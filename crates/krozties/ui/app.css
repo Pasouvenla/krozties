@@ -78,9 +78,9 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
   overflow-y: auto;
 }
 #rail .marque {
-  font-weight: 700; letter-spacing: -.01em; font-size: 1.05rem;
-  padding: .1rem .5rem .8rem; display: flex; align-items: baseline; gap: .4rem;
+  padding: .1rem .2rem .7rem; display: flex; flex-direction: column; gap: .2rem;
 }
+#rail .marque img { display: block; width: 100%; height: auto; }
 #rail .marque small { color: var(--rail-doux); font-weight: 400; font-size: .68rem; }
 #rail .groupe {
   color: var(--rail-doux); font-size: .66rem; text-transform: uppercase;

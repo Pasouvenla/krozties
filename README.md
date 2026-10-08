@@ -1,4 +1,4 @@
-# Krozties
+<p align="center"><img src="crates/krozties/ui/logo.png" alt="Krozties" width="480"></p>
 
 Krozties calcule, pour un personnage et son équipement, la rotation de sorts
 qui fait le plus de dégâts sur plusieurs tours dans Dofus 3. Ses outils
