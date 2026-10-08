@@ -11,10 +11,42 @@ Données du jeu : version 3.7.
 
 Version 0.1.0, la première publiée.
 
-## Mises à jour
+## Comment Krozties est fait
 
-L'application de bureau demande à GitHub, au plus une fois par jour, si une
-nouvelle version est publiée, et l'annonce en bas à droite de la fenêtre.
+Krozties est développé à deux : Pasouvenla, joueur de Dofus, et Claude,
+l'assistant d'IA d'Anthropic, qui a écrit l'essentiel du code sous sa
+direction. Chaque règle de calcul (sorts, effets, durées, cumuls, objets) a été
+confrontée à la donnée du jeu, et une partie a été vérifiée en jeu. Plus de
+700 tests automatisés gardent ces règles d'une version à l'autre.
+
+## Erreurs et signalements
+
+Malgré ces vérifications, il reste sans doute des erreurs : une rotation qui
+n'est pas la meilleure, des dégâts mal calculés, un effet mal compris. Si vous
+en voyez une, ou tout autre bug, ouvrez une
+[issue](https://github.com/Pasouvenla/krozties/issues) en donnant la classe et
+le niveau, le lien DofusBook de l'équipement, le sort ou la rotation en cause,
+ce que Krozties affiche et ce que le jeu donne. Une capture du jeu aide
+beaucoup.
+
+## Vie privée
+
+Krozties n'a ni télémétrie, ni mesure d'audience, ni compte : rien ne part sur
+votre utilisation. L'application ne contacte le réseau que dans trois cas :
+
+- **Nouvelle version** : au plus une fois par jour, l'application de bureau
+  demande à l'API de GitHub (`api.github.com`) le numéro de la dernière version
+  publiée. GitHub voit alors votre adresse IP, comme pour toute page web. Si une
+  version plus récente existe, une mini fenêtre l'annonce en bas à droite.
+- **Import d'un équipement** : quand vous donnez un lien DofusBook,
+  l'application ouvre la page de cet équipement dans une vue invisible pour le
+  lire, comme le ferait votre navigateur, avec ce que la page de DofusBook
+  charge elle-même.
+- **Téléchargement** : le bouton « Télécharger » de la mini fenêtre ouvre la
+  page des versions dans votre navigateur.
+
+Sur votre machine, Krozties ne garde que la date de sa dernière vérification de
+version et le numéro qu'il a vu. L'équipement importé n'est pas conservé.
 
 ## Installation
 
