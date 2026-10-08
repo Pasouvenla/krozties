@@ -274,6 +274,13 @@
         "32118": {"nom": "Amour d'Helséphine", "stats": {"ap": {"avant": [1, 1], "apres": [2, 2]}}},
         "32163": {"nom": "Ferveur d'Amayiro", "stats": {"power": {"avant": [61, 80], "apres": [76, 100]}, "push_damage": {"avant": [16, 20], "apres": [24, 30]}}}
       }
+    },
+    {
+      "id": "2459158",
+      "titre": "Patch Notes 3.7.5 du 08/10/2026",
+      "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2459158-patch-notes-3-7-5-08-10-2026",
+      "objets": {
+      }
     }
   ]
 }
