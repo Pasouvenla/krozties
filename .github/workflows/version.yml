@@ -16,6 +16,10 @@ on:
         type: choice
         options: [correctif, mineure]
         default: correctif
+      essai:
+        description: "Essai : montrer la montée de version sans rien pousser"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -65,9 +69,14 @@ jobs:
           PY
           cargo update -w
 
+      - name: Ce que l'essai changerait
+        if: inputs.essai
+        run: git diff --stat && git diff -- Cargo.toml crates/krozties/tauri.conf.json
+
       # Une étiquette poussée par ce jeton ne déclenche aucun workflow : la
       # release est donc lancée explicitement.
       - name: Commit, étiquette et release
+        if: ${{ !inputs.essai }}
         env:
           GH_TOKEN: ${{ github.token }}
           NUMERO: ${{ steps.version.outputs.numero }}
