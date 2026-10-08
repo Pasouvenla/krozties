@@ -1,0 +1,93 @@
+name: Note de sortie
+
+# Le bot ouvre une PR depuis une branche note/<id>, la note dans
+# data/notes/<id>.json. Ce workflow applique ce qui se chiffre (lignes « avant →
+# après » des sorts, objets de la note), le committe dans la PR, lance les tests
+# et dit dans la PR ce qui reste à modéliser à la main. La fusion de la PR monte
+# la version (workflow `version`).
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  appliquer:
+    if: startsWith(github.head_ref, 'note/')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+
+      # Les tests compilent aussi l'application Tauri, qui en a besoin sous Linux.
+      - name: Bibliothèques système de Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Rust
+        run: rustup toolchain install && rustup show active-toolchain
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Appliquer la note
+        run: |
+          note="data/notes/${GITHUB_HEAD_REF#note/}.json"
+          test -f "$note" || { echo "::error::$note absent de la branche"; exit 1; }
+          {
+            echo "## Note ${GITHUB_HEAD_REF#note/}"
+            echo
+            echo '```'
+            cargo run -q -p dofus-cli -- note "$note" 2>&1 || true
+            echo '```'
+            echo
+            echo "### Ce que la CI a appliqué"
+            echo
+            echo '```'
+            cargo run -q -p dofus-cli -- note "$note" --appliquer 2>&1 || echo "Les lignes chiffrées n'ont pas pu s'appliquer."
+            if python3 tools/note_objets.py "$note" 2>&1; then
+              python3 tools/import_items.py 2>&1
+            else
+              echo "Objets : rien n'est écrit, à reprendre à la main."
+            fi
+            echo '```'
+          } > "$RUNNER_TEMP/rapport.md"
+
+      # Un commit poussé par ce jeton ne relance aucun workflow : les tests
+      # tournent donc ici.
+      - name: Commit
+        run: |
+          git add -A data
+          if git diff --cached --quiet; then echo "Rien à committer."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "donnee: note ${GITHUB_HEAD_REF#note/} appliquee par la CI"
+          git push
+
+      - name: Tests
+        id: tests
+        run: |
+          if cargo test --workspace --no-fail-fast > "$RUNNER_TEMP/tests.log" 2>&1 \
+            && python3 tools/test_import_items.py >> "$RUNNER_TEMP/tests.log" 2>&1; then
+            echo "verdict=verts" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=rouges, détail dans le journal du run" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rapport dans la PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERDICT: ${{ steps.tests.outputs.verdict }}
+        run: |
+          {
+            echo
+            echo "### Tests : ${VERDICT}"
+            echo
+            echo "La prose de la note reste à modéliser à la main, sur cette branche."
+          } >> "$RUNNER_TEMP/rapport.md"
+          gh pr comment "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/rapport.md"

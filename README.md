@@ -7,10 +7,6 @@ bombes du Roublard, les portails de l'Eliotrope et la ligne de vue.
 
 Données du jeu : version 3.7.
 
-## État
-
-Version 0.1.0, la première publiée.
-
 ## Comment Krozties est fait
 
 Chaque règle de calcul (sorts, effets, durées, cumuls, objets) a été
@@ -67,8 +63,8 @@ Avec [Homebrew](https://brew.sh) :
 brew install --cask pasouvenla/krozties/krozties
 ```
 
-Sinon, ouvrir `Krozties_<version>_universal.dmg` et glisser Krozties dans
-Applications.
+Sinon, [télécharger le `.dmg`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_universal.dmg), l'ouvrir et
+glisser Krozties dans Applications.
 
 Krozties n'est pas signé par Apple : au premier lancement, macOS refuse de
 l'ouvrir. Dans Réglages Système, Confidentialité et sécurité, cliquer sur
@@ -76,16 +72,19 @@ l'ouvrir. Dans Réglages Système, Confidentialité et sécurité, cliquer sur
 
 ### Windows
 
-[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/download/v0.1.0/Krozties_0.1.0_x64-setup.exe)
-(le `.msi` est aussi sur la page des versions), puis le lancer. Krozties n'est
-pas signé : si SmartScreen affiche « Windows a protégé votre ordinateur »,
-cliquer sur « Informations complémentaires », puis sur « Exécuter quand même ».
+[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_x64-setup.exe) (ou le
+[`.msi`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_x64.msi)), puis le lancer. Krozties n'est pas signé : si
+SmartScreen affiche « Windows a protégé votre ordinateur », cliquer sur
+« Informations complémentaires », puis sur « Exécuter quand même ».
 
 ### Linux
 
-- AppImage : `chmod +x Krozties_<version>_amd64.AppImage`, puis la lancer.
-- Debian, Ubuntu : `sudo apt install ./Krozties_<version>_amd64.deb`
-- Fedora : `sudo dnf install ./Krozties-<version>-1.x86_64.rpm`
+- [AppImage](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_amd64.AppImage) : `chmod +x Krozties_amd64.AppImage`,
+  puis la lancer.
+- Debian, Ubuntu ([`.deb`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_amd64.deb)) :
+  `sudo apt install ./Krozties_amd64.deb`
+- Fedora ([`.rpm`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_x86_64.rpm)) :
+  `sudo dnf install ./Krozties_x86_64.rpm`
 
 ## Licence
 

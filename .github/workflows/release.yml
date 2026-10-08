@@ -1,31 +1,46 @@
 name: Release
 
 # Une étiquette v* construit Krozties pour macOS (universel), Windows et Linux,
-# et dépose les paquets dans une version en brouillon, à relire avant de la
-# publier. Lancé à la main, le workflow construit sans rien publier : les
-# paquets restent dans les artefacts du run.
+# puis publie la version quand les trois paquets sont prêts, et met à jour le
+# cask Homebrew. Le workflow `version` la lance après une montée de version ;
+# lancé à la main sans étiquette, il construit sans rien publier et garde les
+# paquets dans les artefacts du run.
+#
+# Les paquets ne portent pas de numéro de version (`Krozties_x64-setup.exe`,
+# `Krozties_universal.dmg`…) : un lien `releases/latest/download/<paquet>`
+# mène toujours à la dernière version.
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      etiquette:
+        description: "Étiquette à construire et publier (vide : essai sans publication)"
+        required: false
+        default: ''
 
 permissions:
   contents: write
+
+env:
+  ETIQUETTE: ${{ inputs.etiquette || (github.ref_type == 'tag' && github.ref_name) || '' }}
 
 jobs:
   version:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.ETIQUETTE || github.ref }}
 
       - name: L'étiquette suit la version de l'application
-        if: github.ref_type == 'tag'
+        if: env.ETIQUETTE != ''
         run: |
           app=$(python3 -c "import json; print(json.load(open('crates/krozties/tauri.conf.json'))['version'])")
           cargo=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
-          echo "étiquette ${GITHUB_REF_NAME}, application ${app}, Cargo ${cargo}"
-          test "${GITHUB_REF_NAME}" = "v${app}" && test "${app}" = "${cargo}"
+          echo "étiquette ${ETIQUETTE}, application ${app}, Cargo ${cargo}"
+          test "${ETIQUETTE}" = "v${app}" && test "${app}" = "${cargo}"
 
   paquets:
     needs: version
@@ -47,6 +62,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.ETIQUETTE || github.ref }}
 
       - name: Bibliothèques système de Tauri
         if: runner.os == 'Linux'
@@ -68,6 +85,8 @@ jobs:
       - name: CLI Tauri
         run: npm install -g @tauri-apps/cli@2.11.4
 
+      # La version se crée en brouillon : elle ne se publie qu'une fois les
+      # trois paquets déposés, par le job `publier`.
       - id: tauri
         uses: tauri-apps/tauri-action@v1
         env:
@@ -76,14 +95,69 @@ jobs:
           projectPath: crates/krozties
           tauriScript: tauri
           args: ${{ matrix.args }}
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: ${{ github.ref_type == 'tag' && format('Krozties {0}', github.ref_name) || '' }}
+          tagName: ${{ env.ETIQUETTE }}
+          releaseName: ${{ env.ETIQUETTE && format('Krozties {0}', env.ETIQUETTE) || '' }}
           releaseBody: Paquets pour macOS (Apple Silicon et Intel), Windows et Linux. L'installation est décrite dans le README.
           releaseDraft: true
+          releaseAssetNamePattern: '[name]_[arch][setup][ext]'
 
       - name: Paquets de l'essai
-        if: github.ref_type != 'tag'
+        if: env.ETIQUETTE == ''
         uses: actions/upload-artifact@v7
         with:
           name: krozties-${{ runner.os }}
           path: ${{ join(fromJSON(steps.tauri.outputs.artifactPaths), fromJSON('"\n"')) }}
+
+  publier:
+    needs: paquets
+    if: inputs.etiquette != '' || github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Publier la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$ETIQUETTE" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+
+  cask:
+    needs: publier
+    runs-on: ubuntu-24.04
+    env:
+      TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+    steps:
+      # Le jeton n'écrit que dans le dépôt du tap. Sans lui, le cask reste à
+      # mettre à jour à la main, et le run le dit.
+      - name: Jeton du tap
+        if: env.TAP_TOKEN == ''
+        run: echo "::warning::Secret TAP_TOKEN absent, cask Homebrew à mettre à jour à la main."
+
+      - uses: actions/checkout@v7
+        if: env.TAP_TOKEN != ''
+        with:
+          repository: Pasouvenla/homebrew-krozties
+          token: ${{ env.TAP_TOKEN }}
+
+      - name: Le cask suit la version publiée
+        if: env.TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$ETIQUETTE" > version.json
+          python3 - version.json Casks/krozties.rb <<'PY'
+          import json, re, sys
+          version = json.load(open(sys.argv[1]))
+          numero = version["tag_name"].removeprefix("v")
+          dmg = next(a for a in version["assets"] if a["name"].endswith("_universal.dmg"))
+          empreinte = dmg["digest"].removeprefix("sha256:")
+          cask = open(sys.argv[2]).read()
+          cask = re.sub(r'^  version ".*"$', f'  version "{numero}"', cask, count=1, flags=re.M)
+          cask = re.sub(r'^  sha256 ".*"$', f'  sha256 "{empreinte}"', cask, count=1, flags=re.M)
+          cask = re.sub(r'^  url ".*"$', '  url "https://github.com/Pasouvenla/krozties/releases/download/'
+                        f'v#{{version}}/{dmg["name"]}"', cask, count=1, flags=re.M)
+          open(sys.argv[2], "w").write(cask)
+          PY
+          rm version.json
+          if git diff --quiet; then echo "Cask déjà à jour."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "krozties ${ETIQUETTE#v}"
+          git push

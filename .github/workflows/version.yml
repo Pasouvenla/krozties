@@ -1,0 +1,80 @@
+name: Version
+
+# Une PR de note de sortie fusionnée (branche note/<id>) monte la version
+# mineure : 0.2.0, 0.3.0… Lancé à la main, le workflow monte la mineure ou le
+# correctif (0.2.1). Puis l'étiquette est posée et la release construite et
+# publiée.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      niveau:
+        description: "mineure (0.2.0) ou correctif (0.1.1)"
+        type: choice
+        options: [correctif, mineure]
+        default: correctif
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+jobs:
+  monter:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'note/'))
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+
+      # La version de Rust est celle de `rust-toolchain.toml` ; `cargo update -w`
+      # reporte le nouveau numéro dans `Cargo.lock`.
+      - name: Rust
+        run: rustup toolchain install && rustup show active-toolchain
+
+      # Le numéro vit à deux endroits que l'application compare au lancement :
+      # `Cargo.toml` et `tauri.conf.json`.
+      - name: Nouvelle version
+        id: version
+        env:
+          NIVEAU: ${{ inputs.niveau || 'mineure' }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          conf = pathlib.Path("crates/krozties/tauri.conf.json")
+          c = json.loads(conf.read_text())
+          x, y, z = map(int, c["version"].split("."))
+          numero = f"{x}.{y + 1}.0" if os.environ["NIVEAU"] == "mineure" else f"{x}.{y}.{z + 1}"
+          c["version"] = numero
+          conf.write_text(json.dumps(c, ensure_ascii=False, indent=2) + "\n")
+          cargo = pathlib.Path("Cargo.toml")
+          texte, n = re.subn(r'^version = "[^"]+"$', f'version = "{numero}"', cargo.read_text(), count=1, flags=re.M)
+          assert n == 1, "la version de [workspace.package] est introuvable"
+          cargo.write_text(texte)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"numero={numero}\n")
+          PY
+          cargo update -w
+
+      # Une étiquette poussée par ce jeton ne déclenche aucun workflow : la
+      # release est donc lancée explicitement.
+      - name: Commit, étiquette et release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ steps.version.outputs.numero }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: version ${NUMERO}"
+          git tag -a "v${NUMERO}" -m "Krozties ${NUMERO}"
+          git push origin master "v${NUMERO}"
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref master -f etiquette="v${NUMERO}"
