@@ -13,9 +13,7 @@ Version 0.1.0, la première publiée.
 
 ## Comment Krozties est fait
 
-Krozties est développé à deux : Pasouvenla, joueur de Dofus, et Claude,
-l'assistant d'IA d'Anthropic, qui a écrit l'essentiel du code sous sa
-direction. Chaque règle de calcul (sorts, effets, durées, cumuls, objets) a été
+Chaque règle de calcul (sorts, effets, durées, cumuls, objets) a été
 confrontée à la donnée du jeu, et une partie a été vérifiée en jeu. Plus de
 700 tests automatisés gardent ces règles d'une version à l'autre.
 
@@ -54,10 +52,6 @@ Krozties ne remplace pas DofusBook, il s'appuie dessus. On compose son
 équipement sur DofusBook, et Krozties lit celui que vous lui désignez : il
 ouvre sa page chez DofusBook, à votre demande, comme votre navigateur
 l'afficherait. Rien d'autre n'est lu, rien n'est conservé ni renvoyé ailleurs.
-
-Les chiffres de sorts de DofusBook nous ont servi de référence pour vérifier
-nos calculs, et les caractéristiques des invocations viennent d'un relevé de
-leur site. Merci à l'équipe de DofusBook pour cet outil extraordinaire.
 
 ## Installation
 
