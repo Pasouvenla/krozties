@@ -37,6 +37,35 @@ try {
   resultat.majTexte = fenetre.innerText.replace(/\s+/g, ' ').trim();
   fenetre.remove();
 
+  // La vérification part à chaque ouverture, et sans réseau le numéro déjà
+  // lu reste. GitHub est simulé ; la version installée, que seule
+  // l'application de bureau connaît, arrête ensuite chaque passage, ce qui ne
+  // change rien à ce qu'il a retenu.
+  const CLE_MAJ = 'krozties.mise-a-jour';
+  const vraiFetch = window.fetch;
+  const demandes = [];
+  let horsLigne = false;
+  localStorage.removeItem(CLE_MAJ);
+  window.fetch = async (url, options) => {
+    if (!String(url).includes('api.github.com')) return vraiFetch(url, options);
+    if (horsLigne) throw new TypeError('hors ligne');
+    demandes.push(String(url));
+    return new Response(JSON.stringify({ tag_name: 'v9.9.9' }), { status: 200 });
+  };
+  try {
+    await maj.verifier().catch(() => {});
+    await maj.verifier().catch(() => {});
+    horsLigne = true;
+    await maj.verifier().catch(() => {});
+    resultat.majVerifiee = {
+      demandes: demandes.length,
+      derniere: JSON.parse(localStorage.getItem(CLE_MAJ) || '{}').derniere ?? null,
+    };
+  } finally {
+    window.fetch = vraiFetch;
+    localStorage.removeItem(CLE_MAJ);
+  }
+
   // Un Sram de niveau 200, comme les tests du moteur : la Rotation exige un
   // équipement pour s'ouvrir.
   const build = {

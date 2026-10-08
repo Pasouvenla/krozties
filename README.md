@@ -28,7 +28,7 @@ beaucoup.
 Krozties n'a ni télémétrie, ni mesure d'audience, ni compte : rien ne part sur
 votre utilisation. L'application ne contacte le réseau que dans trois cas :
 
-- **Nouvelle version** : au plus une fois par jour, l'application de bureau
+- **Nouvelle version** : à chaque ouverture, l'application de bureau
   demande à l'API de GitHub (`api.github.com`) le numéro de la dernière version
   publiée. GitHub voit alors votre adresse IP, comme pour toute page web. Si une
   version plus récente existe, une mini fenêtre l'annonce en bas à droite.

@@ -162,6 +162,9 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "Krozties 0.2.0 est disponible Vous utilisez la version 0.1.0. Télécharger Plus tard",
         "{r}"
     );
+    // Deux ouvertures, deux demandes à GitHub ; la troisième, hors ligne, garde
+    // le numéro lu.
+    assert_eq!(r["majVerifiee"], serde_json::json!({ "demandes": 2, "derniere": "9.9.9" }), "{r}");
     for (outil, titre) in [
         ("equipement", "Équipement"),
         ("rotation", "Rotation"),

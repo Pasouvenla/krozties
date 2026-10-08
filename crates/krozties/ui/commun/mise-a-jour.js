@@ -1,6 +1,6 @@
 // Une nouvelle version publiée : une mini fenêtre, en bas à droite, l'annonce.
-// L'application demande la dernière version à GitHub au plus une fois par jour,
-// et « Plus tard » la masque jusqu'au lendemain.
+// L'application demande la dernière version à GitHub à chaque ouverture, et
+// « Plus tard » la masque jusqu'au lendemain.
 
 import { appeler } from '../pont.js';
 import { echapper } from './format.js';
@@ -64,29 +64,22 @@ export function afficher(derniere, actuelle) {
   return fenetre;
 }
 
-/// Au démarrage de l'application de bureau. Une réponse de GitHub, même un
-/// refus, compte pour la journée ; une absence de réseau, non.
+/// À chaque démarrage de l'application de bureau. Sans réseau, ou si GitHub
+/// refuse, le numéro lu à une ouverture précédente sert encore.
 export async function verifier() {
   const memoire = lire();
-  const maintenant = Date.now();
-  if (!memoire.verifiee_le || maintenant - memoire.verifiee_le >= JOUR) {
-    let reponse;
-    try {
-      reponse = await fetch(DERNIERE, { headers: { Accept: 'application/vnd.github+json' } });
-    } catch (e) {
-      return;
-    }
-    let derniere = null;
+  try {
+    const reponse = await fetch(DERNIERE, { headers: { Accept: 'application/vnd.github+json' } });
     if (reponse.ok) {
       const numero = String((await reponse.json()).tag_name || '').replace(/^v/, '');
-      derniere = NUMERO.test(numero) ? numero : null;
+      memoire.derniere = NUMERO.test(numero) ? numero : null;
+      ecrire(memoire);
     }
-    memoire.derniere = derniere;
-    memoire.verifiee_le = maintenant;
-    ecrire(memoire);
+  } catch (e) {
+    // Pas de réseau : rien à mettre à jour.
   }
   if (!memoire.derniere) return;
-  if (memoire.masquee_le && maintenant - memoire.masquee_le < JOUR) return;
+  if (memoire.masquee_le && Date.now() - memoire.masquee_le < JOUR) return;
   const actuelle = await appeler('version');
   if (plusRecente(memoire.derniere, actuelle)) afficher(memoire.derniere, actuelle);
 }
