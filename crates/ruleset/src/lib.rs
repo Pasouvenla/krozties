@@ -171,9 +171,10 @@ pub struct ResourceDef {
     /// Sauvage de l'Osamodas jouent leur tour, puis meurent.
     #[serde(default)]
     pub reset_at_turn_start_while: Option<String>,
-    /// Ce compteur perd un cran au début de chaque tour où cet autre état est
-    /// présent, après les effets de début de tour : la tourelle de la Surtension du
-    /// Steamer joue son tour à l'Évolution III, puis redescend.
+    /// Ce compteur perd, au début de chaque tour, autant de crans que cet autre
+    /// état en porte, après les effets de début de tour : la tourelle de la
+    /// Surtension du Steamer joue son tour à l'Évolution III, puis redescend ; les
+    /// places des poupées du Sadida redevenues Arbres se libèrent.
     #[serde(default)]
     pub lose_at_turn_start_while: Option<String>,
     /// Ce compteur ne monte qu'une fois par tour, quel que soit le nombre de sorts
@@ -553,6 +554,7 @@ pub struct DurationDef {
     pub on_expire: OnExpire,
     /// L'état que la fin de celui-ci pose, pour le tour qui suit : Saoul du Pandawa
     /// pose en retombant l'état 3577 (« sorti de Saoul »), que lit la Gueule de Bois.
+    /// Un cran par état qui s'achève, quand plusieurs posent le même.
     #[serde(default)]
     pub then_gain: Option<String>,
     /// Les sorts dont la relance retombe à zéro quand cet état s'achève de lui-même

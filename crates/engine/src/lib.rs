@@ -435,8 +435,8 @@ struct Resource {
     /// les effets de debut de tour. Voir
     /// [`dofus_ruleset::ResourceDef::reset_at_turn_start_while`].
     remis_sous: Option<usize>,
-    /// Ce compteur perd un cran au debut de chaque tour ou cet etat-la tient,
-    /// apres les effets de debut de tour. Voir
+    /// Ce compteur perd, au debut de chaque tour, autant de crans que cet
+    /// etat-la en porte, apres les effets de debut de tour. Voir
     /// [`dofus_ruleset::ResourceDef::lose_at_turn_start_while`].
     perd_sous: Option<usize>,
     /// Le total dont se retire ce que ce compteur perd en fin de tour. Voir
@@ -2145,8 +2145,8 @@ impl Engine {
             if r.remis_sous.is_some_and(|garde| opened.res[garde] > 0) {
                 opened.res[i] = r.default;
             }
-            if r.perd_sous.is_some_and(|garde| opened.res[garde] > 0) {
-                opened.res[i] = opened.res[i].saturating_sub(1);
+            if let Some(garde) = r.perd_sous {
+                opened.res[i] = opened.res[i].saturating_sub(opened.res[garde]);
             }
         }
         (damage, opened)
@@ -2875,8 +2875,10 @@ impl Engine {
         };
         // Les etats que l'expiration d'un autre pose, poses apres la boucle :
         // la cible peut etre plus bas dans la liste, et la boucle lui
-        // retirerait aussitot le tour qu'on vient de lui donner.
-        let mut suites: u32 = 0;
+        // retirerait aussitot le tour qu'on vient de lui donner. Un cran par
+        // etat qui expire : deux poupees qui partent au meme tour en posent
+        // deux.
+        let mut suites = [0u8; MAX_RESOURCES];
         // Les sorts dont la fin d'un etat remet la relance, remis une fois les
         // relances du tour posees.
         let mut relances_remises: u32 = 0;
@@ -2912,7 +2914,7 @@ impl Engine {
             }
             if let Some(t) = r.puis {
                 if s.res[i] > 0 {
-                    suites |= 1 << t;
+                    suites[t] = suites[t].saturating_add(1);
                 }
             }
             // Un état encore là qui s'achève : ses sorts reviennent. Retiré
@@ -2935,11 +2937,9 @@ impl Engine {
                 };
             }
         }
-        while suites != 0 {
-            let t = suites.trailing_zeros() as usize;
-            suites &= suites - 1;
+        for (t, n) in suites.into_iter().enumerate().filter(|(_, n)| *n > 0) {
             let r = &self.resources[t];
-            s.res[t] = (s.res[t] + 1).min(r.max);
+            s.res[t] = s.res[t].saturating_add(n).min(r.max);
             // Pose pour le tour qui s'ouvre : il vit ce tour-la et ceux que
             // sa propre duree ajoute.
             if let Some((turns, _, _)) = r.duration {

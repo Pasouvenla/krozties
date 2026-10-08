@@ -585,7 +585,7 @@ export async function rendre(cible, etat, { appeler }) {
             <ol class="lancers">${ouverture.map((o) => `
               <li class="ouverture">
                 ${icone(o)}
-                <span class="nom">${echapper(o.name)} <span class="moment">début du tour</span></span>
+                <span class="nom">${echapper(o.name)} <span class="moment">${o.detail ? `${echapper(o.detail)}, ` : ''}début du tour</span></span>
                 <span class="degats">${nb(o.damage)}</span>
                 <span class="pa"></span><span class="reste"></span>
               </li>`).join('')}${t.casts.map((c, k) => `

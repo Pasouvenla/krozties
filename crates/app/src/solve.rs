@@ -400,6 +400,9 @@ pub struct Outcome {
     pub placement_ignore: Vec<String>,
     /// La rotation qui se répète, indépendante de l'horizon demandé.
     pub steady: dofus_engine::SteadyState,
+    /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×3 ») :
+    /// la frise l'écrit sur sa ligne de début de tour.
+    pub jeu_des_invocations: BTreeMap<String, String>,
     pub seconds: f64,
 }
 
@@ -823,7 +826,11 @@ fn avec_les_invocations(
         /// L'autre monstre qu'un sort commun invoque : sa chance, son nom, sa
         /// part des caractéristiques et son tour.
         autre: Option<(u8, String, i64, Vec<AttaqueJouee>)>,
+        /// Les tours qu'elle joue avant que le sort ne la retire, quand il le
+        /// fait : voir [`duree_de_vie`].
+        vie: Option<u8>,
     }
+    let instantane = snapshot_for(build.class).ok();
     let mut jouees: Vec<Jouee> = Vec::new();
     for (i, sort) in ruleset.spells.iter().enumerate() {
         if !request.deck.contains(&sort.id) {
@@ -858,12 +865,16 @@ fn avec_les_invocations(
             let tour = tour_de_l_invocation(rang, &resolved.profile, facteur, pa_de(rang), &[]);
             Some((a.chance, rang.nom.clone().unwrap_or_else(|| entree.nom.clone()), facteur, tour))
         });
-        jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre });
+        let vie = sort
+            .dofusdb_id
+            .zip(invocation.monstre)
+            .and_then(|(id, monstre)| duree_de_vie(instantane.as_ref()?, id, monstre));
+        jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre, vie });
     }
     if jouees.is_empty() {
         return Ok((ruleset, notes));
     }
-    let plafond = plafond_d_invocations(build);
+    let plafond = plafond_d_invocations(resolved);
     let osamodas = build.class == 2;
     let dans_le_deck = |id: &str| request.deck.iter().any(|s| s == id);
     let piqure = osamodas && ruleset.spells.iter().any(|s| s.id == "piqure_motivante");
@@ -880,8 +891,10 @@ fn avec_les_invocations(
     // invocation, une pour Piqûre Motivante.
     let detentes: usize = ruleset.resources.iter().map(|r| r.while_present.len()).sum();
     let en_plus = usize::from(piqure);
+    // Les places que rendent les invocations parties : un compteur de plus.
+    let rendues = usize::from(jouees.iter().any(|j| j.vie.is_some()));
     let place = dofus_engine::MAX_RESOURCES
-        .saturating_sub(ruleset.resources.len() + 1 + usize::from(cortege) + en_plus)
+        .saturating_sub(ruleset.resources.len() + 1 + usize::from(cortege) + en_plus + rendues)
         .min(dofus_engine::MAX_STATE_TRIGGERS.saturating_sub(detentes + en_plus));
     if jouees.len() > place {
         notes.push(format!(
@@ -904,13 +917,23 @@ fn avec_les_invocations(
         }
         r
     };
-    ruleset.resources.push(
-        serde_json::from_value(mortel(serde_json::json!({
-            "id": "invocations_en_jeu", "scope": "caster", "max": en_jeu_au_plus, "default": 0,
-            "monotone": "increasing",
-        })))
-        .map_err(|e| e.to_string())?,
-    );
+    let mut en_jeu = serde_json::json!({
+        "id": "invocations_en_jeu", "scope": "caster", "max": en_jeu_au_plus, "default": 0,
+        "monotone": "increasing",
+    });
+    // Une invocation que son sort retire rend sa place au début du tour qui
+    // suit son dernier : une place par invocation partie.
+    if jouees.iter().any(|j| j.vie.is_some()) {
+        en_jeu["lose_at_turn_start_while"] = serde_json::json!(PLACES_RENDUES);
+        ruleset.resources.push(
+            serde_json::from_value(serde_json::json!({
+                "id": PLACES_RENDUES, "scope": "caster", "max": en_jeu_au_plus, "default": 0,
+                "duration": { "turns": 0, "refresh": "on_apply", "on_expire": "reset_to_default" },
+            }))
+            .map_err(|e| e.to_string())?,
+        );
+    }
+    ruleset.resources.push(serde_json::from_value(mortel(en_jeu)).map_err(|e| e.to_string())?);
     if cortege {
         ruleset.resources.push(
             serde_json::from_value(serde_json::json!({
@@ -953,14 +976,34 @@ fn avec_les_invocations(
                 lignes
             }
         };
-        let compteur = serde_json::json!({
+        // Ce qu'elle joue, que la frise écrit sur sa ligne de début de tour :
+        // sans cela, ses frappes s'y lisent comme un poison.
+        let joue = match &j.autre {
+            None => en_clair(&j.tour),
+            Some((_, _, _, tour_autre)) => format!("{} ou {}", en_clair(&j.tour), en_clair(tour_autre)),
+        };
+        let mut compteur = serde_json::json!({
             "id": id, "scope": "caster", "max": en_jeu_au_plus, "default": 0, "monotone": "increasing",
             "while_present": [{ "trigger": "turn_start", "lines": lignes }],
+            "note": joue,
         });
+        // Elle joue `vie` tours, au début de ceux qui suivent son invocation,
+        // puis le sort la retire et sa place se libère (voir `DurationDef::turns`
+        // pour l'écriture `vie - 1`).
+        if let Some(vie) = j.vie {
+            compteur["duration"] = serde_json::json!({
+                "turns": vie - 1, "refresh": "on_apply", "on_expire": "reset_to_default", "then_gain": PLACES_RENDUES,
+            });
+        }
         ruleset.resources.push(
             serde_json::from_value(if j.commune { compteur } else { mortel(compteur) }).map_err(|e| e.to_string())?,
         );
         let sort = &mut ruleset.spells[j.i];
+        // Une seule à la fois : relancée pendant qu'elle joue encore, la durée
+        // repartirait pour toutes celles de ce type.
+        if j.vie.is_some() {
+            sort.blocked_by.get_or_insert_with(|| id.clone());
+        }
         for r in [id.as_str(), "invocations_en_jeu"] {
             let mut g = serde_json::json!({ "effect": "gain", "resource": r });
             if pacte && !j.commune {
@@ -993,10 +1036,11 @@ fn avec_les_invocations(
         notes.push(match &j.autre {
             None => format!(
                 "{nom} : {} par tour ({} PA sur {}), à {facteur} % de vos caractéristiques, dès le tour qui \
-                 suit son invocation ; ni vos % de dommages ni vos dommages critiques",
+                 suit son invocation{} ; ni vos % de dommages ni vos dommages critiques",
                 en_clair(tour),
                 depense(tour),
                 pa_de(rang),
+                j.vie.map_or(String::new(), |v| format!(", {v} tours durant et une à la fois, puis sa place se libère")),
             ),
             Some((chance, nom_autre, _, tour_autre)) => format!(
                 "{} : {nom} à {} %, {} par tour ({} PA), ou {nom_autre} à {chance} %, {} par tour ({} PA) ; \
@@ -1178,11 +1222,10 @@ fn avec_les_invocations(
             }
         }
     }
-    notes.push(if build.dofusbook.is_some() {
-        format!("{plafond} invocation{} en jeu au plus, d'après la fiche DofusBook", if plafond > 1 { "s" } else { "" })
-    } else {
-        "1 invocation en jeu au plus, faute d'équipement importé de DofusBook".to_string()
-    });
+    notes.push(format!(
+        "{plafond} invocation{} en jeu au plus, d'après l'équipement",
+        if plafond > 1 { "s" } else { "" }
+    ));
     Ok((ruleset, notes))
 }
 
@@ -1440,7 +1483,7 @@ fn avec_les_tourelles(
             })
             .collect::<Vec<_>>()
     };
-    let plafond = plafond_d_invocations(build);
+    let plafond = plafond_d_invocations(resolved);
     pousser(
         &mut ruleset,
         serde_json::json!({
@@ -1693,14 +1736,34 @@ fn avec_les_tourelles(
     Ok((ruleset, notes))
 }
 
-/// Combien d'invocations le build tient en jeu : le total « Invocations » de
-/// la fiche, ou 1 sans équipement importé.
-fn plafond_d_invocations(build: &dofus_build::BuildInput) -> u8 {
-    build
-        .dofusbook
-        .as_ref()
-        .map(|v| crate::fiche::calculer(v, &build.boosts).stats.get("ic").copied().unwrap_or(1.0))
-        .map_or(1, |n| n.clamp(1.0, 20.0) as u8)
+/// Combien d'invocations le build tient en jeu : une de base, plus celles que
+/// donnent ses objets et ses panoplies. Lu sur l'équipement résolu, et non sur
+/// la fiche DofusBook, que l'interface ne joint pas au calcul.
+fn plafond_d_invocations(resolved: &Resolved) -> u8 {
+    (1 + resolved.totals.get("summons").copied().unwrap_or(0)).clamp(1, 20) as u8
+}
+
+/// L'état que posent les invocations qui partent, une place chacune, pour le
+/// tour qui s'ouvre : le compteur partagé en perd autant.
+const PLACES_RENDUES: &str = "places_d_invocation_rendues";
+
+/// Les tours que joue l'invocation d'un sort qui la retire lui-même : un effet
+/// du sort qui la tue (141) ou la remplace (405) au bout de `delay` tours, sur
+/// la cible « F<monstre> ». Les poupées Transmutées du Sadida redeviennent
+/// ainsi des Arbres trois tours après leur invocation ; le Pavois et l'Égide du
+/// Féca disparaissent de même.
+fn duree_de_vie(instantane: &Snapshot, sort: u32, monstre: u32) -> Option<u8> {
+    const FIN: [u32; 2] = [141, 405];
+    let niveau = instantane.spells.iter().find(|s| s.id == sort)?.levels.iter().max_by_key(|l| l.grade)?;
+    let vise = |cible: &str| {
+        cible.split(',').any(|m| m.trim().strip_prefix('F').and_then(|n| n.parse::<u32>().ok()) == Some(monstre))
+    };
+    niveau
+        .other_effects
+        .iter()
+        .filter(|e| FIN.contains(&e.id) && e.target.as_deref().is_some_and(vise))
+        .filter_map(|e| u8::try_from(e.delay?).ok().filter(|d| *d > 0))
+        .min()
 }
 
 /// Ce que la Rotation et le rejeu partagent : le build résolu, les règles de la
@@ -1972,6 +2035,13 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
         zones_sans_plafond: zones,
         zones_degressives: degressives,
         placement_ignore: ignores,
+        // Les compteurs « invocation_<sort> » sont ceux de la greffe, qui
+        // portent ce que joue l'invocation.
+        jeu_des_invocations: ruleset
+            .resources
+            .iter()
+            .filter_map(|r| Some((r.id.strip_prefix("invocation_")?.to_string(), r.note.clone()?)))
+            .collect(),
         seconds: started.elapsed().as_secs_f64(),
     })
 }
@@ -2948,6 +3018,8 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
                             "id": source, "name": nom_de_sort(source), "damage": d.as_f64(),
                             "dofusdb_id": icons.get(source.as_str()).copied().flatten(),
                             "icone_objet": icone_objet(source),
+                            // Le tour d'une invocation : ce qu'elle a joué.
+                            "detail": outcome.jeu_des_invocations.get(source.as_str()),
                         })
                     }).collect::<Vec<_>>(),
                     "casts": t.casts.iter().map(|c| {
@@ -4185,6 +4257,103 @@ mod tests {
             Some(dofus_ruleset::Condition::CasterHas { resource }) if resource.starts_with("invocation_")
         ));
         assert!(!boost.while_present[0].lines.is_empty());
+    }
+
+    /// La durée de vie se lit dans la donnée, pour toutes les classes : les
+    /// cinq poupées Transmutées du Sadida jouent trois tours, le Pavois un et
+    /// l'Égide deux, et aucune autre invocation n'est retirée par son sort.
+    #[test]
+    fn la_duree_de_vie_des_invocations_se_lit_dans_la_donnee() {
+        let mut lues: Vec<(u32, u8)> = Vec::new();
+        for v in crate::invocations::releve().invocations.iter().filter(|v| v.classe != 0) {
+            let instantane = snapshot_for(v.classe).unwrap_or_else(|e| panic!("{} : {e}", v.nom));
+            if let Some(vie) = v.monstre.and_then(|m| duree_de_vie(&instantane, v.sort, m)) {
+                lues.push((v.sort, vie));
+            }
+        }
+        lues.sort_unstable();
+        assert_eq!(lues, [(13016, 1), (13018, 2), (13515, 3), (13520, 3), (13522, 3), (13523, 3), (13526, 3)]);
+    }
+
+    /// Le plafond se lit sur l'équipement, sans la fiche DofusBook, que la
+    /// requête de l'interface ne porte pas : la Boucle d'oreille de Kongoku et
+    /// l'Anneau Lunaire donnent chacun une invocation de plus.
+    #[test]
+    fn le_plafond_d_invocations_se_lit_sur_l_equipement() {
+        let mut items = vec![0u32; 17];
+        (items[0], items[2]) = (17107, 21228);
+        let requete: Request = serde_json::from_value(serde_json::json!({
+            "class": 10, "level": 200, "items": items, "deck": ["la_gonflable_transmutee"], "horizon": 1,
+        }))
+        .unwrap();
+        let build = requete.build.normalise();
+        assert!(build.dofusbook.is_none());
+        let resolved = resolve_build(&build).unwrap();
+        let (regles, notes) =
+            avec_les_invocations(load_ruleset(10).unwrap(), &requete, &build, &resolved).expect("greffe");
+        let en_jeu = regles.resources.iter().find(|r| r.id == "invocations_en_jeu").unwrap();
+        assert_eq!(en_jeu.max, 3);
+        assert!(notes.iter().any(|n| n == "3 invocations en jeu au plus, d'après l'équipement"), "{notes:#?}");
+    }
+
+    /// Les tours où un sort est lancé, ceux où son invocation frappe au début
+    /// du tour, numérotés depuis 1, et ce que la frise écrit sur ces lignes.
+    fn lancers_et_frappes(requete: serde_json::Value, sort: &str) -> (Vec<usize>, Vec<usize>, Vec<String>) {
+        let requete: Request = serde_json::from_value(requete).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let tours = v["rotation"]["turns"].as_array().unwrap();
+        let ou = |cle: &str| -> Vec<usize> {
+            tours
+                .iter()
+                .enumerate()
+                .filter(|(_, t)| t[cle].as_array().unwrap().iter().any(|c| c["id"] == sort))
+                .map(|(k, _)| k + 1)
+                .collect()
+        };
+        let mut details: Vec<String> = tours
+            .iter()
+            .flat_map(|t| t["opening_sources"].as_array().unwrap())
+            .filter(|o| o["id"] == sort)
+            .filter_map(|o| o["detail"].as_str().map(str::to_string))
+            .collect();
+        details.dedup();
+        (ou("casts"), ou("opening_sources"), details)
+    }
+
+    /// La Gonflable Transmutée « est remplacée par un Arbre 3 tours après son
+    /// invocation » : elle frappe trois débuts de tour, puis rend sa place, et se
+    /// relance au terme de ses 4 tours de relance. Une seule place
+    /// d'invocation : la relance prouve que la place s'est libérée.
+    #[test]
+    fn une_poupee_transmutee_joue_trois_tours_puis_rend_sa_place() {
+        let (lancers, frappes, details) = lancers_et_frappes(
+            serde_json::json!({
+                "class": 10, "level": 200, "items": vec![0u32; 17], "deck": ["la_gonflable_transmutee"], "horizon": 7,
+            }),
+            "la_gonflable_transmutee",
+        );
+        assert_eq!(lancers, [1, 5]);
+        assert_eq!(frappes, [2, 3, 4, 6, 7]);
+        // Sa ligne de début de tour dit ce qu'elle a joué.
+        assert_eq!(details, ["Brise Automnale ×3"]);
+    }
+
+    /// Deux poupées invoquées au même tour partent au même tour et rendent
+    /// leurs deux places : la Sacrifiée revient dès sa relance permise, la
+    /// Gonflable au terme de la sienne. Une seule place rendue n'en laisserait
+    /// revenir qu'une.
+    #[test]
+    fn deux_poupees_parties_au_meme_tour_rendent_deux_places() {
+        let mut items = vec![0u32; 17];
+        items[2] = 21228;
+        let requete = serde_json::json!({
+            "class": 10, "level": 200, "items": items, "horizon": 7,
+            "deck": ["la_gonflable_transmutee", "la_sacrifiee_transmutee"],
+        });
+        let (gonflable, _, _) = lancers_et_frappes(requete.clone(), "la_gonflable_transmutee");
+        let (sacrifiee, frappes, _) = lancers_et_frappes(requete, "la_sacrifiee_transmutee");
+        assert_eq!((gonflable.as_slice(), sacrifiee.as_slice()), ([1, 5].as_slice(), [1, 4].as_slice()));
+        assert_eq!(frappes, [2, 3, 4, 5, 6, 7]);
     }
 
     /// Le Pacte Bestial et Cortège Sauvage dans la greffe : le sacrifice des
