@@ -1,0 +1,1008 @@
+{
+  "100": {
+    "drapeaux": [],
+    "nom": "Pleutre"
+  },
+  "1229": {
+    "drapeaux": [],
+    "nom": "Mutilation I"
+  },
+  "1230": {
+    "drapeaux": [],
+    "nom": "Mutilation II"
+  },
+  "1231": {
+    "drapeaux": [],
+    "nom": "Mutilation III"
+  },
+  "1241": {
+    "drapeaux": [],
+    "nom": "Rituel de Jashin"
+  },
+  "130": {
+    "drapeaux": [],
+    "nom": "Activation offensive"
+  },
+  "131": {
+    "drapeaux": [],
+    "nom": "Activation défensive"
+  },
+  "132": {
+    "drapeaux": [],
+    "nom": "Activation tactique"
+  },
+  "1442": {
+    "drapeaux": [],
+    "nom": "Shrapnel"
+  },
+  "1461": {
+    "drapeaux": [],
+    "nom": "Sonnailles cibles"
+  },
+  "1486": {
+    "drapeaux": [],
+    "nom": "Épidémie Double et Comploteur"
+  },
+  "157": {
+    "drapeaux": [],
+    "nom": "Inébranlable"
+  },
+  "1803": {
+    "drapeaux": [],
+    "nom": "Berserk"
+  },
+  "2136": {
+    "drapeaux": [],
+    "nom": "Aimantation"
+  },
+  "218": {
+    "drapeaux": [
+      "cantDealDamage"
+    ],
+    "nom": "Pacifiste"
+  },
+  "2228": {
+    "drapeaux": [],
+    "nom": "Méprise"
+  },
+  "2229": {
+    "drapeaux": [],
+    "nom": "Déambulation"
+  },
+  "2230": {
+    "drapeaux": [],
+    "nom": "Assistance"
+  },
+  "2252": {
+    "drapeaux": [],
+    "nom": "Cataclysme"
+  },
+  "2328": {
+    "drapeaux": [],
+    "nom": "Aiguille"
+  },
+  "2339": {
+    "drapeaux": [],
+    "nom": "Guet-apens (cible)"
+  },
+  "238": {
+    "drapeaux": [],
+    "nom": "Hypoglyphe"
+  },
+  "2415": {
+    "drapeaux": [],
+    "nom": "Perception"
+  },
+  "2499": {
+    "drapeaux": [],
+    "nom": "Casemate"
+  },
+  "2501": {
+    "drapeaux": [],
+    "nom": "Croisement"
+  },
+  "2504": {
+    "drapeaux": [],
+    "nom": "Cadence"
+  },
+  "2511": {
+    "drapeaux": [],
+    "nom": "Poudre"
+  },
+  "2512": {
+    "drapeaux": [],
+    "nom": "Rémission"
+  },
+  "2515": {
+    "drapeaux": [],
+    "nom": "Bombe Collante"
+  },
+  "2519": {
+    "drapeaux": [],
+    "nom": "Brancard"
+  },
+  "256": {
+    "drapeaux": [],
+    "nom": "{{spell,24283,1::Feuillu}}"
+  },
+  "263": {
+    "drapeaux": [],
+    "nom": "{{spell,24278,1::Infecté}}"
+  },
+  "269": {
+    "drapeaux": [
+      "invulnerable"
+    ],
+    "nom": "Invulnérable"
+  },
+  "2742": {
+    "drapeaux": [],
+    "nom": "Ataraxie"
+  },
+  "290": {
+    "drapeaux": [],
+    "nom": "Feu"
+  },
+  "291": {
+    "drapeaux": [],
+    "nom": "Eau"
+  },
+  "292": {
+    "drapeaux": [],
+    "nom": "Terre"
+  },
+  "2921": {
+    "drapeaux": [],
+    "nom": "Surtension"
+  },
+  "293": {
+    "drapeaux": [],
+    "nom": "Air"
+  },
+  "296": {
+    "drapeaux": [],
+    "nom": "Rune"
+  },
+  "3": {
+    "drapeaux": [
+      "preventsSpellCast"
+    ],
+    "nom": "{{spell,24243,1::Porteur}}"
+  },
+  "3494": {
+    "drapeaux": [],
+    "nom": "Charge Héroïque"
+  },
+  "3498": {
+    "drapeaux": [],
+    "nom": "{{spell,32507,1::Holmgang}}"
+  },
+  "3512": {
+    "drapeaux": [],
+    "nom": "Roquet Rang 3"
+  },
+  "3531": {
+    "drapeaux": [],
+    "nom": "{{spell,24037,1::Sobre}}"
+  },
+  "3532": {
+    "drapeaux": [],
+    "nom": "Paume Explosive Sobre"
+  },
+  "3533": {
+    "drapeaux": [],
+    "nom": "Paume Explosive Saoul"
+  },
+  "3536": {
+    "drapeaux": [],
+    "nom": "Prohibition"
+  },
+  "3622": {
+    "drapeaux": [],
+    "nom": "{{spell,24510,1::Téléfrag}}"
+  },
+  "3642": {
+    "drapeaux": [],
+    "nom": "Coup pour Coup"
+  },
+  "3643": {
+    "drapeaux": [],
+    "nom": "Friction"
+  },
+  "3645": {
+    "drapeaux": [],
+    "nom": "Bouclier Élémentaire"
+  },
+  "3680": {
+    "drapeaux": [],
+    "nom": "{{spell,32506,1::Étreinte de Valkyr}}"
+  },
+  "3681": {
+    "drapeaux": [],
+    "nom": "Balestra"
+  },
+  "3691": {
+    "drapeaux": [],
+    "nom": "Croisement / Piège Magnétique"
+  },
+  "3743": {
+    "drapeaux": [],
+    "nom": "Trident de la Mer (attirance diagonale)"
+  },
+  "375": {
+    "drapeaux": [],
+    "nom": "Invulnérable à Distance"
+  },
+  "3756": {
+    "drapeaux": [],
+    "nom": "Montée de Sève"
+  },
+  "376": {
+    "drapeaux": [],
+    "nom": "Invulnérable en Mêlée"
+  },
+  "3795": {
+    "drapeaux": [],
+    "nom": "Blocage Rémission"
+  },
+  "3931": {
+    "drapeaux": [],
+    "nom": "Jormun (cercle)"
+  },
+  "3942": {
+    "drapeaux": [],
+    "nom": "Javelot-Foudre (ligne)"
+  },
+  "3979": {
+    "drapeaux": [],
+    "nom": "Tribulation cibles"
+  },
+  "3998": {
+    "drapeaux": [],
+    "nom": "Espace-temps"
+  },
+  "4026": {
+    "drapeaux": [],
+    "nom": "{{spell,25518,1::Main de Pandawa}}"
+  },
+  "4028": {
+    "drapeaux": [],
+    "nom": "Barrière allié"
+  },
+  "4043": {
+    "drapeaux": [],
+    "nom": "Brancard Train"
+  },
+  "4068": {
+    "drapeaux": [],
+    "nom": "Imposture"
+  },
+  "4069": {
+    "drapeaux": [],
+    "nom": "Bombe collé"
+  },
+  "4072": {
+    "drapeaux": [],
+    "nom": "Brassage"
+  },
+  "4073": {
+    "drapeaux": [],
+    "nom": "Brassage I"
+  },
+  "4144": {
+    "drapeaux": [],
+    "nom": "Pelage Protecteur"
+  },
+  "4145": {
+    "drapeaux": [],
+    "nom": "Aboiement"
+  },
+  "4146": {
+    "drapeaux": [],
+    "nom": "Rogne"
+  },
+  "4153": {
+    "drapeaux": [],
+    "nom": "Férocité"
+  },
+  "4155": {
+    "drapeaux": [],
+    "nom": "Poursuite"
+  },
+  "4157": {
+    "drapeaux": [],
+    "nom": "{{spell,26209,1::Encouragé}}"
+  },
+  "4159": {
+    "drapeaux": [],
+    "nom": "Stimulé"
+  },
+  "4160": {
+    "drapeaux": [],
+    "nom": "Rajeuni"
+  },
+  "4161": {
+    "drapeaux": [],
+    "nom": "Vivifié"
+  },
+  "4162": {
+    "drapeaux": [],
+    "nom": "Galvanisé"
+  },
+  "4163": {
+    "drapeaux": [],
+    "nom": "{{spell,26210,1::Moqué}}"
+  },
+  "4164": {
+    "drapeaux": [],
+    "nom": "Découragé"
+  },
+  "4165": {
+    "drapeaux": [],
+    "nom": "Décadent"
+  },
+  "4166": {
+    "drapeaux": [],
+    "nom": "Déprimé"
+  },
+  "4167": {
+    "drapeaux": [],
+    "nom": "Accablé"
+  },
+  "4197": {
+    "drapeaux": [],
+    "nom": "Couronne d'Épines"
+  },
+  "4199": {
+    "drapeaux": [],
+    "nom": "Pilori"
+  },
+  "42": {
+    "drapeaux": [],
+    "nom": "Affaibli"
+  },
+  "4201": {
+    "drapeaux": [],
+    "nom": "{{spell,26215,1::Turbulent}}"
+  },
+  "4205": {
+    "drapeaux": [],
+    "nom": "{{spell,26211,1::Malice}}"
+  },
+  "4206": {
+    "drapeaux": [],
+    "nom": "{{spell,26212,1::Farce}}"
+  },
+  "4229": {
+    "drapeaux": [],
+    "nom": "Cascade"
+  },
+  "4230": {
+    "drapeaux": [],
+    "nom": "Lamentations"
+  },
+  "4437": {
+    "drapeaux": [],
+    "nom": "Bosquet Enchanté"
+  },
+  "4438": {
+    "drapeaux": [],
+    "nom": "{{spell,26213,2::Floraison}}"
+  },
+  "4440": {
+    "drapeaux": [],
+    "nom": "{{spell,26214,3::Peinture}}"
+  },
+  "4462": {
+    "drapeaux": [],
+    "nom": "{{spell,26243,2::Cryothérapie}}"
+  },
+  "4464": {
+    "drapeaux": [],
+    "nom": "Transfiguration"
+  },
+  "496": {
+    "drapeaux": [],
+    "nom": "Flair"
+  },
+  "498": {
+    "drapeaux": [],
+    "nom": "{{spell,24036,1::Saoul}}"
+  },
+  "516": {
+    "drapeaux": [],
+    "nom": "Proie"
+  },
+  "5179": {
+    "drapeaux": [],
+    "nom": "{{spell,29644,1::Arbre de Vie}}"
+  },
+  "5183": {
+    "drapeaux": [],
+    "nom": "Poisse"
+  },
+  "5184": {
+    "drapeaux": [],
+    "nom": "Condamné"
+  },
+  "5188": {
+    "drapeaux": [],
+    "nom": "Pénitence"
+  },
+  "5242": {
+    "drapeaux": [],
+    "nom": "Rituel de Jashin ennemi"
+  },
+  "5260": {
+    "drapeaux": [],
+    "nom": "Glyphes déclenchés"
+  },
+  "5261": {
+    "drapeaux": [],
+    "nom": "{{spell,29073,1::Étoile du Berger}}"
+  },
+  "5294": {
+    "drapeaux": [],
+    "nom": "Automatique"
+  },
+  "5305": {
+    "drapeaux": [],
+    "nom": "Courant Haut"
+  },
+  "5306": {
+    "drapeaux": [],
+    "nom": "Courant Bas"
+  },
+  "5309": {
+    "drapeaux": [],
+    "nom": "Harmattan"
+  },
+  "5313": {
+    "drapeaux": [],
+    "nom": "Mal de Mer"
+  },
+  "5314": {
+    "drapeaux": [],
+    "nom": "Écume"
+  },
+  "5372": {
+    "drapeaux": [],
+    "nom": "Transhumance"
+  },
+  "5373": {
+    "drapeaux": [],
+    "nom": "Mise en Garde"
+  },
+  "5375": {
+    "drapeaux": [],
+    "nom": "Barrière ennemi"
+  },
+  "5383": {
+    "drapeaux": [],
+    "nom": "Flibuste"
+  },
+  "5398": {
+    "drapeaux": [],
+    "nom": "{{spell,29969,1::Vaudou}}"
+  },
+  "5399": {
+    "drapeaux": [],
+    "nom": "{{spell,29967,1::Chardons Ardents}}"
+  },
+  "5403": {
+    "drapeaux": [],
+    "nom": "{{spell,29968,1::Mandragore}}"
+  },
+  "5407": {
+    "drapeaux": [],
+    "nom": "{{spell,29971,1::Forêt Hantée}}"
+  },
+  "5425": {
+    "drapeaux": [],
+    "nom": "Harmonie"
+  },
+  "5437": {
+    "drapeaux": [],
+    "nom": "{{spell,29970,1::Fétiches Calcinés}}"
+  },
+  "5440": {
+    "drapeaux": [],
+    "nom": "{{spell,29675,1::Valet de Pique}}"
+  },
+  "5442": {
+    "drapeaux": [],
+    "nom": "{{spell,29686,1::Dame de Pique}}"
+  },
+  "5443": {
+    "drapeaux": [],
+    "nom": "{{spell,29687,1::Roi de Pique}}"
+  },
+  "5444": {
+    "drapeaux": [],
+    "nom": "{{spell,29676,1::Valet de Trèfle}}"
+  },
+  "5446": {
+    "drapeaux": [],
+    "nom": "{{spell,29691,1::Dame de Trèfle}}"
+  },
+  "5447": {
+    "drapeaux": [],
+    "nom": "{{spell,29693,1::Roi de Trèfle}}"
+  },
+  "5448": {
+    "drapeaux": [],
+    "nom": "{{spell,29678,1::Valet de Cœur}}"
+  },
+  "5450": {
+    "drapeaux": [],
+    "nom": "{{spell,29696,1::Dame de Cœur}}"
+  },
+  "5451": {
+    "drapeaux": [],
+    "nom": "{{spell,29697,1::Roi de Cœur}}"
+  },
+  "5452": {
+    "drapeaux": [],
+    "nom": "{{spell,29679,1::Valet de Carreau}}"
+  },
+  "5454": {
+    "drapeaux": [],
+    "nom": "{{spell,29700,1::Dame de Carreau}}"
+  },
+  "5455": {
+    "drapeaux": [],
+    "nom": "{{spell,29701,1::Roi de Carreau}}"
+  },
+  "5457": {
+    "drapeaux": [],
+    "nom": "{{spell,29688,1::As de Pique}}"
+  },
+  "5458": {
+    "drapeaux": [],
+    "nom": "{{spell,29694,1::As de Trèfle}}"
+  },
+  "5459": {
+    "drapeaux": [],
+    "nom": "{{spell,29698,1::As de Cœur}}"
+  },
+  "5460": {
+    "drapeaux": [],
+    "nom": "{{spell,29702,1::As de Carreau}}"
+  },
+  "5472": {
+    "drapeaux": [],
+    "nom": "Ruée vers l'Or"
+  },
+  "5473": {
+    "drapeaux": [],
+    "nom": "Tunnel de Fortune"
+  },
+  "5493": {
+    "drapeaux": [],
+    "nom": "Éboulement"
+  },
+  "5494": {
+    "drapeaux": [],
+    "nom": "Orpaillage"
+  },
+  "5495": {
+    "drapeaux": [],
+    "nom": "Monnaie Sonnante"
+  },
+  "5496": {
+    "drapeaux": [],
+    "nom": "Coup de Grisou"
+  },
+  "5595": {
+    "drapeaux": [],
+    "nom": "Dérobade"
+  },
+  "5597": {
+    "drapeaux": [],
+    "nom": "Pile"
+  },
+  "5598": {
+    "drapeaux": [],
+    "nom": "Face"
+  },
+  "56": {
+    "drapeaux": [
+      "invulnerable"
+    ],
+    "nom": "Invulnérable"
+  },
+  "5610": {
+    "drapeaux": [],
+    "nom": "{{spell,29976,1::Bonne Étoile}}"
+  },
+  "5611": {
+    "drapeaux": [],
+    "nom": "{{spell,29965,1::Destin d'Ecaflip}}"
+  },
+  "5613": {
+    "drapeaux": [],
+    "nom": "{{spell,29964,2::Infortune}}"
+  },
+  "5614": {
+    "drapeaux": [],
+    "nom": "{{spell,29966,2::Feu de Brousse}}"
+  },
+  "5620": {
+    "drapeaux": [],
+    "nom": "{{spell,30003,1::I. Le Magicien}}"
+  },
+  "5621": {
+    "drapeaux": [],
+    "nom": "{{spell,30004,1::II. La Cartomancienne}}"
+  },
+  "5622": {
+    "drapeaux": [],
+    "nom": "{{spell,30005,1::III. L'Impératrice}}"
+  },
+  "5623": {
+    "drapeaux": [],
+    "nom": "{{spell,30006,1::IV. L'Empereur}}"
+  },
+  "5624": {
+    "drapeaux": [],
+    "nom": "{{spell,30007,1::V. Le Hiérophante}}"
+  },
+  "5625": {
+    "drapeaux": [],
+    "nom": "{{spell,30008,1::VI. Les Amoureux}}"
+  },
+  "5626": {
+    "drapeaux": [],
+    "nom": "{{spell,30009,1::VII. Le Chariot}}"
+  },
+  "5627": {
+    "drapeaux": [],
+    "nom": "{{spell,30010,1::VIII. La Justice}}"
+  },
+  "5628": {
+    "drapeaux": [],
+    "nom": "{{spell,30011,1::IX. L'Ermite}}"
+  },
+  "5629": {
+    "drapeaux": [],
+    "nom": "{{spell,30012,1::X. La Roue de Fortune}}"
+  },
+  "5630": {
+    "drapeaux": [],
+    "nom": "{{spell,30013,1::XI. Le Croupier}}"
+  },
+  "5631": {
+    "drapeaux": [],
+    "nom": "{{spell,30014,1::XII. Le Pendu}}"
+  },
+  "5632": {
+    "drapeaux": [],
+    "nom": "{{spell,30015,1::XIII. La Mort}}"
+  },
+  "5633": {
+    "drapeaux": [],
+    "nom": "{{spell,30016,1::XIV. Le Temple}}"
+  },
+  "5634": {
+    "drapeaux": [],
+    "nom": "{{spell,30017,1::XV. Le Diable}}"
+  },
+  "5635": {
+    "drapeaux": [],
+    "nom": "{{spell,30018,1::XVI. La Tour}}"
+  },
+  "5636": {
+    "drapeaux": [],
+    "nom": "{{spell,30019,1::XVII. L'Étoile}}"
+  },
+  "5637": {
+    "drapeaux": [],
+    "nom": "{{spell,30020,1::XVIII. La Lune}}"
+  },
+  "5638": {
+    "drapeaux": [],
+    "nom": "{{spell,30021,1::XIX. Le Soleil}}"
+  },
+  "5639": {
+    "drapeaux": [],
+    "nom": "{{spell,30022,1::XX. Le Jugement}}"
+  },
+  "5640": {
+    "drapeaux": [],
+    "nom": "{{spell,30023,1::XXI. Le Monde}}"
+  },
+  "5641": {
+    "drapeaux": [],
+    "nom": "{{spell,30024,1::0. Le Fou}}"
+  },
+  "573": {
+    "drapeaux": [],
+    "nom": "Flèche Dévorante I"
+  },
+  "574": {
+    "drapeaux": [],
+    "nom": "Flèche Dévorante II"
+  },
+  "5742": {
+    "drapeaux": [],
+    "nom": "Holmgang (cast)"
+  },
+  "5745": {
+    "drapeaux": [],
+    "nom": "{{spell,30133,1::Péril}}"
+  },
+  "5746": {
+    "drapeaux": [],
+    "nom": "Holmgang (caster glyphe)"
+  },
+  "583": {
+    "drapeaux": [],
+    "nom": "Sacrifice"
+  },
+  "584": {
+    "drapeaux": [],
+    "nom": "Mot de Solidarité"
+  },
+  "589": {
+    "drapeaux": [],
+    "nom": "Coup pour Coup"
+  },
+  "5896": {
+    "drapeaux": [],
+    "nom": "Forêt Hantée (cible)"
+  },
+  "5897": {
+    "drapeaux": [],
+    "nom": "Mangrove (cible)"
+  },
+  "590": {
+    "drapeaux": [],
+    "nom": "Tempête de Puissance I"
+  },
+  "591": {
+    "drapeaux": [],
+    "nom": "Tempête de Puissance II"
+  },
+  "6": {
+    "drapeaux": [],
+    "nom": "Enraciné"
+  },
+  "600": {
+    "drapeaux": [],
+    "nom": "Manifestation"
+  },
+  "601": {
+    "drapeaux": [],
+    "nom": "Surcharge Runique"
+  },
+  "602": {
+    "drapeaux": [],
+    "nom": "Répulsion Runique"
+  },
+  "6023": {
+    "drapeaux": [],
+    "nom": "{{spell,32505,1::Poinçon}}"
+  },
+  "6032": {
+    "drapeaux": [],
+    "nom": "Estoc Brûlant"
+  },
+  "6037": {
+    "drapeaux": [],
+    "nom": "Pénitence (ennemi)"
+  },
+  "6049": {
+    "drapeaux": [],
+    "nom": "Orgueil"
+  },
+  "6059": {
+    "drapeaux": [],
+    "nom": "Perquisition (cible)"
+  },
+  "6094": {
+    "drapeaux": [],
+    "nom": "Évolution bloquée"
+  },
+  "6095": {
+    "drapeaux": [],
+    "nom": "Évolution en cours"
+  },
+  "6108": {
+    "drapeaux": [],
+    "nom": "Brassage II"
+  },
+  "6128": {
+    "drapeaux": [],
+    "nom": "Sablier"
+  },
+  "6135": {
+    "drapeaux": [],
+    "nom": "Rémanent"
+  },
+  "6136": {
+    "drapeaux": [],
+    "nom": "Faille"
+  },
+  "6137": {
+    "drapeaux": [],
+    "nom": "Sables du Temps (cible)"
+  },
+  "6138": {
+    "drapeaux": [],
+    "nom": "Conservation"
+  },
+  "614": {
+    "drapeaux": [],
+    "nom": "Faille (blocage)"
+  },
+  "6140": {
+    "drapeaux": [],
+    "nom": "Dessèchement"
+  },
+  "6249": {
+    "drapeaux": [],
+    "nom": "Coalition"
+  },
+  "6251": {
+    "drapeaux": [],
+    "nom": "Résonance"
+  },
+  "6252": {
+    "drapeaux": [],
+    "nom": "Entraide"
+  },
+  "6260": {
+    "drapeaux": [],
+    "nom": "{{spell,31041,1::Toupet}}"
+  },
+  "6280": {
+    "drapeaux": [],
+    "nom": "Espace-temps (allié)"
+  },
+  "6281": {
+    "drapeaux": [],
+    "nom": "Espace-temps (ennemi)"
+  },
+  "6290": {
+    "drapeaux": [],
+    "nom": "En Laisse"
+  },
+  "6291": {
+    "drapeaux": [],
+    "nom": "Relais"
+  },
+  "6295": {
+    "drapeaux": [],
+    "nom": "Bestial"
+  },
+  "636": {
+    "drapeaux": [],
+    "nom": "Perfusion"
+  },
+  "6390": {
+    "drapeaux": [],
+    "nom": "Martinet"
+  },
+  "641": {
+    "drapeaux": [],
+    "nom": "Bombe Collante alliée"
+  },
+  "643": {
+    "drapeaux": [],
+    "nom": "Concentration de Chakra"
+  },
+  "656": {
+    "drapeaux": [],
+    "nom": "Flèche Détonante"
+  },
+  "657": {
+    "drapeaux": [],
+    "nom": "Sentence"
+  },
+  "662": {
+    "drapeaux": [],
+    "nom": "Flèche Dévorante III"
+  },
+  "665": {
+    "drapeaux": [],
+    "nom": "Bombe Collante ennemie"
+  },
+  "667": {
+    "drapeaux": [],
+    "nom": "Epidémie"
+  },
+  "6675": {
+    "drapeaux": [],
+    "nom": "Supernova (rune)"
+  },
+  "676": {
+    "drapeaux": [],
+    "nom": "Liens du Sang"
+  },
+  "6939": {
+    "drapeaux": [],
+    "nom": "Pendule"
+  },
+  "6957": {
+    "drapeaux": [],
+    "nom": "Prisme Élémentaire"
+  },
+  "6967": {
+    "drapeaux": [],
+    "nom": "Sublimation"
+  },
+  "6968": {
+    "drapeaux": [],
+    "nom": "Runification"
+  },
+  "6971": {
+    "drapeaux": [],
+    "nom": "Rune (rang 3)"
+  },
+  "6975": {
+    "drapeaux": [],
+    "nom": "Flèche Boomerang"
+  },
+  "6980": {
+    "drapeaux": [],
+    "nom": "Surcharge Runique (rang 2)"
+  },
+  "6990": {
+    "drapeaux": [],
+    "nom": "{{spell,32503,2::Noa}}"
+  },
+  "6992": {
+    "drapeaux": [],
+    "nom": "{{spell,32504,2::Parade}}"
+  },
+  "6994": {
+    "drapeaux": [],
+    "nom": "{{spell,32508,2::Éclipse}}"
+  },
+  "7": {
+    "drapeaux": [],
+    "nom": "Pesanteur"
+  },
+  "7010": {
+    "drapeaux": [],
+    "nom": "Flèches Amoureuses"
+  },
+  "7120": {
+    "drapeaux": [],
+    "nom": "Flèche d'Abolition I"
+  },
+  "7121": {
+    "drapeaux": [],
+    "nom": "Flèche d'Abolition II"
+  },
+  "717": {
+    "drapeaux": [],
+    "nom": "Barrière"
+  },
+  "76": {
+    "drapeaux": [
+      "incurable"
+    ],
+    "nom": "Insoignable"
+  },
+  "92": {
+    "drapeaux": [],
+    "nom": "{{spell,24182,1::Kaboom}}"
+  },
+  "96": {
+    "drapeaux": [],
+    "nom": "Intaclable"
+  },
+  "97": {
+    "drapeaux": [],
+    "nom": "Indéplaçable"
+  },
+  "98": {
+    "drapeaux": [],
+    "nom": "Intrépide"
+  },
+  "99": {
+    "drapeaux": [],
+    "nom": "Psychopathe"
+  }
+}

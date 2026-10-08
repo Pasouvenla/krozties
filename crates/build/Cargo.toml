@@ -1,0 +1,12 @@
+[package]
+name = "dofus-build"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Resolve an imported equipment list into the figures the solver needs."
+
+[dependencies]
+dofus-damage = { path = "../damage" }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name = "dofus-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "La couche applicative : un build et une question en entrée, du JSON en sortie."
+
+[dependencies]
+dofus-grid = { path = "../grid" }
+dofus-build = { path = "../build" }
+dofus-damage = { path = "../damage" }
+dofus-engine = { path = "../engine" }
+dofus-ruleset = { path = "../ruleset" }
+serde = { workspace = true }
+serde_json = { workspace = true }

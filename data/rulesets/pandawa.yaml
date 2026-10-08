@@ -1,0 +1,1266 @@
+# Pandawa.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: pandawa
+name: { fr: "Pandawa", en: "Pandawa" }
+
+resources:
+  - id: paume_explosive_lancee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # `turns: 0` veut dire « le tour de la pose, et lui seul » : l'etat marque
+    # que le sort a deja ete lance CE tour-ci, et il est parti au suivant. Une
+    # duree de 1 le ferait vivre tout le tour d'apres, si bien que le premier
+    # lancer du tour deux se paierait deja au prix fort.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Etats « Paume Explosive Sobre » (3532) et « Paume Explosive Saoul »
+      (3533), effet 950 de duree 1 dans l'instantane. Ils marquent que la Paume
+      a deja ete lancee dans le tour, et c'est le sort lui-meme qui les lit pour
+      savoir s'il doit couter plus cher.
+
+      Un seul compteur ici plutot que deux : les deux etats disent la meme
+      chose, chacun dans son regime d'ebriete, et le surcout est le meme des
+      deux cotes. La zone, que seul l'etat Sobre commande, se lit sur
+      `paume_explosive_sobre` ; le bonus de degats reste declare sur le sort.
+
+  - id: paume_explosive_sobre
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Meme duree que `paume_explosive_lancee` : le tour du lancer, et lui seul.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      État « Paume Explosive Sobre » (3532) : la Paume a été lancée sous Sobre
+      dans ce tour. La donnée en fait la condition de sa zone : une seule case
+      sans lui (masque `*e3532`), un cercle de taille 2 avec (`*E3532`), aux mêmes
+      dégâts. À part de `paume_explosive_lancee`, qui compte les lancers des deux
+      régimes : une Paume lancée Saoul ne l'arme pas.
+
+  - id: distillation_crans
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Le poison se déclenche au début du tour de la cible, donc entre deux tours
+    # du Pandawa. « Les bonus sont retirés après utilisation du sort » : le
+    # drapeau tient jusqu'au lancer suivant, qui le consomme, et ce lancer le
+    # réarme pour le tour d'après. Sans durée.
+    note: |
+      Drapeau de presence, pas un compteur : il dit que le poison de la
+      Distillation s'est declenche depuis le dernier lancer. Ce que vaut le
+      bonus ne se lit pas ici mais sur les lignes, `per_extra_target_while`
+      multipliant par le nombre d'ennemis annonce.
+
+      « Les dommages du sort et du poison sont augmentes pour chaque poison du
+      sort declenche sur une cible (cumulable 4 fois). » Le tout premier lancer
+      du combat ne peut rien avoir declenche : il sort nu, et c'est la raison
+      d'etre de ce drapeau plutot qu'un bonus replie a la compilation.
+
+  - id: distillation_poison
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: water
+            # Le poison ne décroît pas avec la distance : l'instantané donne
+            # `falloff_percent: 0` sur cette ligne, là où le coup immédiat porte les
+            # 10 % habituels. Carré de taille 1, neuf cases : l'effet 1160 de la donnée,
+            # qui pose le poison.
+            area: { shape: G, size: 1, max_targets: 9 }
+            critical: [17, 20]
+            normal: [13, 16]
+            # « Les dommages du sort et du poison sont augmentés » : le texte
+            # nomme les deux, et chaque palier « N cibles sous poison » range les
+            # deux lignes. Le bonus du lancer qui l'a posé, pas celui du moment où
+            # il tombe : voir `distillation_poison_renforce`.
+            base_bonus:
+              - kind: per_extra_target_while
+                resource: distillation_poison_renforce
+                amount: 4
+                cap: 4
+        note: |
+          Le poison de début de tour : « Occasionne des dommages et applique un poison
+          Eau de début de tour sur les cibles en zone. » L'instantané porte deux
+          lignes Eau 13-16, l'une au déclenchement « I », l'autre au déclenchement
+          « TB », étiquetées « Tous sauf lanceur » et « Tous sauf lanceur - Début de
+          tour », la seconde avec une durée de 3 : le coup immédiat et le poison.
+
+  - id: distillation_poison_renforce
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Un tour de plus que le poison : celui-ci frappe une derniere fois au
+    # debut du tour ou sa duree s'acheve, et ce drapeau doit encore y etre lu.
+    duration: { turns: 3, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Le poison posé porte le bonus du lancer qui l'a posé, figé à la pose : celui
+      du tout premier lancer du combat, posé sans bonus, reste sans bonus à
+      chacune de ses frappes, même une fois `distillation_crans` armé.
+
+  - id: saoul
+    # Saoul (498) quand il vaut un, Sobre (3531) quand il vaut zéro : cinq sorts
+    # exigent Saoul, quatre Sobre (Karcham et Chamrak pour porter, Stabilisation,
+    # Varappe). Sobre au début du combat.
+    game_states: [498]
+    game_states_when_zero: [3531]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    # Deux tours : posé au tour N, il disparaît au début du tour N+2. En
+    # retombant, il pose « sorti de Saoul » pour le tour qui s'ouvre, comme le
+    # déclencheur EOFF498 du jeu.
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+      then_gain: sorti_de_saoul
+    note: |
+      L'état Saoul (498), le cœur du Pandawa. Cinq de ses sorts offensifs frappent
+      plus fort sous cet état, chaque fourchette étant étiquetée « Lanceur sous
+      Sobre » ou « Lanceur sous Saoul », la Sobre toujours la plus basse.
+
+      Sans durée : on reste Saoul jusqu'à ce qu'un sort rende Sobre, Picole et
+      Bombance, qui basculent de l'un à l'autre, la Gueule de Bois, le Lait de
+      Bambou et la Prohibition. Un régime et non un buff qui expire, ce que
+      `monotone: none` dit au solveur : porter l'état n'est pas toujours
+      préférable.
+
+      La Main de Pandawa est l'exception : 70 dans le meilleur élément sous Sobre
+      et 7 dans chacun des cinq sous Saoul, donc plus fort à jeun. Elle est
+      traitée à part.
+
+
+  - id: porteur
+    # Porteur (3), qu'exigent les cinq sorts qui jettent ce que le Pandawa
+    # porte : Propulsion, Pandikulation, Eau-de-vie, Brancard, Cascade.
+    game_states: [3]
+    # Drapeau preventsSpellCast de l'etat : en portant, on ne fait que jeter.
+    prevents_spell_cast: true
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      Le Pandawa porte-t-il quelque chose ? Karcham et Chamrak le font porter
+      (effet 950 sur 3, sans durée), et cinq sorts à dégâts « jettent la
+      cible » : sans rien porter, le jeu les refuse (condition HS=3 de la donnée).
+
+      L'état porte le drapeau `preventsSpellCast` : tant qu'il porte, le Pandawa
+      ne lance que les sorts dont la condition exige Porteur, Karcham, Chamrak et
+      les cinq qui jettent. Karcham exige une cible : la rotation porte l'ennemi
+      qu'elle frappe, ou un allié présent.
+
+      Ce qui est porté n'est pas simulé (la cible, un allié, le Tonneau de
+      l'Ivresse ou de l'Ébriété, un Bambou) : la rotation suppose que le jet tombe
+      de façon à ce que la zone touche la cible. Porter son Tonneau rend 1 PA et le
+      jeter rend Saoul : ni l'un ni l'autre n'est compté.
+
+  - id: prohibition
+    # Prohibition (3536), que Picole et Bombance exigent absente.
+    game_states: [3536]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'état que la Prohibition pose sur le lanceur, durée 1 dans la donnée : le
+      tour du lancer seulement. Il « empêche l'entrée dans l'état Saoul » : les
+      cinq gains de Saoul l'exigent absent.
+
+  - id: sorti_de_saoul
+    # « Gueule de Bois » (3577) : le Pandawa est sorti de l'etat Saoul ce
+    # tour-ci. La Gueule de Bois frappe plus fort sous cet etat.
+    game_states: [3577]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Le sous-sort « Gueule de Bois » (24248) pose l'état 3577 sur le lanceur
+      chaque fois que Saoul le quitte, par un déclencheur « EOFF498 » (24247). La
+      Gueule de Bois lit l'état dans ses lignes : 34-37 au lieu de 24-27. Le tour
+      en cours seulement, comme le dit le texte du sort (« si le lanceur est sorti
+      de l'état Saoul pendant le tour en cours »), bien que la donnée porte une
+      durée de 1. Picole, Bombance, Gueule de Bois, Lait de Bambou et Prohibition
+      le posent quand le Pandawa était Saoul.
+
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 8
+    name: "Porte"
+    note: "Le Pandawa n'est porte que par un allie, ou par son Bambou ou son Pandawasta s'il les frappe au contact : la rotation ne fait ni l'un ni l'autre."
+  - state: 534
+    name: "Goule Anerice"
+    note: "Aucun sort du Pandawa ne le pose."
+  - state: 661
+    name: "Porte Bambou"
+    note: "Le Bambou porte le Pandawa Sobre qui le frappe au contact, et la rotation ne frappe pas ses invocations."
+
+spells:
+  - id: ivresse
+    dofusdb_id: 12777
+    name: { fr: "Ivresse", en: "Drunkenness" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Tonneau qui soigne son invocateur lorsqu'il est porté et le rend Saoul quand il est jeté.
+      Le lanceur soigne également ses alliés en zone autour du point d'impact.
+      
+      Rend 1 PA au lanceur s'il porte son Tonneau.
+      
+      Si le Tonneau du lanceur est encore présent et que le sort est relancé, l'ancien est détruit pour laisser place au nouveau.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+    lines: []
+    effects: []
+
+  - id: picole
+    dofusdb_id: 12780
+    name: { fr: "Picole", en: "Boozer" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 6
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur Saoul ou Sobre.
+      Augmente ses PM s'il devient Sobre.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance « Saoul » (24036) si le lanceur est Sobre, « Sobre » (24037) s'il est Saoul, les deux masques lus avant le lancer : une bascule (effet `toggle`). Le PM gagné en redevenant Sobre (effet 128) n'est pas compté, ce calculateur ne simulant pas les déplacements."
+    lines: []
+    effects:
+      - effect: toggle
+        resource: saoul
+      # Redevenu Sobre : sorti de Saoul ce tour-ci.
+      - effect: gain
+        resource: sorti_de_saoul
+        requires: { kind: exactly, resource: saoul, amount: 0 }
+
+  - id: paume_explosive
+    dofusdb_id: 12781
+    name: { fr: "Paume Explosive", en: "Explosive Palm" }
+    ap_cost:
+      base: 2
+      # Effet 296, « +1 PA au cout du sort apres le premier lancer », cumulable
+      # une fois. Le compteur se pose au lancer et se lit AVANT les effets du
+      # suivant, si bien que le lancer qui le pose se paie encore 2 PA.
+      increased_by: { resource: paume_explosive_lancee, per_stack: 1, ceiling: 1 }
+    casts_per_turn: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      N'affecte pas le lanceur.
+      
+      Modifie le sort selon l'état du lanceur après un lancer :
+      • Le coût en PA du sort est augmenté après le premier lancer.
+      • Sobre : les dommages s'appliquent en zone.
+      • Saoul : les dommages du sort sont augmentés.
+      
+      Chaque effet est cumulable une fois.
+    assumptions:
+      - "Effets 950 et 951, etats « Paume Explosive Sobre » (3532) et « Saoul » (3533) : ils marquent que le sort a deja ete lance ce tour-ci, chacun dans son regime, et le sort les lit lui-meme pour savoir s'il doit couter plus cher et frapper plus fort."
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », « Change la zone d'effet en Cercle de taille 2 », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 293, +12 dégâts de base, à une condition à deux termes : « Saoul » et absence de « Paume Explosive Saoul » (cible `C,*E498,*e3533`), écrite en `all_of`. Deux fourchettes, 20-22 nu et 32-34 à une charge, largeur constante des deux côtés comme un bonus de dégâts de base."
+      - "L'état Sobre (3532) ne change pas les dégâts, il change la zone : les deux lignes de la donnée portent 20-22 et ne diffèrent que par leur forme, une seule case sans l'état, Cercle de taille 2 avec. Le compteur `paume_explosive_sobre` suit l'état, et les deux lignes Sobre portent chacune leur zone."
+      - "Effet 296, +1 PA après le premier lancer : le sort vaut 2 PA, puis 3, puis 3, ce qui n'en laisse tenir que deux dans un tour à 7 PA."
+    lines:
+      # Quatre lignes qui s'excluent. Sous Sobre, la zone suit l'etat 3532 : une
+      # case au premier lancer Sobre du tour, un cercle de taille 2 ensuite
+      # (masques `*e3532` et `*E3532` de la donnee, degressif de 10 % par cran
+      # sur quatre crans comme elle). Sous Saoul, une case, et le bonus au
+      # premier lancer. Les zones sont ECRITES ici parce que la donnee porte
+      # deux zones pour la meme fourchette : la fusion ne sait pas laquelle.
+      - element: fire
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 0 }
+            - { resource: paume_explosive_sobre, exactly: 0 }
+        area: { shape: P, size: 1, max_targets: 1, falloff_percent: 10, falloff_steps: 4 }
+        critical: [24, 26]
+        normal: [20, 22]
+      - element: fire
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 0 }
+            - { resource: paume_explosive_sobre, exactly: 1 }
+        area: { shape: C, size: 2, max_targets: 13, falloff_percent: 10, falloff_steps: 4 }
+        critical: [24, 26]
+        normal: [20, 22]
+      - element: fire
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 1 }
+            - { resource: paume_explosive_lancee, exactly: 1 }
+        area: { shape: P, size: 1, max_targets: 1, falloff_percent: 10, falloff_steps: 4 }
+        critical: [24, 26]
+        normal: [20, 22]
+      # Le bonus : Saoul, et le sort pas encore lance dans le tour.
+      - element: fire
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 1 }
+            - { resource: paume_explosive_lancee, exactly: 0 }
+        area: { shape: P, size: 1, max_targets: 1, falloff_percent: 10, falloff_steps: 4 }
+        critical: [36, 38]
+        normal: [32, 34]
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: paume_explosive_lancee
+      # L'etat 3532 : lancee sous Sobre ce tour-ci.
+      - effect: gain
+        resource: paume_explosive_sobre
+        requires: { kind: exactly, resource: saoul, amount: 0 }
+
+  - id: schnaps
+    dofusdb_id: 12782
+    name: { fr: "Schnaps", en: "Schnaps" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique des effets sur les cibles selon l'état du lanceur en zone :
+      • Sobre : retire du Retrait PA et PM.
+      • Saoul : réduit les Résistances Poussée.
+      
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 417, -30 de la Resistance Poussee sur les cibles : le sort applique des effets differents selon le regime du lanceur, Sobre ou Saoul. Aucun des trois ne touche a ce qu'on inflige : ils changent ce que la cible resiste ou retire."
+      - "Effet 413, -30 du Retrait PM sur les cibles : le sort applique des effets differents selon le regime du lanceur, Sobre ou Saoul. Aucun des trois ne touche a ce qu'on inflige : ils changent ce que la cible resiste ou retire."
+      - "Effet 411, -30 du Retrait PA sur les cibles : le sort applique des effets differents selon le regime du lanceur, Sobre ou Saoul. Aucun des trois ne touche a ce qu'on inflige : ils changent ce que la cible resiste ou retire."
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: epouvante
+    dofusdb_id: 12783
+    name: { fr: "Épouvante", en: "Terror" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse la cible et applique des effets sur la cible selon l'état du lanceur :
+      • Sobre : la poussée est plus importante.
+      • Saoul : réduit les chances de Critique.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: souffle_alcoolise
+    dofusdb_id: 12784
+    name: { fr: "Souffle Alcoolisé", en: "Alcoholic Breath" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+      
+      La portée du sort est réduite de moitié mais les dommages sont plus importants si le lanceur est Saoul.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      # Deux régimes, jamais les deux : la première « Lanceur sous Sobre », la
+      # seconde « Lanceur sous Saoul ».
+      - element: air
+        active_at: { resource: saoul, exactly: 0 }
+        critical: [34, 38]
+        normal: [28, 32]
+      - element: air
+        active_at: { resource: saoul, exactly: 1 }
+        critical: [40, 44]
+        normal: [34, 38]
+    effects:
+      - effect: damage
+
+  - id: bambouseraie
+    dofusdb_id: 12785
+    name: { fr: "Bambouseraie", en: "Bamboo Grove" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque plusieurs Petits <color=#ebc304>{{spell,12824,1::Bambous}}</color> en zone.
+      
+      Les Bambous meurent au début du prochain tour du lanceur.
+    lines: []
+    effects: []
+
+  - id: ribote
+    dofusdb_id: 12786
+    name: { fr: "Ribote", en: "Debauchery" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon l'état du lanceur et occasionne des dommages Terre :
+      • Sobre : rend le lanceur Saoul.
+      • Saoul : retire de la Fuite à la cible.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 754, -40 Fuite sur la cible sous regime Saoul : la Fuite decide si un corps a corps se quitte, jamais ce qu'un sort inflige."
+      - "Effets 792/1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », « Saoul », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: saoul
+        # Pas sous Prohibition, qui « empeche l'entree dans l'etat Saoul ».
+        requires: { kind: exactly, resource: prohibition, amount: 0 }
+        at_cap: refresh
+      - effect: damage
+
+  - id: karcham
+    dofusdb_id: 12787
+    name: { fr: "Karcham", en: "Karcham" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 4
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Porte ou jette la cible.
+      
+      La portée maximale du sort est augmentée lorsque le lanceur porte une cible.
+    assumptions:
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effet 2960 : lance aussi « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    # Porter : la condition de la donnee exige Sobre. Le jet par ce sort
+    # n'est pas ecrit, il ne frappe pas : ce sont les cinq sorts a degats qui
+    # jettent qui rendent la main.
+    requires: { kind: exactly, resource: porteur, amount: 0 }
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,24243,1::Porteur}} » (3), qui porte preventsSpellCast, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 50 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 51 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 281 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      - effect: gain
+        resource: porteur
+
+  - id: propulsion
+    dofusdb_id: 12788
+    name: { fr: "Propulsion", en: "Propulsion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Jette la cible, soigne les alliés, occasionne des dommages Air aux ennemis et repousse les cibles depuis le centre en zone.
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effet 51, « lance une entite » : le Pandawa jette sa cible. C'est un deplacement, et ce calculateur ne simule pas la grille."
+      - "Effet 2960 : lance aussi « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Jette la cible » : le Pandawa ne porte plus rien.
+      - effect: consume
+        resource: porteur
+
+  - id: stabilisation
+    dofusdb_id: 12789
+    name: { fr: "Stabilisation", en: "Stabilisation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Enracine la cible et augmente l'Esquive PM de l'allié ciblé.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Enraciné » (6). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 161 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: eviction
+    dofusdb_id: 12790
+    name: { fr: "Éviction", en: "Eviction" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon l'état du lanceur et occasionne des dommages Terre aux ennemis.
+      • Sobre : téléporte le lanceur symétriquement par rapport à la cible.
+      • Saoul : téléporte la cible symétriquement par rapport au lanceur et occasionne les dommages en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ethylo
+    dofusdb_id: 12791
+    name: { fr: "Ethylo", en: "Tipple" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et applique des effets selon l'état du lanceur :
+      • Sobre : augmente la Portée du lanceur.
+      • Saoul : retire de la Portée à la cible.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: souillure
+    dofusdb_id: 12792
+    name: { fr: "Souillure", en: "Stain" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur la cible et retire de la Puissance aux ennemis.
+    assumptions:
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    effects: []
+
+  - id: pandikulation
+    dofusdb_id: 12793
+    name: { fr: "Pandikulation", en: "Pandilongation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Jette la cible, attire les cibles vers le centre, soigne les alliés et occasionne des dommages Feu aux ennemis en zone.
+    assumptions:
+      - "Effet 51, « lance une entite » : le Pandawa jette sa cible. C'est un deplacement, et ce calculateur ne simule pas la grille."
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effet 2960 : lance aussi « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Jette la cible » : le Pandawa ne porte plus rien.
+      - effect: consume
+        resource: porteur
+
+  - id: vague_a_lame
+    dofusdb_id: 12794
+    name: { fr: "Vague à Lame", en: "Melancholy" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse les cibles en zone.
+      La poussée est appliquée uniquement si le lanceur est Sobre.
+      
+      La portée du sort est réduite de moitié mais les dommages sont plus importants si le lanceur est Saoul.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », « Vague à Lame », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      # Deux régimes, jamais les deux : la première « Lanceur sous Sobre », la
+      # seconde « Lanceur sous Saoul ».
+      - element: water
+        active_at: { resource: saoul, exactly: 0 }
+        critical: [43, 48]
+        normal: [36, 40]
+      - element: water
+        active_at: { resource: saoul, exactly: 1 }
+        critical: [51, 56]
+        normal: [44, 48]
+    effects:
+      - effect: damage
+
+  - id: flasque_explosive
+    dofusdb_id: 12796
+    name: { fr: "Flasque Explosive", en: "Explosive Flask" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu en zone.
+      N'affecte pas le lanceur.
+      
+      La portée du sort est réduite de moitié mais les dommages sont plus importants si le lanceur est Saoul.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      # Deux régimes, jamais les deux : la première « Lanceur sous Sobre », la
+      # seconde « Lanceur sous Saoul ».
+      - element: fire
+        active_at: { resource: saoul, exactly: 0 }
+        critical: [22, 24]
+        normal: [18, 20]
+      - element: fire
+        active_at: { resource: saoul, exactly: 1 }
+        critical: [26, 30]
+        normal: [22, 25]
+    effects:
+      - effect: damage
+
+  - id: pandatak
+    dofusdb_id: 12797
+    name: { fr: "Pandatak", en: "Pandatak" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre en zone.
+      
+      La portée du sort est réduite de moitié mais les dommages sont plus importants si le lanceur est Saoul.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      # Deux régimes, jamais les deux : la première « Lanceur sous Sobre », la
+      # seconde « Lanceur sous Saoul ».
+      - element: earth
+        active_at: { resource: saoul, exactly: 0 }
+        critical: [46, 50]
+        normal: [38, 42]
+      - element: earth
+        active_at: { resource: saoul, exactly: 1 }
+        critical: [54, 58]
+        normal: [46, 50]
+    effects:
+      - effect: damage
+
+  - id: pandanlku
+    dofusdb_id: 12798
+    name: { fr: "Pandanlku", en: "Pandiniuras" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM de la cible.
+    lines: []
+    effects: []
+
+  - id: lien_spiritueux
+    dofusdb_id: 12799
+    name: { fr: "Lien Spiritueux", en: "Spirit Bond" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Pandawasta maîtrisable qui retire de la Fuite, de la Puissance et tacle les adversaires.
+      Il peut également augmenter ses caractéristiques pendant le combat ou porter le lanceur Sobre si ce dernier l'attaque en mêlée.
+      
+      Le Pandawasta réduit de 50% les dommages immédiats alliés.
+    lines: []
+    effects: []
+
+  - id: gueule_de_bois
+    dofusdb_id: 12803
+    name: { fr: "Gueule de Bois", en: "Hangover" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rend le lanceur Sobre et occasionne des dommages Terre.
+      Les dommages sont plus importants si le lanceur est sorti de l'état Saoul pendant le tour en cours.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 1160 : lance « Sobre » (24037) si le lanceur est Saoul : il redevient Sobre après la frappe, et sort de Saoul pour le reste du tour."
+    lines:
+      # Trois lignes dans la donnée, une seule frappe : 24-27 Sobre, 34-37 si le
+      # lanceur est Saoul (masque « *E498 ») ou sorti de Saoul ce tour-ci
+      # (« *E3577,*e498 »).
+      - element: earth
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 0 }
+            - { resource: sorti_de_saoul, exactly: 0 }
+        critical: [29, 32]
+        normal: [24, 27]
+      - element: earth
+        active_at:
+          all_of:
+            - { resource: saoul, exactly: 0 }
+            - { resource: sorti_de_saoul, exactly: 1 }
+        critical: [39, 42]
+        normal: [34, 37]
+      - element: earth
+        active_at: { resource: saoul, exactly: 1 }
+        critical: [39, 42]
+        normal: [34, 37]
+    effects:
+      - effect: damage
+      # Sorti de Saoul, si le Pandawa l'etait : la Gueule de Bois le lit.
+      - effect: gain
+        resource: sorti_de_saoul
+        requires: { kind: exactly, resource: saoul, amount: 1 }
+      - effect: reset
+        resource: saoul
+
+  - id: bombance
+    dofusdb_id: 12804
+    name: { fr: "Bombance", en: "Blow-Out" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 6
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur Saoul ou Sobre.
+      Rend 1 PA s'il devient Sobre.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance « Saoul » (24036) si le lanceur est Sobre, « Sobre » (24037) s'il est Saoul, les deux masques lus avant le lancer : une bascule (effet `toggle`). Le PA rendu en redevenant Sobre (effet 120, masque « C,E498 ») est compté : le sort ne coûte alors rien."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      - effect: toggle
+        resource: saoul
+      # Redevenu Sobre : sorti de Saoul ce tour-ci, et 1 PA rendu.
+      - effect: gain
+        resource: sorti_de_saoul
+        requires: { kind: exactly, resource: saoul, amount: 0 }
+        ap_bonus: { amount: 1 }
+
+  - id: souffle_enflamme
+    dofusdb_id: 12805
+    name: { fr: "Souffle Enflammé", en: "Fiery Breath" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et réduit les chances de Critique en zone.
+    assumptions:
+      - "Effet 171, -20 % de Critique sur les cibles : ce sont les coups critiques de l'ADVERSAIRE qui baissent, pas ceux du lanceur."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: consolation
+    dofusdb_id: 12806
+    name: { fr: "Consolation", en: "Consolation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire et soigne l'allié ciblé.
+    lines: []
+    effects: []
+
+  - id: engourdissement
+    dofusdb_id: 12807
+    name: { fr: "Engourdissement", en: "Numbness" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique des effets selon l'état du lanceur en zone :
+      • Sobre : augmente les PM du lanceur pour chaque entité touché (cumulable 3 fois).
+      • Saoul : retire des PM aux cibles.
+      
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 128, +1 PM au lanceur sous regime Sobre, cumulable trois fois : les points de mouvement servent a se placer, et ce calculateur ne simule pas la grille."
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », « Engourdissement », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: eau_de_vie
+    dofusdb_id: 12808
+    name: { fr: "Eau-de-vie", en: "Brandy" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Jette la cible, soigne les alliés et occasionne des dommages Eau aux ennemis en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 51, « lance une entite » : le Pandawa jette sa cible. C'est un deplacement."
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effet 2960 : lance aussi « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Jette la cible » : le Pandawa ne porte plus rien.
+      - effect: consume
+        resource: porteur
+
+  - id: liqueur
+    dofusdb_id: 12809
+    name: { fr: "Liqueur", en: "Liqueur" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rend le lanceur Saoul et vole de la vie dans l'élément Air.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance aussi « Saoul », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: saoul
+        # Pas sous Prohibition, qui « empeche l'entree dans l'etat Saoul ».
+        requires: { kind: exactly, resource: prohibition, amount: 0 }
+        at_cap: refresh
+      - effect: damage
+
+  - id: chamrak
+    dofusdb_id: 12810
+    name: { fr: "Chamrak", en: "Chamrak" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 4
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Porte ou jette la cible.
+      
+      La portée maximale du sort est augmentée et sa ligne de vue est désactivée lorsque le lanceur porte une cible.
+    assumptions:
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effet 2960 : lance aussi « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    # Porter : la condition de la donnee exige Sobre. Le jet par ce sort
+    # n'est pas ecrit, il ne frappe pas : ce sont les cinq sorts a degats qui
+    # jettent qui rendent la main.
+    requires: { kind: exactly, resource: porteur, amount: 0 }
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,24243,1::Porteur}} » (3), qui porte preventsSpellCast, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 50 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 51 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 281 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      - effect: gain
+        resource: porteur
+
+  - id: brancard
+    dofusdb_id: 12811
+    name: { fr: "Brancard", en: "Stretcher" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Jette la cible, attire les cibles et rapproche le lanceur vers la cible, soigne les alliés et occasionne des dommages Terre aux ennemis en zone.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus."
+      - "Effet 51, « lance une entite » : le Pandawa jette sa cible ou son Tonneau. C'est un deplacement, et ce calculateur ne simule pas la grille."
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effets 950/951 : ce sort applique « Brancard Train » (4043) ; applique « Brancard » (2519). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/2960 : lance aussi « Brancard », « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Jette la cible » : le Pandawa ne porte plus rien.
+      - effect: consume
+        resource: porteur
+
+  - id: varappe
+    dofusdb_id: 12813
+    name: { fr: "Varappe", en: "Sherpa" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente le nombre de lancers par tour et par cible des sorts Karcham ou Chamrak du lanceur.
+      Rend également l'allié ciblé Intaclable.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 290 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 291 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: nausee
+    dofusdb_id: 12814
+    name: { fr: "Nausée", en: "Nausea" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon l'état du lanceur et occasionne des dommages Air aux ennemis :
+      • Sobre : éloigne le lanceur de la cible.
+      • Saoul : repousse la cible.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: distillation
+    dofusdb_id: 12815
+    name: { fr: "Distillation", en: "Distillation" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages et applique un poison Eau de début de tour sur les cibles en zone.
+      N'affecte pas le lanceur.
+      
+      Les dommages du sort et du poison sont augmentés pour chaque poison du sort déclenché sur une cible (cumulable 4 fois).
+      
+      Les bonus sont retirés après utilisation du sort.
+    assumptions:
+      - "Effet 96 au déclencheur « TB », Eau 13-16 (17-20 en critique), durée 3, sur l'état `distillation_poison` : « applique un poison Eau de début de tour sur les cibles en zone », la seconde des deux lignes Eau, « Tous sauf lanceur - Début de tour »."
+      - "Effet 406 : le sort retire les effets qu'il a lui-meme poses. Sans mecanique modelisee derriere, il n'a rien a retirer."
+      - "Effet 1160 : lance aussi « Distillation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effets 293 et 3793, +4 dégâts de base par cran, sur les deux lignes, le coup immédiat et le poison (« les dommages du sort et du poison sont augmentés »). Le cran se compte par ennemi touché au-delà du premier : le palier le plus bas s'appelle « 2 cibles sous poison » et vaut 17-20 quand le lancer nu vaut 13-16, soit un seul cran pour deux cibles. Même convention que le Muspel du Forgelance."
+      - "Le drapeau `distillation_crans` s'arme avec un tour de retard, parce que le poison se declenche au DEBUT du tour de la cible : le tout premier lancer du combat ne peut rien avoir declenche et sort a 13-16, quel que soit le nombre d'ennemis. Un bonus replie a la compilation, comme celui du Muspel, aurait paye ce premier lancer plein tarif."
+      - "Un palier de trop est publié : de « 2 cibles sous poison » à « 6 cibles sous poison », soit cinq crans à +4, quand le texte du sort dit « cumulable 4 fois ». Le fichier suit le texte et plafonne à quatre crans, donc +16 : au-delà de cinq ennemis touchés, il sous-estime de 4 points de base. À vérifier en jeu."
+      - "Le poison se fige à la pose : il garde le bonus du lancer qui l'a posé, et celui du tout premier lancer, posé à vide, reste nu à chacune de ses frappes."
+      - "⚠️ Si le Pandawa saute un tour, le drapeau tombe alors que le poison, lui, dure trois tours et continue de se declencher. Le lancer qui suit une pause sort donc nu ici, quand le jeu lui donnerait ses crans. Sous-estimation, et le solveur ne choisit de toute facon pas de sauter un tour avec le sort de degats de zone de la classe."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_extra_target_while
+            resource: distillation_crans
+            amount: 4
+            cap: 4
+    effects:
+      - effect: damage
+      # Le poison se fige a la pose : il porte le bonus de CE lancer.
+      - effect: reset
+        resource: distillation_poison_renforce
+      - effect: gain
+        resource: distillation_poison_renforce
+        requires: { kind: caster_has, resource: distillation_crans }
+      # Le bonus sert a ce lancer, puis il est retire.
+      - effect: reset
+        resource: distillation_crans
+      - effect: gain
+        resource: distillation_poison
+      # Le poison pose maintenant se declenchera au debut du tour des cibles,
+      # donc avant le prochain tour du Pandawa : `delay: 1`.
+      - effect: schedule_gain
+        resource: distillation_crans
+        delay: 1
+
+  - id: brassage
+    dofusdb_id: 12816
+    name: { fr: "Brassage", en: "Brewing" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique des effets sur la cible selon l'état du lanceur :
+      • Sobre : augmente les dommages subis par la cible.
+      • Saoul : applique l'état Pesanteur sur la cible et l'état Brassage sur le lanceur.
+      
+      L'état Brassage empêche l'utilisation du sort dans l'état Saoul.
+      La portée du sort est modifiable dans l'état Sobre, mais elle est réduite de moitié si le lanceur est Saoul.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7) ; applique « Brassage » (4072) ; applique « Brassage II » (6108) ; applique « Brassage I » (4073). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « <color=#e6893d>État Saoul :</color> », « <color=#e6893d>État Sobre :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: prohibition
+    dofusdb_id: 12817
+    name: { fr: "Prohibition", en: "Prohibition" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend la cible Insoignable et Invulnérable en mêlée.
+      
+      Sur le lanceur :
+      • Rend Invulnérable en mêlée et Sobre.
+      • Applique l'état Prohibition, qui empêche l'entrée dans l'état Saoul et l'application des effets des Tonneaux sur lui.
+      • Rend Insoignable au début du prochain tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Invulnérable en Mêlée » (376). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Sobre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Insoignable » (76), qui porte incurable, un drapeau qui change ce qu'une cible peut infliger ou subir ; applique « {{spell,24037,1::Sobre}} » (3531), lu par Absinthe, Alcoshu, Bistouille, Bombance, Brassage, Engourdissement et 12 autre(s) ; applique « Prohibition » (3536), lu par Absinthe, Alcoshu, Bistouille, Liqueur, Ribote. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # Sorti de Saoul, si le Pandawa l'etait : la Gueule de Bois le lit.
+      - effect: gain
+        resource: sorti_de_saoul
+        requires: { kind: exactly, resource: saoul, amount: 1 }
+      - effect: reset
+        resource: saoul
+      - effect: gain
+        resource: prohibition
+
+  - id: fermentation
+    dofusdb_id: 12819
+    name: { fr: "Fermentation", en: "Fermentation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur l'allié ciblé immédiatement et au tour suivant.
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: absinthe
+    dofusdb_id: 12820
+    name: { fr: "Absinthe", en: "Absinthe" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rend le lanceur Saoul et vole de la vie dans l'élément Feu.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance aussi « Saoul », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: saoul
+        # Pas sous Prohibition, qui « empeche l'entree dans l'etat Saoul ».
+        requires: { kind: exactly, resource: prohibition, amount: 0 }
+        at_cap: refresh
+      - effect: damage
+
+  - id: bistouille
+    dofusdb_id: 12821
+    name: { fr: "Bistouille", en: "Filthipint" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rend le lanceur Saoul et vole de la vie dans l'élément Terre en zone.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance aussi « Saoul », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: saoul
+        # Pas sous Prohibition, qui « empeche l'entree dans l'etat Saoul ».
+        requires: { kind: exactly, resource: prohibition, amount: 0 }
+        at_cap: refresh
+      - effect: damage
+
+  - id: cascade
+    dofusdb_id: 12823
+    name: { fr: "Cascade", en: "Waterfall" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Jette la cible, soigne les alliés, occasionne des dommages Eau aux ennemis et repousse les entités en zone.
+    assumptions:
+      - "Effet 51, « lance une entite » : le Pandawa jette sa cible ou son Tonneau. C'est un deplacement, et ce calculateur ne simule pas la grille."
+      - "Effet 2960, sous-sort « Potion Magique » : deux gardes. Côté lanceur, le sous-sort ne part que sur « C,*E4029 » ou « C,*E4030 », l'état d'Ébriété, c'est-à-dire avec le Tonneau. Côté cible, chacun de ses trois paliers porte sa propre garde, « A,*E4077 », « A,*E4078 » et « A,*E4079 », pour 4-6, 6-8 et 8-10 dans le meilleur élément (sous-sort 25508). Aucun sort du parc ne pose ces cinq états : une rotation de sorts de classe seule ne peut pas déclencher cette frappe, et ses fourchettes sont les plus petites du parc."
+      - "Effets 950/951 : ce sort applique « Cascade » (4229). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Cascade », « Grande Rasade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Jette la cible » : le Pandawa ne porte plus rien.
+      - effect: consume
+        resource: porteur
+
+  - id: bambou
+    dofusdb_id: 12824
+    name: { fr: "Bambou", en: "Bamboo" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Bambou qui sert d'obstacle.
+      Il peut porter le lanceur Sobre si ce dernier l'attaque en mêlée.
+      
+      Le Bambou réduit de 80% les dommages immédiats alliés.
+      
+      Rend 1 PA au lanceur s'il porte un Bambou.
+    lines: []
+    effects: []
+
+  - id: ebriete
+    dofusdb_id: 12826
+    name: { fr: "Ébriété", en: "Inebriation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Tonneau qui augmente la Puissance de son invocateur lorsqu'il est porté et le rend Saoul quand il est jeté.
+      Le lanceur occasionne également des dommages dans son meilleur élément aux ennemis en zone autour du point d'impact.
+      
+      Rend 1 PA au lanceur s'il porte son Tonneau.
+      
+      Si le Tonneau du lanceur est encore présent et que le sort est relancé, l'ancien est détruit pour laisser place au nouveau.
+    assumptions:
+      - "Effet 138, la Puissance que le Tonneau donne « lorsqu'il est PORTE ». Porter son Tonneau est un geste de placement, et le sort ne le donne pas de lui-meme : il invoque le Tonneau, c'est tout."
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: unknown
+        normal: [8, 10]
+    effects:
+      - effect: damage
+
+  - id: alcoshu
+    dofusdb_id: 14307
+    name: { fr: "Alcoshu", en: "Alcoshu" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rend le lanceur Saoul et vole de la vie dans l'élément Eau.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance aussi « Saoul », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: saoul
+        # Pas sous Prohibition, qui « empeche l'entree dans l'etat Saoul ».
+        requires: { kind: exactly, resource: prohibition, amount: 0 }
+        at_cap: refresh
+      - effect: damage
+
+  - id: pandjiu
+    dofusdb_id: 14309
+    name: { fr: "Pandjiu", en: "Pandjiu" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: lait_de_bambou
+    dofusdb_id: 24038
+    name: { fr: "Lait de Bambou", en: "Bamboo Milk" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur le lanceur et le rend Sobre.
+    assumptions:
+      - "Effets 950 et 951, états « Saoul » (498) et « Sobre » (3531) : le régime du Pandawa. Cinq sorts offensifs portent deux fourchettes selon lui, et la ressource `saoul` décide laquelle s'applique."
+      - "Effet 792 : lance « Sobre » (24037) si le lanceur est Saoul."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    effects:
+      # Sorti de Saoul, si le Pandawa l'etait : la Gueule de Bois le lit.
+      - effect: gain
+        resource: sorti_de_saoul
+        requires: { kind: exactly, resource: saoul, amount: 1 }
+      - effect: reset
+        resource: saoul
+
+  - id: main_de_pandawa
+    dofusdb_id: 24039
+    name: { fr: "Main de Pandawa", en: "Pandawa's Hand" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 5 }
+    note: |
+      Retire de la Puissance et occasionne des dommages selon l'état du lanceur et lui applique l'état Main de Pandawa :
+      • Sobre : occasionne des dommages dans son meilleur élément.
+      • Saoul : occasionne des dommages Neutre, Terre, Feu, Eau et Air.
+    assumptions:
+      - "Effet 186, -N Puissance sur la CIBLE : « retire de la Puissance », dit le texte. C'est l'adversaire qui frappera moins fort, pas le lanceur qui frappera plus."
+      - "Effets 950/951 : ce sort applique « {{spell,25518,1::Main de Pandawa}} » (4026). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Main de Pandawa », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le lanceur est suppose SOBRE, l'etat par defaut : 70 degats fixes dans son meilleur element, 100 en critique. L'alternative Saoul frappe 7 dans CHACUN des cinq elements, 10 en critique, soit 35 repartis dont un seul profite de la caracteristique du build : sur un build mono-element elle est nettement en dessous. Saoul s'obtient en jetant son Tonneau, un geste de placement que ce calculateur ne simule pas, et n'est donc pas propose."
+    lines:
+      # Effet 2822, palier « Lanceur sous Sobre ». Valeur fixe, pas une fourchette :
+      # la donnée porte dice_side à 0.
+      - best_element: true
+        critical: [100, 100]
+        normal: [70, 70]
+    effects:
+      - effect: damage

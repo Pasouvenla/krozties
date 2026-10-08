@@ -1,0 +1,210 @@
+{
+  "2": {
+    "objective": 43369.0,
+    "turns": [
+      {
+        "turn": 1,
+        "damage": 5172.5,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Souvenir (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 2,
+        "damage": 5196.0,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 3,
+        "damage": 8222.0,
+        "casts": [
+          "(Aiguille poison)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]",
+          "Glas [6 stacks]"
+        ]
+      },
+      {
+        "turn": 4,
+        "damage": 5196.0,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 5,
+        "damage": 6164.5,
+        "casts": [
+          "(Aiguille poison)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Souvenir (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 6,
+        "damage": 5196.0,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 7,
+        "damage": 8222.0,
+        "casts": [
+          "(Aiguille poison)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]",
+          "Glas [6 stacks]"
+        ]
+      }
+    ]
+  },
+  "3": {
+    "objective": 43400.0,
+    "turns": [
+      {
+        "turn": 1,
+        "damage": 5172.5,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Souvenir (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 2,
+        "damage": 5196.0,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 3,
+        "damage": 8222.0,
+        "casts": [
+          "(Aiguille poison)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]",
+          "Glas [6 stacks]"
+        ]
+      },
+      {
+        "turn": 4,
+        "damage": 5196.0,
+        "casts": [
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]"
+        ]
+      },
+      {
+        "turn": 5,
+        "damage": 6357.0,
+        "casts": [
+          "(Aiguille poison)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]",
+          "Poussiere (4 PA) [TF, +2 PA]",
+          "Souvenir (2 PA) [no TF]"
+        ]
+      },
+      {
+        "turn": 6,
+        "damage": 5034.5,
+        "casts": [
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA)",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Aiguille (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Souvenir (2 PA) [no TF]"
+        ]
+      },
+      {
+        "turn": 7,
+        "damage": 8222.0,
+        "casts": [
+          "(Aiguille poison)",
+          "Ralentissement (2 PA)",
+          "Sablier (2 PA)",
+          "Refraction (2 PA) [+ Aiguille proc]",
+          "Souvenir (2 PA) [TF, +2 PA]",
+          "Refraction (2 PA) [+ Sablier resolves]",
+          "Engrenage (3 PA) [TF, +2 PA]",
+          "Glas [6 stacks]"
+        ]
+      }
+    ]
+  }
+}

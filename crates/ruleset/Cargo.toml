@@ -1,0 +1,13 @@
+[package]
+name = "dofus-ruleset"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Declarative spell mechanics: schema, loader, validation and compiler."
+
+[dependencies]
+dofus-damage = { path = "../damage" }
+serde = { workspace = true }
+serde_yaml_ng = "0.10"
+serde_json = { workspace = true }

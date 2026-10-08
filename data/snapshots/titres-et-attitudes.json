@@ -1,0 +1,119 @@
+{
+  "source": "dofusdb.fr",
+  "fetched_at": "2026-10-03",
+  "game_version": "3.6.12",
+  "titres": {
+    "8": [
+      "Pourfendeur de Bworker",
+      "Pourfendeuse de Bworker"
+    ],
+    "9": [
+      "Pourfendeur du Sphincter Cell",
+      "Pourfendeuse du Sphincter Cell"
+    ],
+    "10": [
+      "Pourfendeur du Koulosse",
+      "Pourfendeuse du Koulosse"
+    ],
+    "11": [
+      "Pourfendeur du Wa Wabbit",
+      "Pourfendeuse du Wa Wabbit"
+    ],
+    "12": [
+      "Pourfendeur du Kimbo",
+      "Pourfendeuse du Kimbo"
+    ],
+    "13": [
+      "Pourfendeur du Minotoror",
+      "Pourfendeuse du Minotoror"
+    ],
+    "14": [
+      "Pourfendeur du Dragon Cochon",
+      "Pourfendeuse du Dragon Cochon"
+    ],
+    "15": [
+      "Pourfendeur du Chêne Mou",
+      "Pourfendeuse du Chêne Mou"
+    ],
+    "16": [
+      "Pourfendeur du Moon",
+      "Pourfendeuse du Moon"
+    ],
+    "17": [
+      "Pourfendeur du Dark Vlad",
+      "Pourfendeuse du Dark Vlad"
+    ],
+    "58": [
+      "Maître des Éléments",
+      "Maîtresse des Éléments"
+    ],
+    "59": [
+      "Grand Maître des Éléments",
+      "Grande Maîtresse des Éléments"
+    ],
+    "61": [
+      "Conquérant de la Lumière",
+      "Conquérante de la Lumière"
+    ],
+    "86": [
+      "Disciple Pandawushuka",
+      "Disciple Pandawushuka"
+    ],
+    "90": [
+      "Pwâkificateur",
+      "Pwâkificatrice"
+    ],
+    "91": [
+      "Robill Adoptif",
+      "Robill Adoptive"
+    ],
+    "93": [
+      "Trouffion des Neiges",
+      "Trouffion des Neiges"
+    ],
+    "94": [
+      "Commère des Miches",
+      "Commère des Miches"
+    ],
+    "98": [
+      "Écumeur des 107 océans",
+      "Écumeuse des 107 océans"
+    ],
+    "99": [
+      "Farfouilleur d'Otomaï",
+      "Farfouilleuse d'Otomaï"
+    ],
+    "149": [
+      "Gardien de la Paix",
+      "Gardienne de la Paix"
+    ]
+  },
+  "attitudes": {
+    "7": "Jouer de la flûte",
+    "69": "Lire une carte",
+    "70": "Ogrine (familier)",
+    "84": "Longue-Vue",
+    "94": "Tirer sa langue",
+    "95": "Kramouflage",
+    "108": "S'envoler",
+    "109": "Ver de terre",
+    "110": "Phorrer le sol",
+    "111": "Renifler le sol",
+    "118": "Rugir",
+    "123": "Hanter (familier)",
+    "124": "Se dandiner (familier)",
+    "125": "Piétiner (familier)",
+    "126": "Enflammer (familier)",
+    "128": "Peindre",
+    "153": "Wow (familier)",
+    "154": "Marquer son territoire (familier)",
+    "169": "Flammes Bontariennes",
+    "170": "Flammes Brâkmariennes",
+    "181": "Dofus Ivoire",
+    "182": "Dofus Ébène",
+    "183": "Dofus Émeraude",
+    "184": "Dofus Turquoise",
+    "185": "Dofus Ocre",
+    "186": "Dofus Pourpre"
+  }
+}

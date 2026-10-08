@@ -1,0 +1,934 @@
+# Enutrof.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: enutrof
+name: { fr: "Enutrof", en: "Enutrof" }
+
+resources:
+  - id: age_d_or_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13329
+    modifies_damage:
+      # Effet 138 a `delay: 1` : la Puissance arrive AU TOUR SUIVANT.
+      - kind: characteristic
+        amount: 200
+    note: |
+      La Puissance que l'Âge d'Or accorde au tour suivant : « Rend l'allié ciblé
+      Intaclable. Augmente sa Puissance au tour suivant. » Effet 138 à 200 sur la
+      cible « a », `delay: 1`, durée 1 ; le lanceur peut se cibler lui-même, sa
+      portée minimale étant de zéro. Gagnée par un `schedule_gain` à un tour de
+      délai, elle vit le tour où elle arrive et lui seul (`turns: 0`).
+      L'Intaclable n'est pas modélisé : il porte sur le déplacement.
+  - id: tunnel_de_fortune_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 138, duree 1 et `delay: 1` : la Puissance arrive AU TOUR SUIVANT et
+    # y reste ce tour-la. Le sort la gagne par un `schedule_gain`, et
+    # `turns: 0` la fait vivre ce tour-la seulement.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12809
+    modifies_damage:
+      # Vingt points de Puissance PAR PM DEPENSE, sans plafond dans la donnee.
+      - kind: characteristic
+        amount: 20
+        per_mp_used: true
+    note: |
+      La Puissance que le Tunnel de Fortune accorde au lanceur au tour suivant :
+      « augmente sa Puissance au tour suivant pour chaque PM qu'il a utilisé ».
+      Effet 138 à 20 sur le lanceur (« C »), `delay: 1`. Le nombre de PM se
+      déclare : c'est le réglage « PM dépensés » du scénario, comme pour la
+      Tourbière. Le jeu lit les PM dépensés au tour du lancer ; le réglage étant
+      unique, le même chiffre vaut pour tous les tours. L'invisibilité n'est pas
+      modélisée.
+  - id: eboulement
+    scope: target
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: removes_range
+        spends: 1
+        lines:
+          - element: earth
+            critical: [15, 17]
+            normal: [12, 14]
+        note: |
+          La marque que pose Éboulement : elle répond à un retrait de Portée subi par la
+          cible, quatre fois, puis disparaît (effet 950 de durée 3 ; « déclenchables
+          4 fois, l'état est retiré dès la limite atteinte »). C'est la tentative qui
+          déclenche, pas sa réussite : la résistance au retrait de la cible ne
+          l'empêche pas.
+
+  - id: monnaie_sonnante
+    scope: target
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: removes_ap
+        spends: 1
+        lines:
+          - element: air
+            critical: [14, 16]
+            normal: [11, 13]
+        note: |
+          La marque que pose Monnaie Sonnante : elle répond à une tentative de retrait de PA subi par la
+          cible, quatre fois, puis disparaît (effet 950 de durée 3 ; « déclenchables
+          4 fois, l'état est retiré dès la limite atteinte »). C'est la tentative qui
+          déclenche, pas sa réussite : la résistance au retrait de la cible ne
+          l'empêche pas.
+
+  - id: orpaillage
+    scope: target
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: removes_mp
+        spends: 1
+        lines:
+          - element: water
+            critical: [13, 15]
+            normal: [10, 12]
+        note: |
+          La marque que pose Orpaillage : elle répond à une tentative de retrait de PM subi par la
+          cible, quatre fois, puis disparaît (effet 950 de durée 3 ; « déclenchables
+          4 fois, l'état est retiré dès la limite atteinte »). C'est la tentative qui
+          déclenche, pas sa réussite : la résistance au retrait de la cible ne
+          l'empêche pas.
+
+  - id: opportunite
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138 : de la Puissance, dans l'arrondi caracteristique.
+      - kind: characteristic
+        amount: 80
+    note: |
+      « Occasionne des dommages Air et augmente la Puissance du lanceur. » 80
+      pendant deux tours, cumul 2 : deux lancers donnent 160. Le sort coûte 2 PA
+      et se lance trois fois par tour.
+
+
+spells:
+  - id: sac_anime
+    dofusdb_id: 13328
+    name: { fr: "Sac Animé", en: "Living Bag" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Sac Animé maîtrisable qui intercepte les dommages des alliés situés dans sa zone d'invocation.
+      Le Sac Animé est détruit 3 tours après son invocation.
+      
+      Lorsqu'il est attaqué par un allié, ce dernier est soigné.
+    lines: []
+    open_questions:
+      - "Effet 765 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: age_d_or
+    dofusdb_id: 13329
+    name: { fr: "Âge d'Or", en: "Golden Age" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'allié ciblé Intaclable.
+      Augmente sa Puissance au tour suivant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # La Puissance arrive AU TOUR SUIVANT (effet 138 a `delay: 1`) et ne
+      # dure que ce tour-la.
+      - effect: schedule_gain
+        resource: age_d_or_puissance
+        delay: 1
+
+  - id: lancer_de_pelle
+    dofusdb_id: 13330
+    name: { fr: "Lancer de Pelle", en: "Shovel Throwing" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    tags: [removes_range]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire de la Portée.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: roulage_de_pelle
+    dofusdb_id: 13331
+    name: { fr: "Roulage de Pelle", en: "Shovel Kiss" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: clef_du_tresor
+    dofusdb_id: 13332
+    name: { fr: "Clef du Trésor", en: "Treasure Key" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    tags: [removes_range]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire de la Portée aux ennemis ou augmente celle de l'allié ciblé.
+    lines: []
+    effects: []
+
+  - id: peremption
+    dofusdb_id: 13333
+    name: { fr: "Péremption", en: "Expiry" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Occasionne des dommages Feu supplémentaires aux invocations.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: boite_de_pandore
+    dofusdb_id: 13334
+    name: { fr: "Boîte de Pandore", en: "Pandora's Box" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne tous les alliés mais augmente les PM de tous les ennemis.
+    lines: []
+    effects: []
+
+  - id: remblai
+    dofusdb_id: 13335
+    name: { fr: "Remblai", en: "Mound" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    tags: [removes_range]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire de la Portée en zone.
+      Les dommages sont plus importants sur les invocations.
+      
+      N'affecte pas le lanceur.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Ce sort porte deux fourchettes Terre : 25-27 sur une invocation, 20-22 sur une cible ordinaire. C'est la seconde qui est comptée ici, la cible décrite plus haut n'étant pas une invocation."
+    effects:
+      - effect: damage
+
+  - id: pelle_fantomatique
+    dofusdb_id: 13336
+    name: { fr: "Pelle Fantomatique", en: "Ghostly Shovel" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages Feu aux ennemis.
+    assumptions:
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: maladresse
+    dofusdb_id: 13337
+    name: { fr: "Maladresse", en: "Clumsiness" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 4
+    casts_per_target: 1
+    tags: [removes_mp]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire des PM.
+    lines: []
+    effects: []
+
+  - id: lancer_de_pieces
+    dofusdb_id: 13338
+    name: { fr: "Lancer de Pièces", en: "Coin Throwing" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 6
+    casts_per_target: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: force_de_l_age
+    dofusdb_id: 13340
+    name: { fr: "Force de l'Âge", en: "Prime of Life" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et augmente les PM au lanceur.
+    assumptions:
+      - "Le PM donné au lanceur n'est pas modélisé : le déplacement n'est pas simulé."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ruee_vers_l_or
+    dofusdb_id: 13342
+    name: { fr: "Ruée vers l'Or", en: "Goldrush" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM de l'allié ciblé et lui applique l'état Ruée vers l'Or :
+      • À la fin du tour de la cible, augmente sa Puissance au tour suivant si elle est au contact d'un ennemi et la soigne si elle est au contact d'une invocation Enutrof.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Ruée vers l'Or » (5472). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Ruée vers l'Or », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 138, +150 Puissance : va a l'ALLIE CIBLE, et seulement s'il finit son tour au contact d'un ennemi. Deux raisons de ne rien valoir ici, l'allie et le placement."
+    effects: []
+
+  - id: pelle_aurifere
+    dofusdb_id: 13343
+    name: { fr: "Pelle Aurifère", en: "Auriferous Shovel" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    tags: [removes_mp]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des PM.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: pelle_animee
+    dofusdb_id: 13344
+    name: { fr: "Pelle Animée", en: "Living Shovel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Pelle Animée maîtrisable qui peut pousser.
+      
+      Lorsqu'elle est attaquée par un allié, ce dernier est soigné.
+    lines: []
+    effects: []
+
+  - id: pelle_des_anciens
+    dofusdb_id: 13345
+    name: { fr: "Pelle des Anciens", en: "Shovel of the Ancients" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    tags: [removes_mp]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des PM aux ennemis et repousse la cible.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: corruption
+    dofusdb_id: 13346
+    name: { fr: "Corruption", en: "Bribery" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'ennemi ciblé Pacifiste et Invulnérable.
+      
+      Sur un allié : le rend Pacifiste et le soigne.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Pacifiste » (218), qui porte cantDealDamage, un drapeau qui change ce qu'une cible peut infliger ou subir ; applique « Invulnérable » (269), qui porte invulnerable, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: coffre_anime
+    dofusdb_id: 13347
+    name: { fr: "Coffre Animé", en: "Living Chest" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Coffre Animé maîtrisable qui peut tacler, occasionner des dommages Eau et dévoiler les invisibles.
+      
+      Lorsqu'il est attaqué par un allié, ce dernier est soigné.
+    lines: []
+    effects: []
+
+  - id: retraite_anticipee
+    dofusdb_id: 13349
+    name: { fr: "Retraite Anticipée", en: "Pull Out" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 7
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Immobilise les cibles et applique l'état Pesanteur sur tout le monde sauf le lanceur.
+      Immobilise le lanceur au tour suivant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: eboulement
+    dofusdb_id: 13352
+    name: { fr: "Éboulement", en: "Collapse" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et applique l'état Éboulement sur l'ennemi ciblé :
+      • Occasionne des dommages Terre si la cible subit un retrait de Portée.
+      
+      Les dommages peuvent être déclenchés 4 fois tant que l'état est actif.
+      L'état est retiré dès la limite atteinte.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Éboulement » (5493). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Éboulement » et ce qu'il lance a son tour sur « A » : Terre 12-14. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Le mécanisme est écrit : la marque répond quatre fois à une tentative de retrait. Il ne reste que le script de classe, sans effet chiffrable."
+      - "Les deux fourchettes Terre sont deux effets distincts, tous deux modélisés : la première est le coup immédiat, 12-14 est ce que la marque inflige à chaque retrait de Portée subi par la cible, quatre fois au plus."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: eboulement
+        amount: 4
+
+  - id: monnaie_sonnante
+    dofusdb_id: 13353
+    name: { fr: "Monnaie Sonnante", en: "Hard Cash" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique l'état Monnaie Sonnante sur l'ennemi ciblé :
+      • Occasionne des dommages Air si la cible subit une tentative de retrait de PA.
+      
+      Les dommages peuvent être déclenchés 4 fois tant que l'état est actif.
+      L'état est retiré dès la limite atteinte.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Monnaie Sonnante » (5495). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Monnaie Sonnante » et ce qu'il lance a son tour sur « A » : Air 11-13. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Le mécanisme est écrit : la marque répond quatre fois à une tentative de retrait. Il ne reste que le script de classe, sans effet chiffrable."
+      - "Les deux fourchettes Air sont deux effets distincts, tous deux modélisés : la première est le coup immédiat, 11-13 est ce que la marque inflige à chaque tentative de retrait de PA subi par la cible, quatre fois au plus."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: monnaie_sonnante
+        amount: 4
+
+  - id: musette_animee
+    dofusdb_id: 13354
+    name: { fr: "Musette Animée", en: "Living Satchel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Musette Animée maîtrisable qui partage les dommages entre tous les alliés situés dans sa zone d'invocation.
+      La Musette Animée est détruite 2 tours après son invocation.
+      
+      Lorsqu'elle est attaquée par un allié, ce dernier est soigné.
+    lines: []
+    open_questions:
+      - "Effet 1061 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: feu_de_mine
+    dofusdb_id: 13355
+    name: { fr: "Feu de Mine", en: "Mine Fire" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Les entités qui attaquent la cible sont soignées d'une partie des dommages occasionnés.
+    assumptions:
+      - "Le soin rendu aux attaquants de la cible n'est pas modélisé : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: deambulation
+    dofusdb_id: 13356
+    name: { fr: "Déambulation", en: "Wandering" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur la cible et échange sa position avec le Sac Animé ou la Musette Animée du lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Déambulation » (2229) ; retire « Déambulation » (2229). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Déambulation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    effects: []
+
+  - id: boite_a_outils
+    dofusdb_id: 13357
+    name: { fr: "Boîte à Outils", en: "Toolbox" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PA et les PM de l'allié ciblé mais le rend Pacifiste.
+      Rend également toutes les invocations de l'allié ciblé Pacifistes.
+    assumptions:
+      - "Effet 792 : lance aussi « Boîte à Outils », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Pacifiste » (218), qui porte cantDealDamage, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 111, +3 PA : va a l'ALLIE CIBLE, et le rend Pacifiste par-dessus le marche. Rien pour le lanceur seul."
+    effects: []
+
+  - id: tourbiere
+    dofusdb_id: 13358
+    name: { fr: "Tourbière", en: "Peat Bog" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre en zone.
+      Les dommages du sort sont augmentés pour chaque PM utilisé pour le tour en cours.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        # +5 par PM dépensé, six crans au plus : 31-35 nu, puis 36-40 à un PM,
+        # jusqu'à 61-65 à six.
+        base_bonus: [{ kind: per_mp_used, amount: 5, cap: 6, critical_amount: 5 }]
+    effects:
+      - effect: damage
+
+  - id: clef_de_bras
+    dofusdb_id: 13359
+    name: { fr: "Clef de Bras", en: "Armlock" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    tags: [removes_mp]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne l'allié ciblé et retire des PM non esquivables.
+    lines: []
+    effects: []
+
+  - id: obsolescence
+    dofusdb_id: 13360
+    name: { fr: "Obsolescence", en: "Obsolescence" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire de l'Esquive PM.
+      Les dommages sont plus importants sur les invocations.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effet 293, +5 dégâts de base par PM utilisé dans le tour, six crans au plus : 31-35 nu puis 36-40 à un PM, jusqu'à 61-65 à six. Le cran se déclare : c'est le réglage « PM dépensés » du scénario, comme « Ennemis touchés » donne le nombre d'ennemis en zone."
+      - "Le retrait d'Esquive PM ne change rien ici : l'esquive ne joue que sur le déplacement, qui n'est pas simulé."
+      - "Ce sort porte deux fourchettes Eau : 34-38 sur une invocation, 26-30 sur une cible ordinaire. C'est la seconde qui est comptée ici, la cible décrite plus haut n'étant pas une invocation."
+    effects:
+      - effect: damage
+
+  - id: beche_animee
+    dofusdb_id: 13361
+    name: { fr: "Bêche Animée", en: "Living Spade" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Bêche Animée maîtrisable qui peut voler de la vie dans l'élément Terre et donner de la Fuite.
+      
+      Lorsqu'elle est attaquée par un allié, ce dernier est soigné.
+    lines: []
+    effects: []
+
+  - id: avarice
+    dofusdb_id: 13362
+    name: { fr: "Avarice", en: "Miserliness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    tags: [removes_mp]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire des PM non esquivables pour augmenter les PA des cibles en zone autour du lanceur.
+      Retire également de la Puissance à toutes les entités hors de la zone d'effet pour augmenter la Puissance du lanceur pour chaque entité touchée (cumulable 10 fois).
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Avarice », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 111, +3 PA : va aux CIBLES EN ZONE autour du lanceur, ce qui depend du placement. Le sort les achete en retirant des PM, que ce calculateur ne suit pas non plus."
+      - "Effet 138, +50 Puissance au lanceur, cumulable dix fois : un cran PAR ENTITE hors de la zone d'effet. Le compte depend du placement, que ce calculateur ne simule pas."
+    effects: []
+
+  - id: orpaillage
+    dofusdb_id: 13363
+    name: { fr: "Orpaillage", en: "Placer Mining" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et applique l'état Orpaillage sur l'ennemi ciblé :
+      • Occasionne des dommages Eau si la cible subit une tentative de retrait de PM.
+      
+      Les dommages peuvent être déclenchés 4 fois tant que l'état est actif.
+      L'état est retiré dès la limite atteinte.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Orpaillage » (5494). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Orpaillage » et ce qu'il lance a son tour sur « A » : Eau 10-12. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Le mécanisme est écrit : la marque répond quatre fois à une tentative de retrait. Il ne reste que le script de classe, sans effet chiffrable."
+      - "Les deux fourchettes Eau sont deux effets distincts, tous deux modélisés : la première est le coup immédiat, 10-12 est ce que la marque inflige à chaque tentative de retrait de PM subi par la cible, quatre fois au plus."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: orpaillage
+        amount: 4
+
+  - id: souterrain
+    dofusdb_id: 13364
+    name: { fr: "Souterrain", en: "Tunnel" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Terre aux ennemis.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: abattement
+    dofusdb_id: 13365
+    name: { fr: "Abattement", en: "Loafylactic" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    tags: [removes_ap]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PA.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: opportunite
+    dofusdb_id: 13366
+    name: { fr: "Opportunité", en: "Opportuneness" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et augmente la Puissance du lanceur.
+    assumptions:
+      - "En plus de ses dégâts, donne 80 Puissance au lanceur pendant deux tours, cumulable deux fois, donc 160. La Puissance entre dans l'arrondi caractéristique et profite à tous les sorts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: opportunite
+
+
+  - id: beche_des_anciens
+    dofusdb_id: 13367
+    name: { fr: "Bêche des Anciens", en: "Spade of the Ancients" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    tags: [removes_ap]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PA aux ennemis et repousse les cibles depuis le centre en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: coup_de_grisou
+    dofusdb_id: 13368
+    name: { fr: "Coup de Grisou", en: "Firedamp Explosion" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis en zone et applique l'état Coup de Grisou sur la cible :
+      • Occasionne des dommages Feu aux ennemis en zone autour de la cible si elle est soignée.
+      
+      Les dommages peuvent être déclenchés 4 fois tant que l'état est actif.
+      L'état est retiré dès la limite atteinte.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Coup de Grisou » (5496). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Coup de Grisou » et ce qu'il lance a son tour sur « A » : Feu 11-13; « Coup de Grisou » et ce qu'il lance a son tour sur « a » : Feu 11-13. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "La marque répond quatre fois ; il ne reste que le script de classe, sans effet chiffrable. Ici le déclencheur est un soin sur la cible, qui ne se produit pas dans une recherche de dégâts."
+      - "Seul le coup immédiat est compté, soit 30-34 Feu. Ce sort déclenche 11-13 Feu de plus quand la cible est soignée, ce qui ne se produit pas dans une recherche de dégâts : le total affiché est un plancher."
+    effects:
+      - effect: damage
+
+  - id: decadence
+    dofusdb_id: 13369
+    name: { fr: "Décadence", en: "Decadence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    tags: [removes_ap]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire des PA aux ennemis.
+      
+      Sur un allié : augmente ses dommages finaux occasionnés immédiatement mais les réduit au tour suivant.
+    lines: []
+    open_questions:
+      - "Effet 1171 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1172 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: tamisage
+    dofusdb_id: 13370
+    name: { fr: "Tamisage", en: "Sieving" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    tags: [removes_mp]
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des PM en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: malle_animee
+    dofusdb_id: 13371
+    name: { fr: "Malle Animée", en: "Living Trunk" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Malle Animée maîtrisable qui peut soigner.
+      
+      Lorsqu'elle est attaquée par un allié, ce dernier est soigné.
+    lines: []
+    effects: []
+
+  - id: dernier_recours
+    dofusdb_id: 13372
+    name: { fr: "Dernier Recours", en: "Last Resort" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique l'état Pesanteur sur les cibles et occasionne des dommages Air aux ennemis en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "L'état Pesanteur n'est pas modélisé : il pèse sur le déplacement, que ce calculateur ne simule pas."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: gisement
+    dofusdb_id: 14273
+    name: { fr: "Gisement", en: "Deposit" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et soigne les alliés au début de leur tour en zone.
+    assumptions:
+      - "Les soins rendus aux alliés ne sont pas modélisés : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: tunnel_de_fortune
+    dofusdb_id: 14274
+    name: { fr: "Tunnel de Fortune", en: "Lucky Tunnel" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur invisible et lui applique l'état Tunnel de Fortune :
+      • Augmente sa Puissance au tour suivant pour chaque PM qu'il a utilisé.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Tunnel de Fortune » (5473). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Tunnel de Fortune », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 150 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 138, +20 Puissance au lanceur : un cran PAR PM UTILISE dans le tour. Ce solveur ne deplace personne, donc n'en depense aucun : le gain vaudrait zero de toute facon."
+    effects:
+      # La Puissance arrive AU TOUR SUIVANT (effet 138 a `delay: 1`) et ne
+      # dure que ce tour-la.
+      - effect: schedule_gain
+        resource: tunnel_de_fortune_puissance
+        delay: 1
+
+  - id: banqueroute
+    dofusdb_id: 14278
+    name: { fr: "Banqueroute", en: "Bankruptcy" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire de l'Esquive PA.
+      Les dommages sont plus importants sur les invocations.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Le retrait d'Esquive PA ne change rien ici : l'esquive ne joue que sur le déplacement, qui n'est pas simulé."
+      - "Ce sort porte deux fourchettes Air : 47-51 sur une invocation, 36-40 sur une cible ordinaire. C'est la seconde qui est comptée ici, la cible décrite plus haut n'étant pas une invocation."
+    effects:
+      - effect: damage
+
+  - id: pelle_de_fortune
+    dofusdb_id: 29755
+    name: { fr: "Pelle de Fortune", en: "Lucky Shovel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Pelle de Fortune statique.
+      Lorsqu'elle est invoquée, puis à chaque début de tour, elle augmente la Puissance, la Fuite, le Retrait PA et le Retrait PM du lanceur.
+      
+      La Pelle de Fortune est détruite 2 tours après son invocation en soignant le lanceur.
+      
+      Lorsqu'elle est attaquée par un allié, ce dernier est soigné.
+    assumptions:
+      - "Effet 1160 : lance aussi « Pelle de Fortune », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []

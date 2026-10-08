@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+.DS_Store
+__pycache__/
+
+# Artefacts de construction de l'application de bureau
+crates/krozties/gen/
+crates/krozties/ui/icons/
+crates/krozties/ui/objets/

@@ -1,0 +1,176 @@
+{
+  "source": "dofusdb.fr",
+  "fetched_at": "2026-10-03",
+  "game_version": "3.6.12",
+  "types": [
+    {
+      "id": 2,
+      "name": "Arc",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 3,
+      "name": "Baguette",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 4,
+      "name": "Bâton",
+      "raw_zone": "T1,10,1",
+      "zone": {
+        "shape": "T",
+        "size": 1,
+        "size2": 0,
+        "cells": 3,
+        "falloff_percent": 10,
+        "falloff_steps": 1
+      }
+    },
+    {
+      "id": 5,
+      "name": "Dague",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 6,
+      "name": "Épée",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 7,
+      "name": "Marteau",
+      "raw_zone": "X1,0,10,1",
+      "zone": {
+        "shape": "X",
+        "size": 1,
+        "size2": 0,
+        "cells": 5,
+        "falloff_percent": 10,
+        "falloff_steps": 1
+      }
+    },
+    {
+      "id": 8,
+      "name": "Pelle",
+      "raw_zone": "V1,10,2",
+      "zone": {
+        "shape": "V",
+        "size": 1,
+        "size2": 0,
+        "cells": 4,
+        "falloff_percent": 10,
+        "falloff_steps": 2
+      }
+    },
+    {
+      "id": 19,
+      "name": "Hache",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 20,
+      "name": "Outil",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 21,
+      "name": "Pioche",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 22,
+      "name": "Faux",
+      "raw_zone": "U1,10,1",
+      "zone": {
+        "shape": "U",
+        "size": 1,
+        "size2": 0,
+        "cells": 3,
+        "falloff_percent": 10,
+        "falloff_steps": 1
+      }
+    },
+    {
+      "id": 114,
+      "name": "Arme magique",
+      "raw_zone": "P",
+      "zone": {
+        "shape": "P",
+        "size": 0,
+        "size2": 0,
+        "cells": 1,
+        "falloff_percent": 0,
+        "falloff_steps": 0
+      }
+    },
+    {
+      "id": 271,
+      "name": "Lance",
+      "raw_zone": "L3,10,3",
+      "zone": {
+        "shape": "L",
+        "size": 3,
+        "size2": 0,
+        "cells": 3,
+        "falloff_percent": 10,
+        "falloff_steps": 3
+      }
+    }
+  ]
+}

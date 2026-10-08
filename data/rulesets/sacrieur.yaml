@@ -1,0 +1,945 @@
+# Sacrieur.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: sacrieur
+name: { fr: "Sacrieur", en: "Sacrieur" }
+
+resources:
+  - id: mutilation_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # AUCUNE `duration` : l'effet 138 porte `duration: -1`, il ne s'eteint pas.
+    # C'est le seul etat permanent du parc.
+    dofusdb_source: 12737
+    modifies_damage:
+      - kind: characteristic
+        amount: 150
+    note: |
+      La Puissance que la Mutilation accorde, définitivement : « Sacrifie une
+      partie de la vie du lanceur pour augmenter sa Puissance. » Effet 138 à 150
+      au grade 3, sur le lanceur, `duration: -1`.
+
+      Les points de vie sacrifiés ne sont pas comptés : ce calculateur mesure les
+      dégâts portés, et voit les 150 Puissance sans leur prix. L'état de
+      Mutilation qui monte chaque tour (états 1229 à 1231, qui alimentent le
+      bouclier de la Coagulation) ne touche pas aux dégâts. Relancer le sort
+      retire tout et lance la Coagulation : non modélisé, le solveur ne relançant
+      jamais un sort dont il tire un bonus permanent.
+  - id: pacte_de_sang_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 138, duree 3 dans l'instantane, cible « C » : le lanceur, sans
+    # condition. Copiee telle quelle, comme partout dans le parc.
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12762
+    modifies_damage:
+      # Cent points de PUISSANCE, `dice_num` a 100. Pas d'element : la Puissance
+      # n'en connait pas, elle entre dans le meme facteur que la caracteristique
+      # et leve les cinq lignes. C'est ce qui la distingue d'un vol.
+      - kind: characteristic
+        amount: 100
+    note: |
+      La Puissance que le Pacte de Sang accorde au lanceur pour trois tours :
+      « augmente la Vitalité et la Puissance du lanceur », sans condition, cible
+      « C ». La Vitalité n'est pas comptée : elle ne change aucun dégât.
+
+  - id: furie
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1171 : « 3 % Dommages finaux », un multiplicateur, donc applique
+      # tout a la fin du pipeline et non dans l'arrondi caracteristique.
+      - kind: final_multiplier
+        percent: 103
+        # Effet 1171, « % Dommages finaux » : ils s'additionnent à ceux des
+        # Dofus et de l'équipement.
+        finaux: true
+    note: |
+      « Augmente les dommages finaux du lanceur. » Trois pour cent pendant trois
+      tours (effet 1171 au dernier grade), cumul 2 (`maxStack`) : le moteur
+      applique les modificateurs par charge, et deux crans valent le double.
+
+  - id: douleur_cuisante
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138 : de la Puissance, donc DANS l'arrondi caracteristique.
+      - kind: characteristic
+        amount: 60
+    note: |
+      « Augmente la Puissance du lanceur. » Soixante pendant trois tours (effet
+      138 au dernier grade), cumul 2 (`maxStack`) : deux crans valent le double.
+
+
+  - id: nervosite_critique
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 115, valeur 7, durée 3 : sept points de taux de coup critique, le
+      # seul modificateur qui ne touche aucun étage du calcul mais le tirage.
+      - kind: critical_rate
+        percent: 7
+    note: |
+      « Augmente les chances de Critique du lanceur », effet 115 de valeur 7
+      pendant trois tours, cumul 2 (`maxStack`) : sept points de taux par cran,
+      appliqués à l'écart entre un coup critique et un coup normal.
+
+  - id: vulnerabilite_decimation
+    scope: target
+    max: 2
+    default: 0
+    monotone: increasing
+    # Zéro tour veut dire « le tour de la pose, et lui seul » : la vulnérabilité
+    # tient jusqu'au début du prochain tour du lanceur, qui n'en profite que dans
+    # le même tour d'actions.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, « Dommages subis x103 % » : un multiplicateur, donc tout a
+      # la fin du pipeline.
+      - kind: final_multiplier
+        percent: 103
+    note: |
+      La vulnérabilité que Décimation pose sur sa cible, cumul 2 (`maxStack`) :
+      tout ce qui tombe ensuite sur elle dans le même tour est multiplié par 1,03
+      par cran.
+
+  - id: vie_restante
+    scope: caster
+    max: 100
+    default: 100
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Vie restante (%)"
+    note: |
+      La part de votre vie maximum qui vous reste, en pour cent, valable pour
+      toute la rotation, soins et régénération compris ; le sacrifice du
+      Châtiment ne la fait pas baisser. La vie maximum vient du build : 50, plus
+      5 par niveau, plus la Vitalité.
+
+  - id: erosion
+    scope: caster
+    max: 100
+    default: 10
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Érosion (%)"
+    note: |
+      Votre taux d'érosion, en pour cent : 10 de base, davantage sous les malus
+      subis. La vie érodée est ce taux appliqué à la vie perdue : à 60 % de vie et
+      20 % d'érosion, 8 % de la vie maximum. Seule la Punition la lit.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Seule la Couronne d'Epines la pose, en zone autour du lanceur, et elle n'a aucun effet dans ce calculateur : la rotation ne la lance pas. ⚠️ Si elle en recoit un, Fulgurance, Transposition et Penitence devront l'exiger absente."
+
+spells:
+  - id: furie
+    dofusdb_id: 12723
+    name: { fr: "Furie", en: "Fury" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air en zone et augmente les dommages finaux du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: furie
+
+  - id: fulgurance
+    dofusdb_id: 12724
+    name: { fr: "Fulgurance", en: "Light Speed" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur sur la première case disponible entre la cible et lui et occasionne des dommages Air aux ennemis en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: supplice
+    dofusdb_id: 12725
+    name: { fr: "Supplice", en: "Torture" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre.
+      Les entités qui attaquent la cible sont soignées d'une partie des dommages occasionnés.
+    assumptions:
+      - "Effet 786, « Soin sur l'attaquant : 20 % des dommages » : c'est un vol de vie, il rend des points de vie au Sacrieur sans changer d'un point ce que la cible encaisse. Ce calculateur ne mesure que les degats portes."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: projection
+    dofusdb_id: 12726
+    name: { fr: "Projection", en: "Projection" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible et occasionne des dommages Eau aux ennemis.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: nervosite
+    dofusdb_id: 12727
+    name: { fr: "Nervosité", en: "Nervousness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau en zone et augmente les chances de Critique du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effet 115, +7 % de Critique sur le lanceur pendant trois tours, compté sur le compteur `nervosite_critique` (`kind: critical_rate`)."
+      - "Un sort déclaré sans critique n'en gagne pas pour autant. Le moteur distingue un taux NUL, qui accepte les points d'une ressource, d'un sort qui ne peut pas critiquer, qui n'en accepte aucun : sans cette distinction, les poisons du Sadida et la Runification du Huppermage se seraient mis à critiquer."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: nervosite_critique
+
+  - id: stase
+    dofusdb_id: 12728
+    name: { fr: "Stase", en: "Stase" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau et réduit les chances de Critique.
+    assumptions:
+      - "Effet 171, -20 % de Critique sur la CIBLE : ce sont les coups critiques de l'adversaire qui baissent. Aucun degat porte n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: afflux
+    dofusdb_id: 12729
+    name: { fr: "Afflux", en: "Influx" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Attire les cibles vers le centre et occasionne des dommages Terre aux ennemis en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: douleur_cuisante
+    dofusdb_id: 12730
+    name: { fr: "Douleur Cuisante", en: "Excruciating Pain" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu en zone et augmente la Puissance du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: douleur_cuisante
+
+  - id: decimation
+    dofusdb_id: 12731
+    name: { fr: "Décimation", en: "Decimation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et augmente les dommages subis par les cibles en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 1163, « Dommages subis x103 % » sur la cible : elle tient de la pose jusqu'au début du prochain tour du lanceur, et un solveur solo n'en profite que sur les lancers qui suivent celui-ci dans le même tour."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: vulnerabilite_decimation
+        at_cap: refresh
+
+  - id: bain_de_sang
+    dofusdb_id: 12732
+    name: { fr: "Bain de Sang", en: "Blood Bath" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente le Tacle du lanceur pour chaque entité dans la zone d'effet et vole de la vie dans l'élément Terre en zone.
+    assumptions:
+      - "Effet 753, +15 Tacle sur le lanceur : le Tacle empeche l'adversaire de fuir, il ne change aucun degat porte."
+      - "Effet 1160 : lance aussi « Bain de Sang », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: assaut
+    dofusdb_id: 12733
+    name: { fr: "Assaut", en: "Assault" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Air aux ennemis.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: absorption
+    dofusdb_id: 12734
+    name: { fr: "Absorption", en: "Absorption" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu et retire de la Puissance aux ennemis ou transfère une partie de la vie du lanceur à l'allié ciblé.
+    assumptions:
+      - "Effet 186, -150 Puissance sur la CIBLE : c'est la puissance de l'adversaire qui tombe, pas celle du lanceur. Ce calculateur ne simule pas ce que l'adversaire inflige."
+      - "Effet 1160 : lance aussi « Absorption », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: attirance
+    dofusdb_id: 12735
+    name: { fr: "Attirance", en: "Attraction" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire la cible.
+      
+      L'attirance est plus importante et la portée maximale du sort est augmentée de 4 si le lanceur est en Souffrance 6 ou plus.
+    lines: []
+    effects: []
+
+  - id: transposition
+    dofusdb_id: 12736
+    name: { fr: "Transposition", en: "Transposition" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de position avec la cible.
+      
+      La portée maximale du sort est augmentée de 4 si le lanceur est en Souffrance 6 ou plus.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: mutilation
+    dofusdb_id: 12737
+    name: { fr: "Mutilation", en: "Mutilation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour augmenter sa Puissance.
+      À chaque début de tour, sacrifie de nouveau une partie de sa vie pour incrémenter son état de Mutilation tant que le sort est actif.
+      
+      Relancer le sort retire les effets appliqués et lance le sort Coagulation :
+      • Applique un bouclier sur le lanceur.
+      • Le bouclier est plus important selon l'état de Mutilation.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Mutilation I » (1229). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Coagulation », « Mutilation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Mutilation II » (1230), lu par Mutilation ; applique « Mutilation III » (1231), lu par Mutilation. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1039 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1048 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 138, +150 Puissance permanents, payés en sacrifiant de la vie à chaque début de tour : la Puissance est comptée, son prix en vie ne l'est pas, ce calculateur ne mesurant que les dégâts portés."
+    effects:
+      - effect: gain
+        resource: mutilation_puissance
+
+  - id: transfusion
+    dofusdb_id: 12738
+    name: { fr: "Transfusion", en: "Transfusion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Occasionne des dommages Neutre selon la vie restante du lanceur aux ennemis et transfère une partie de sa vie aux alliés en zone.
+    assumptions:
+      - "Effet 89, 10 % des PV du lanceur, aux ennemis dans un cercle de rayon 3 : dégâts bruts, que seules les résistances Neutre réduisent, en pour cent puis en fixe : ni Puissance, ni caractéristique, ni multiplicateur, ni critique. La vie est celle du build, à la part que le joueur déclare en « Vie restante (%) »."
+      - "Effet 90 : le sort transfere aussi 10 % de la vie du lanceur a ses allies. C'est un soin, il reste dehors."
+      - "Effet 792 : lance aussi « Souffrance », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: neutral
+        percent_of_life: { percent: 10, of: remaining }
+        area: { shape: C, size: 3, max_targets: 25 }
+    effects:
+      - effect: damage
+
+  - id: sacrifice
+    dofusdb_id: 12739
+    name: { fr: "Sacrifice", en: "Sacrifice" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Intercepte les dommages subis par les alliés en zone.
+      Détruit également les Épées du lanceur dans la zone pour lui transférer une partie de leur vie restante.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Sacrifice » (583). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Sacrifice », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 765 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: folie_sanguinaire
+    dofusdb_id: 12740
+    name: { fr: "Folie Sanguinaire", en: "Bloodthirsty Madness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans le meilleur élément du lanceur en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effet 2828, vol de vie dans le meilleur élément, 24-28 (29-34 en critique) : « vole de la vie dans le meilleur élément du lanceur en zone », sans condition, en déclenchement immédiat sur un cercle de rayon 3. Le vol lui-même n'est pas compté : ce calculateur mesure les dégâts portés."
+      - "Les dommages de zone ne sont pas degressifs, le texte du sort le dit : rien a retirer par cran d'eloignement."
+      - "Ses seuls dégâts sont ceux de l'effet 2828."
+    lines:
+      - best_element: true
+        # Sa zone vient de l'effet 2828, cercle de rayon 3, que l'instantané
+        # porte.
+        critical: [29, 34]
+        normal: [24, 28]
+    effects:
+      - effect: damage
+
+  - id: punition
+    dofusdb_id: 12741
+    name: { fr: "Punition", en: "Retribution" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 25 }
+    note: |
+      Occasionne des dommages dans le meilleur élément du lanceur et des dommages Neutre selon sa vie érodée.
+    assumptions:
+      - "Effet 1118, 35 % des PV érodés du lanceur : dégâts bruts, que seules les résistances Neutre réduisent, en pour cent puis en fixe : ni Puissance, ni caractéristique, ni multiplicateur, ni critique. La vie érodée est le taux d'érosion déclaré appliqué à la vie perdue : à 60 % de vie et 20 % d'érosion, 8 % de la vie maximum."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [37, 42]
+        normal: [31, 35]
+      - element: neutral
+        percent_of_life: { percent: 35, of: eroded }
+    effects:
+      - effect: damage
+
+  - id: berserk
+    dofusdb_id: 12743
+    name: { fr: "Berserk", en: "Berserk" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour lui appliquer l'état Berserk :
+      • Rend le lanceur Intaclable.
+      • Augmente ses dommages aux sorts.
+      • Réduit les soins reçus par le lanceur.
+      
+      L'état Berserk est retiré si le lanceur retourne en Souffrance 5 ou moins ou relance le sort.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Berserk », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Berserk » (1803), lu par Berserk. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 333 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1048 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2812 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: epee_vorace
+    dofusdb_id: 12744
+    name: { fr: "Épée Vorace", en: "Voracious Sword" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Épée Vorace maîtrisable qui peut voler de la vie dans l'élément Neutre.
+    lines: []
+    effects: []
+
+  - id: condensation
+    dofusdb_id: 12745
+    name: { fr: "Condensation", en: "Condensation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et attire les cibles en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Condensation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ravage
+    dofusdb_id: 12746
+    name: { fr: "Ravage", en: "Ravages" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible et occasionne des dommages Terre aux ennemis.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: immolation
+    dofusdb_id: 12747
+    name: { fr: "Immolation", en: "Immolation" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour occasionner des dommages Feu en zone.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 1048, -10 % PV sur le LANCEUR : c'est le prix que le Sacrieur paie de sa vie. Ce calculateur ne simule pas les points de vie, et cette perte ne change pas d'un point ce que le sort inflige. Elle borne en revanche combien de fois on peut se le permettre, ce qui releve du joueur."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: hemorragie
+    dofusdb_id: 12748
+    name: { fr: "Hémorragie", en: "Hemorrhage" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par la cible et vole de la vie dans l'élément Air.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: aversion
+    dofusdb_id: 12749
+    name: { fr: "Aversion", en: "Aversion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles depuis le centre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: hecatombe
+    dofusdb_id: 12750
+    name: { fr: "Hécatombe", en: "Slaughter" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par les cibles et vole de la vie dans l'élément Feu en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: entaille
+    dofusdb_id: 12751
+    name: { fr: "Entaille", en: "Gash" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour occasionner des dommages Terre.
+    assumptions:
+      - "Effet 1048, -10 % PV sur le LANCEUR : c'est le prix que le Sacrieur paie de sa vie. Ce calculateur ne simule pas les points de vie, et cette perte ne change pas d'un point ce que le sort inflige. Elle borne en revanche combien de fois on peut se le permettre, ce qui releve du joueur."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: carnage
+    dofusdb_id: 12752
+    name: { fr: "Carnage", en: "Carnage" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour occasionner des dommages Air en zone.
+    assumptions:
+      - "Effet 1048, -10 % PV sur le LANCEUR : c'est le prix que le Sacrieur paie de sa vie. Ce calculateur ne simule pas les points de vie, et cette perte ne change pas d'un point ce que le sort inflige. Elle borne en revanche combien de fois on peut se le permettre, ce qui releve du joueur."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: desolation
+    dofusdb_id: 12753
+    name: { fr: "Désolation", en: "Desolation" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Air et retire des PM en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: liens_du_sang
+    dofusdb_id: 12754
+    name: { fr: "Liens du Sang", en: "Blood Ties" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rapproche le lanceur vers la cible et applique l'état Liens du Sang sur l'ennemi ciblé :
+      • Rapproche le lanceur vers l'ennemi ciblé si le lanceur subit des dommages ennemis.
+      
+      Le rapprochement immédiat est plus important et la portée maximale du sort est augmentée de 4 si le lanceur est en Souffrance 6 ou plus.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Liens du Sang » (676). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Liens du Sang », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: dechainement
+    dofusdb_id: 12755
+    name: { fr: "Déchaînement", en: "Clobbering" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour occasionner des dommages Eau en zone.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 1048, -10 % PV sur le LANCEUR : c'est le prix que le Sacrieur paie de sa vie. Ce calculateur ne simule pas les points de vie, et cette perte ne change pas d'un point ce que le sort inflige. Elle borne en revanche combien de fois on peut se le permettre, ce qui releve du joueur."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: hostilite
+    dofusdb_id: 12756
+    name: { fr: "Hostilité", en: "Hostility" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: dissolution
+    dofusdb_id: 12757
+    name: { fr: "Dissolution", en: "Dissolution" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau et retire de la Fuite en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 754, -30 Fuite sur la cible : la Fuite decide si l'adversaire peut se degager, jamais ce qu'il encaisse."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: perfusion
+    dofusdb_id: 12758
+    name: { fr: "Perfusion", en: "Perfusion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Transfère une partie de la vie du lanceur à ses alliés en zone et leur applique l'état Perfusion :
+      • Les alliés dans l'état Perfusion sont soignés d'une partie des dommages occasionnés au lanceur.
+      
+      Le transfert n'est pas appliqué si le lanceur est en Souffrance 6 ou plus.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Perfusion » (636). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Perfusion », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 2020 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: libation
+    dofusdb_id: 12759
+    name: { fr: "Libation", en: "Libation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour réduire la durée de ses effets et le soigner à la fin de son prochain tour.
+      Les soins sont plus importants selon la Souffrance.
+    assumptions:
+      - "Effet 792 : lance aussi « Libation », « Souffrance », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    open_questions:
+      - "Effet 1048 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: chatiment
+    dofusdb_id: 12760
+    name: { fr: "Châtiment", en: "Punishment" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Occasionne des dommages Neutre aux ennemis en zone selon la vie restante du lanceur et en sacrifiant une partie de sa vie.
+    assumptions:
+      - "Effet 89, 15 % des PV du lanceur, en croix sans centre de quatre cases : dégâts bruts, que seules les résistances Neutre réduisent, en pour cent puis en fixe : ni Puissance, ni caractéristique, ni multiplicateur, ni critique. La vie est celle du build, à la part que le joueur déclare en « Vie restante (%) »."
+      - "Effet 1048, « - 15 % PV », permanent sur le lanceur : le sacrifice que le texte annonce. Non suivi : la vie restante déclarée vaut pour toute la rotation, et le sort ne repart que tous les trois tours."
+    lines:
+      - element: neutral
+        percent_of_life: { percent: 15, of: remaining }
+    effects:
+      - effect: damage
+
+  - id: couronne_d_epines
+    dofusdb_id: 12761
+    name: { fr: "Couronne d'Épines", en: "Thorn Crown" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Pesanteur sur les cibles en zone, un bouclier et l'état Couronne d'Épines sur le lanceur :
+      • Renvoie 100% des dommages subis en mêlée aux ennemis à son contact.
+      
+      Applique un bouclier supplémentaire sur le lanceur pour chaque ennemi dans la zone d'effet s'il est en Souffrance 6 ou plus.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7) ; applique « Couronne d'Épines » (4197). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Couronne d'Épines », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1039 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1223 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: pacte_de_sang
+    dofusdb_id: 12762
+    name: { fr: "Pacte de Sang", en: "Blood Pact" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Vitalité et la Puissance du lanceur.
+    assumptions:
+      - "Effet 138, +100 Puissance au lanceur pendant trois tours, sur l'état `pacte_de_sang_puissance` : la cible est « C », le lanceur, sans allié à cibler ni condition. La Vitalité n'est pas comptée, ce calculateur mesurant les dégâts et non les points de vie."
+      - "Effet 792 : lance aussi « Souffrance », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      - effect: gain
+        resource: pacte_de_sang_puissance
+
+  - id: fluctuation
+    dofusdb_id: 12763
+    name: { fr: "Fluctuation", en: "Fluctuation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur et ses Épées Intaclables et augmente leurs PM.
+      
+      Les effets sont plus importants si le lanceur est en Souffrance 6 ou plus.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    effects: []
+
+  - id: penitence
+    dofusdb_id: 12764
+    name: { fr: "Pénitence", en: "Penitence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de position avec la cible et lui applique l'état Pénitence :
+      • Sur un allié : échange les positions de la cible et du lanceur si elle subit des dommages.
+      • Sur un ennemi : échange les positions de la cible et du lanceur s'il subit des dommages.
+      • Sur le lanceur : échange de position ses attaquants.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pénitence » (5188) ; applique « Pénitence (ennemi) » (6037). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Pénitence », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: epee_dansante
+    dofusdb_id: 12765
+    name: { fr: "Épée Dansante", en: "Dancing Sword" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Épée Dansante maîtrisable qui peut attirer, échanger de positions et occasionner des dommages Neutre.
+    lines: []
+    effects: []
+
+  - id: rituel_de_jashin
+    dofusdb_id: 14000
+    name: { fr: "Rituel de Jashin", en: "Jashin Ritual" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Rituel de Jashin sur l'ennemi ciblé et pose un glyphe-aura sous le lanceur qui lui applique l'état et le rend Intaclable.
+      Tant que le lanceur et la cible sont dans cet état, renvoie la totalité des dommages subis par le lanceur à la cible, et inversement.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Rituel de Jashin » (1241) ; applique « Rituel de Jashin ennemi » (5242). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Rituel de Jashin », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: pilori
+    dofusdb_id: 14011
+    name: { fr: "Pilori", en: "Pillory" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur l'allié ciblé et applique les états Indéplaçable et Pilori sur la cible :
+      • Retire les effets du sort si la cible subit des dommages en mêlée et soigne le lanceur.
+      
+      Les effets ne peuvent pas être retirés si le lanceur est en Souffrance 6 ou plus.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Indéplaçable » (97) ; applique « Pilori » (4199). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Pilori », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1039 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []

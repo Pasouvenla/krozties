@@ -1,0 +1,2185 @@
+{
+ "source": "dofusbook.net /api/spells/class",
+ "breed": 4,
+ "sorts": [
+  {
+   "id": 12902,
+   "n": "Truanderie",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "dt",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12932,
+   "n": "Chausse-trappe",
+   "cu": 5,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       28,
+       32,
+       0
+      ],
+      [
+       "dt",
+       1,
+       34,
+       38,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "dt",
+       0,
+       36,
+       40,
+       0
+      ],
+      [
+       "dt",
+       1,
+       42,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "dt",
+       0,
+       44,
+       48,
+       0
+      ],
+      [
+       "dt",
+       1,
+       50,
+       54,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "dt",
+       0,
+       52,
+       56,
+       0
+      ],
+      [
+       "dt",
+       1,
+       58,
+       62,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "dt",
+       0,
+       60,
+       64,
+       0
+      ],
+      [
+       "dt",
+       1,
+       66,
+       70,
+       0
+      ]
+     ]
+    ],
+    [
+     "5 charges",
+     0,
+     [
+      [
+       "dt",
+       0,
+       68,
+       72,
+       0
+      ],
+      [
+       "dt",
+       1,
+       74,
+       78,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12904,
+   "n": "Sournoiserie",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       28,
+       31,
+       0
+      ],
+      [
+       "df",
+       1,
+       34,
+       37,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi / Allié",
+     0,
+     [
+      [
+       "pou",
+       0,
+       3,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12935,
+   "n": "Coupe-gorge",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "df",
+       1,
+       40,
+       44,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12907,
+   "n": "Arsenic",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi - Début de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       16,
+       18,
+       2
+      ],
+      [
+       "da",
+       1,
+       19,
+       22,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12933,
+   "n": "Toxines",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi - Fin de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       7,
+       9,
+       2
+      ]
+     ]
+    ],
+    [
+     "1 tour avec cible sous poison",
+     0,
+     [
+      [
+       "da",
+       0,
+       13,
+       15,
+       2
+      ]
+     ]
+    ],
+    [
+     "2 tours avec cible sous poison",
+     0,
+     [
+      [
+       "da",
+       0,
+       19,
+       21,
+       2
+      ]
+     ]
+    ],
+    [
+     "3 tours avec cible sous poison",
+     0,
+     [
+      [
+       "da",
+       0,
+       25,
+       27,
+       2
+      ]
+     ]
+    ],
+    [
+     "4 tours avec cible sous poison",
+     0,
+     [
+      [
+       "da",
+       0,
+       31,
+       33,
+       2
+      ]
+     ]
+    ],
+    [
+     "5 tours avec cible sous poison",
+     0,
+     [
+      [
+       "da",
+       0,
+       37,
+       39,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12919,
+   "n": "Cruauté",
+   "cu": null,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "de",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "de",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12922,
+   "n": "Poisse",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "ve",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12913,
+   "n": "Invisibilité",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 12930,
+   "n": "Brume",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 12915,
+   "n": "Double",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 12936,
+   "n": "Comploteur",
+   "cu": 5,
+   "g": [
+    [
+     "Allié / Ennemi - Dans 3 tours",
+     0,
+     [
+      [
+       "dme",
+       0,
+       26,
+       30,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "dme",
+       0,
+       34,
+       38,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "dme",
+       0,
+       42,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "dme",
+       0,
+       50,
+       54,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "dme",
+       0,
+       58,
+       62,
+       0
+      ]
+     ]
+    ],
+    [
+     "5 charges",
+     0,
+     [
+      [
+       "dme",
+       0,
+       66,
+       70,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12906,
+   "n": "Piège Sournois",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       17,
+       19,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12939,
+   "n": "Guet-apens",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "ve",
+       1,
+       27,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12916,
+   "n": "Piège Fangeux",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pie",
+       0,
+       33,
+       37,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12943,
+   "n": "Épidémie",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi - Fin de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       36,
+       40,
+       1
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Fin de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       36,
+       40,
+       1
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12948,
+   "n": "Piège Funeste",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pit",
+       0,
+       28,
+       32,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "pit",
+       0,
+       48,
+       52,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "pit",
+       0,
+       68,
+       72,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "pit",
+       0,
+       88,
+       92,
+       0
+      ]
+     ]
+    ],
+    [
+     "5 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "pit",
+       0,
+       108,
+       112,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 14742,
+   "n": "Effraction",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       15,
+       17,
+       0
+      ],
+      [
+       "df",
+       1,
+       19,
+       21,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12914,
+   "n": "Piège Répulsif",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pia",
+       0,
+       14,
+       17,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12920,
+   "n": "Piège Effroyable",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pit",
+       0,
+       20,
+       22,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12910,
+   "n": "Piège d'Immobilisation",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 14314,
+   "n": "Fosse Commune",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 12938,
+   "n": "Extorsion",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vt",
+       0,
+       27,
+       30,
+       0
+      ],
+      [
+       "vt",
+       1,
+       32,
+       36,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12947,
+   "n": "Perquisition",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       13,
+       15,
+       0
+      ],
+      [
+       "df",
+       1,
+       16,
+       18,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Lanceur sans Double invoqué",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Invocateur + ses invocations - Cible sous Double - Lanceur sous Double invoqué",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12911,
+   "n": "Arnaque",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       25,
+       28,
+       0
+      ],
+      [
+       "va",
+       1,
+       30,
+       34,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12937,
+   "n": "Larcin",
+   "cu": 2,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "de",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "de",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12934,
+   "n": "Pillage",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12917,
+   "n": "Attaque Mortelle",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi - Cible avec PDV >= 50%",
+     0,
+     [
+      [
+       "dt",
+       0,
+       43,
+       48,
+       0
+      ],
+      [
+       "dt",
+       1,
+       52,
+       58,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Cible avec PDV < 50%",
+     0,
+     [
+      [
+       "dt",
+       0,
+       54,
+       60,
+       0
+      ],
+      [
+       "dt",
+       1,
+       65,
+       72,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12905,
+   "n": "Fourberie",
+   "cu": 2,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "vf",
+       0,
+       27,
+       31,
+       0
+      ],
+      [
+       "vf",
+       1,
+       32,
+       37,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12940,
+   "n": "Injection Toxique",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi - Début de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       28,
+       32,
+       3
+      ],
+      [
+       "da",
+       1,
+       34,
+       38,
+       3
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12908,
+   "n": "Peur",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 12945,
+   "n": "Méprise",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi / autour du lanceur / son invocation",
+     0,
+     [
+      [
+       "dn",
+       0,
+       1,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12942,
+   "n": "Piège de Dérive",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       17,
+       19,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12918,
+   "n": "Piège Insidieux",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi - Fin de tour",
+     0,
+     [
+      [
+       "pia",
+       0,
+       8,
+       9,
+       1
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pia",
+       0,
+       8,
+       9,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12931,
+   "n": "Piège Scélérat",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pie",
+       0,
+       17,
+       19,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12941,
+   "n": "Piège à Fragmentation",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       47,
+       51,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       27,
+       31,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       37,
+       41,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pif",
+       0,
+       47,
+       51,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12903,
+   "n": "Concentration de Chakra",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi / autour du lanceur / son invocation",
+     0,
+     [
+      [
+       "vme",
+       0,
+       12,
+       0,
+       1
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 14741,
+   "n": "Manigance",
+   "cu": 2,
+   "g": []
+  },
+  {
+   "id": 12921,
+   "n": "Piège Mortel",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi - Cible avec PDV >= 50%",
+     0,
+     [
+      [
+       "pit",
+       0,
+       39,
+       43,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Cible avec PDV < 50%",
+     0,
+     [
+      [
+       "pit",
+       0,
+       49,
+       54,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12950,
+   "n": "Calamité",
+   "cu": 4,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "pie",
+       0,
+       40,
+       44,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12909,
+   "n": "Fourvoiement",
+   "cu": 2,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "da",
+       0,
+       32,
+       36,
+       0
+      ],
+      [
+       "da",
+       1,
+       38,
+       43,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12949,
+   "n": "Perfidie",
+   "cu": 4,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       56,
+       60,
+       0
+      ],
+      [
+       "dt",
+       1,
+       62,
+       66,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 14312,
+   "n": "Dérobade",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 14313,
+   "n": "Marque Mortuaire",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi / autour du lanceur / son invocation",
+     0,
+     [
+      [
+       "dn",
+       0,
+       1,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 368,
+   "n": "Libération",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       4,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24029,
+   "n": "Attraction",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 370,
+   "n": "Invocation de l'Arakne",
+   "cu": null,
+   "g": [
+    [
+     "Coude boule - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       11,
+       15,
+       0
+      ],
+      [
+       "dt",
+       1,
+       16,
+       20,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24027,
+   "n": "Invocation de l'Arakne Majeure",
+   "cu": null,
+   "g": [
+    [
+     "Frapperie - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       20,
+       0
+      ],
+      [
+       "dt",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 18646,
+   "n": "Maîtrise des Invocations",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 22312,
+   "n": "Liberté des Invocations",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 367,
+   "n": "Cawotte Savouweuse",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       4,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24022,
+   "n": "Cawotte Chawnue",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 369,
+   "n": "Foudroiement de Grunob",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "df",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24017,
+   "n": "Leçon de Grunob",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "df",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 373,
+   "n": "Invocation de Chaferfu",
+   "cu": null,
+   "g": [
+    [
+     "Embrochée - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       25,
+       0
+      ],
+      [
+       "dt",
+       1,
+       21,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24028,
+   "n": "Invocation de Chaferfu Lancier",
+   "cu": null,
+   "g": [
+    [
+     "Coup du Chafer - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       23,
+       0
+      ],
+      [
+       "dt",
+       1,
+       35,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 3506,
+   "n": "Maîtrise d'Arme",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 24030,
+   "n": "Maladresse d'Arme",
+   "cu": 3,
+   "g": []
+  },
+  {
+   "id": 24006,
+   "n": "Flamèche",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dpe",
+       0,
+       8,
+       10,
+       0
+      ],
+      [
+       "dpe",
+       1,
+       11,
+       13,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 350,
+   "n": "Flamiche",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dme",
+       0,
+       8,
+       10,
+       0
+      ],
+      [
+       "dme",
+       1,
+       11,
+       13,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24015,
+   "n": "Kannibulle",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "de",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24016,
+   "n": "Ebilition",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "de",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24011,
+   "n": "Mantiscroc",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       22,
+       24,
+       0
+      ],
+      [
+       "dt",
+       1,
+       26,
+       29,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24013,
+   "n": "Dard Moklès",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       24,
+       27,
+       0
+      ],
+      [
+       "dt",
+       1,
+       29,
+       32,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 366,
+   "n": "Marteau de Moon",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "da",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24010,
+   "n": "Marteau de Darkli Moon",
+   "cu": 4,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       19,
+       22,
+       0
+      ],
+      [
+       "da",
+       1,
+       23,
+       26,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 364,
+   "n": "Boomerang Perfide",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vt",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vt",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vf",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vf",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "va",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24007,
+   "n": "Boomerang de Diamantine",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "vt",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vt",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "vf",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vf",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "va",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 6149,
+   "n": "Le Singe et la Lune",
+   "cu": null,
+   "g": [
+    [
+     "Lanceur",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       10,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 11352,
+   "n": "Appétit de Crocobur",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vme",
+       0,
+       15,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12505,
+   "n": "Toxicité du Scorbute",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dme",
+       0,
+       8,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 15975,
+   "n": "Nuée Pestilentielle",
+   "cu": null,
+   "g": [
+    [
+     "Tous sauf lanceur - Début de tour",
+     0,
+     [
+      [
+       "dme",
+       0,
+       18,
+       0,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 18629,
+   "n": "Noir Ébène",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "de",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "df",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "dn",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 28516,
+   "n": "Garde Champêtre",
+   "cu": null,
+   "g": [
+    [
+     "Lanceur - Cible sans Dofus Sylvestre - Fin de tour",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       8,
+       0,
+       63
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 31607,
+   "n": "Éclosion Explosive",
+   "cu": 10,
+   "g": [
+    [
+     "Ennemi - Lanceur sans Éclosion II",
+     0,
+     [
+      [
+       "dme",
+       0,
+       10,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  }
+ ]
+}

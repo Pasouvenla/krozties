@@ -1,0 +1,912 @@
+# Steamer.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: steamer
+name: { fr: "Steamer", en: "Steamer" }
+
+resources:
+  - id: tourelles_au_contact
+    scope: caster
+    max: 1
+    default: 0
+    declared_by_player: true
+    player_label: "Vos tourelles sont au contact de la cible"
+    note: |
+      Cochez si vous posez vos tourelles au contact de la cible : elles sont
+      alors dans la zone de vos sorts. Vapor et Turbine les font évoluer, le
+      Sabotage frappe plus fort pour chacune qui a évolué puis la rétrograde,
+      Ancrage et Gouvernail vous rendent 1 PA.
+
+  - id: poussee_subie
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible subit des dommages de poussée à chaque tour"
+    note: |
+      À cocher si vous poussez la cible contre un obstacle à chaque tour : elle
+      subit des dommages de poussée sans bouger, ce que la Flibuste exploite.
+
+  - id: flibuste
+    # Sans `dofusdb_source` : ses chiffres sont la SECONDE ligne de son sort,
+    # que l'appariement par position confondrait avec la premiere. Le
+    # controle des magnitudes le rattache au sort de meme identifiant.
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      # La poussee d'un autre, entre deux tours : seulement si le joueur la
+      # declare.
+      - trigger: turn_start
+        requires: { kind: caster_has, resource: poussee_subie }
+        # Sous-sort 31025, grade 2 : 1 % de critique de base, et non les 15 %
+        # du sort.
+        crit_base_percent: 1
+        lines:
+          - element: air
+            area: { shape: G, size: 1, max_targets: 9 }
+            critical: [28, 30]
+            normal: [23, 25]
+      # La poussée des sorts du Steamer lui-même, quand le joueur coche « Vos
+      # poussées butent contre un obstacle ».
+      - trigger: push_damage
+        crit_base_percent: 1
+        lines:
+          - element: air
+            area: { shape: G, size: 1, max_targets: 9 }
+            critical: [28, 30]
+            normal: [23, 25]
+    note: |
+      L'etat Flibuste : 23-25 Air aux ennemis en zone quand la cible subit des
+      dommages de poussee, puis il se retire. Deux Flibustes dans le meme tour
+      rafraichissent le meme etat, qu'une seule poussee consomme.
+
+      Deux poussees le consomment. Celle d'un sort du Steamer, dans le tour,
+      si ses poussees butent contre un obstacle. Et celle que le joueur declare
+      subie par la cible a chaque tour, comptee une fois au debut du tour
+      suivant si l'etat est encore la.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Aucun sort du Steamer ne la pose."
+
+spells:
+  - id: scaphandre
+    dofusdb_id: 13819
+    name: { fr: "Scaphandre", en: "Scaphander" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur et les Tourelles et le rend Intaclable.
+      Le bouclier est plus important sur le lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: maree
+    dofusdb_id: 13820
+    name: { fr: "Marée", en: "Tide" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Eau aux ennemis.
+      
+      Sur le lanceur : modifie l'état de Marée et rembourse le coût en PA et l'utilisation du sort.
+      Cet effet peut être déclenché 2 fois maximum par tour.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Marée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Deux modes de lancer. Sur un ennemi, le sort échange les positions et frappe en Eau, ce qui est compté ici. Sur le lanceur, il retourne la Marée, se rembourse ses PA et son utilisation, et peut repartir deux fois par tour au plus : ce mode ne frappe pas, et la Marée ne commande que des poussées, des attirances, des portées et des lignes de vue. Il n'est donc pas écrit, et le total reste juste."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ressac
+    dofusdb_id: 13821
+    name: { fr: "Ressac", en: "Backwash" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse la cible.
+      
+      Rend 2 PA au lanceur et la poussée ne fait pas de dommages si le sort est lancé sur une Tourelle.
+    assumptions:
+      - "Effet 1103, « Repousse de N cases SANS dommages » : la poussee de ce sort ne porte explicitement aucun degat, la donnee du jeu le dit dans le nom meme de l'effet. Seul le placement change."
+      - "Effet 1160 : lance aussi « Ressac », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: courant
+    dofusdb_id: 13822
+    name: { fr: "Courant", en: "Torrent" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et déplace la cible selon la Marée :
+      • Marée Basse : attire la cible.
+      • Marée Haute : repousse la cible.
+      
+      Une même cible ne peut être affectée qu'une seule fois par le déplacement d'une Marée dans le tour en cours.
+    assumptions:
+      - "Effets 950 et 951, etats « Courant Bas » (5306) et « Courant Haut » (5305) : c'est la Maree, lue par le Courant lui-meme pour decider s'il ATTIRE ou REPOUSSE la cible. Les deux font les memes degats, seul le deplacement change, et ce calculateur ne simule pas la grille."
+      - "Effet 1160 : lance aussi « <color=#E6893D>Marée Basse :</color> », « <color=#E6893D>Marée Haute :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: flibuste
+    dofusdb_id: 13823
+    name: { fr: "Flibuste", en: "Pilfer" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique l'état Flibuste sur l'ennemi ciblé :
+      • Occasionne des dommages Air aux ennemis en zone et retire l'état si la cible subit des dommages de poussée.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Flibuste » (5383). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Le coup de l'état Flibuste, 23-25 Air en zone, part quand la cible subit des dommages de poussée, à 1 % de critique de base comme son sous-sort : quand un sort du Steamer la pousse contre un obstacle (poussées déclarées bloquées), ou au début du tour suivant si le joueur déclare qu'elle subit une poussée à chaque tour."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: flibuste
+
+  - id: foene
+    dofusdb_id: 13824
+    name: { fr: "Foène", en: "Trident" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ecume
+    dofusdb_id: 13825
+    name: { fr: "Écume", en: "Froth" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et déplace les cibles selon la Marée en zone :
+      • Marée Basse : attire les cibles vers le lanceur.
+      • Marée Haute : repousse les cibles depuis le lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Écume » (5314). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « <color=#E6893D>Marée Basse :</color> », « <color=#E6893D>Marée Haute :</color> », « Écume », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: vapor
+    dofusdb_id: 13826
+    name: { fr: "Vapor", en: "Vapour" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles depuis le centre en zone.
+      
+      Évolue également les Tourelles dans la zone d'effet.
+    assumptions:
+      - "Effets 950/951 : ce sort retire « Évolution en cours » (6095). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : « +1 Évolution » sur les tourelles de la zone, compté par la Rotation quand le joueur déclare ses tourelles au contact de la cible (`tourelles_au_contact`)."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ancrage
+    dofusdb_id: 13827
+    name: { fr: "Ancrage", en: "Anchor" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PM aux ennemis en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Rend 1 PA au lanceur si une Tourelle est dans la zone d'effet.
+    assumptions:
+      - "Rend 1 PA quand une tourelle est dans la zone : compté par la Rotation quand le joueur déclare ses tourelles au contact de la cible (`tourelles_au_contact`)."
+      - "Effet 2160 : lance aussi « Ancrage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: gouvernail
+    dofusdb_id: 13828
+    name: { fr: "Gouvernail", en: "Rudder" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire les cibles jusqu'au centre en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Rend 1 PA au lanceur si une Tourelle est dans la zone d'effet.
+    assumptions:
+      - "Rend 1 PA quand une tourelle est dans la zone : compté par la Rotation quand le joueur déclare ses tourelles au contact de la cible (`tourelles_au_contact`)."
+      - "Effet 2160 : lance aussi « Gouvernail », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: harponneuse
+    dofusdb_id: 13829
+    name: { fr: "Harponneuse", en: "Harpooner" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle offensive qui vole de la vie dans le meilleur élément du lanceur.
+    assumptions:
+      - "La tourelle joue son tour dans la Rotation : la meilleure combinaison de ses attaques à son palier d'Évolution, à la part transmise des caractéristiques, dès le tour qui suit sa pose. Une seule à la fois."
+      - "Effet 1160 : lance aussi « Évolutions Harponneuse », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: gardienne
+    dofusdb_id: 13830
+    name: { fr: "Gardienne", en: "Lifesaver" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle défensive qui soigne.
+    assumptions:
+      - "Effet 1160 : lance aussi « Évolutions Gardienne », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: tactirelle
+    dofusdb_id: 13831
+    name: { fr: "Tactirelle", en: "Tacturret" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle tactique qui repousse les cibles en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Évolutions Tactirelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: evolution
+    dofusdb_id: 13832
+    name: { fr: "Évolution", en: "Evolution" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Évolue et soigne une Tourelle.
+      Les soins sont plus importants sur une Tourelle qui évolue.
+      
+      Sur un allié : augmente sa Puissance.
+    assumptions:
+      - "Une tourelle offensive en jeu (Harponneuse, Foreuse) monte d'un palier, de l'Évolution I à la III, une fois par tour (« Évolution bloquée », 6094). Un mode par tourelle offensive du deck. Les soins, et la Puissance donnée à un allié, ne servent pas le lanceur seul."
+      - "Effet 1160 : « Évolution II » et « Évolution III » sont les paliers de la tourelle, comptes par la Rotation (`tourelle_<sort>`)."
+    lines: []
+    effects: []
+
+  - id: plongee
+    dofusdb_id: 13833
+    name: { fr: "Plongée", en: "Dive" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Active les sorts spéciaux des Tourelles tactiques du lanceur sur la cible.
+      
+      Retire des PM aux ennemis.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Activation tactique » (132) ; retire « Activation tactique » (132). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Activation Steamer », « Spécial : Mortier », « Spécial : Écoutille », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: aiguillage
+    dofusdb_id: 13834
+    name: { fr: "Aiguillage", en: "Signal Box" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire la cible vers la Tourelle la plus proche dans une croix de taille 5 autour d'elle.
+      Si la cible termine son déplacement au contact d'une Tourelle, cette dernière la téléporte symétriquement et lui réapplique les effets du sort.
+    assumptions:
+      - "Effet 792 : lance aussi « Aiguillage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: embuscade
+    dofusdb_id: 13835
+    name: { fr: "Embuscade", en: "Ambush" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Active les sorts spéciaux des Tourelles offensives du lanceur sur la cible.
+      
+      Occasionne des dommages Eau, Terre, Air et Feu.
+    assumptions:
+      - "Effets 1160 et 2794 : chaque tourelle offensive à l'Évolution III lance son sort spécial sur la cible (« Activation Steamer », cible « E135 ») : l'Armada de la Harponneuse, l'Excavation de la Foreuse, au grade du rang de la tourelle, dans le meilleur élément, sans critique, à la part transmise des caractéristiques."
+      - "Effets 950/951 : ce sort applique « Activation offensive » (130) ; retire « Activation offensive » (130). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+      - element: earth
+        critical: unknown
+        normal: unknown
+      - element: fire
+        critical: unknown
+        normal: unknown
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: secourisme
+    dofusdb_id: 13836
+    name: { fr: "Secourisme", en: "First Aid" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Active les sorts spéciaux des Tourelles défensives du lanceur sur l'allié ciblé.
+      
+      Soigne la cible dans le meilleur élément du lanceur.
+    assumptions:
+      - "Effet 3002, soins dans le meilleur element : ce calculateur ne mesure que les degats."
+      - "Effets 950/951 : ce sort applique « Activation défensive » (131) ; retire « Activation défensive » (131). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Activation Steamer », « Spécial : Décompression », « Spécial : Intervention », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: longue_vue
+    dofusdb_id: 13837
+    name: { fr: "Longue-vue", en: "Spyglass" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et applique des effets selon la Marée :
+      • Marée Basse : augmente la Portée du lanceur et de l'allié ciblé.
+      • Marée Haute : retire des PM aux ennemis.
+    assumptions:
+      - "Effet 1160 : lance aussi « <color=#E6893D>Marée Basse :</color> », « <color=#E6893D>Marée Haute :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: aspiration
+    dofusdb_id: 13838
+    name: { fr: "Aspiration", en: "Grapnel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rapproche le lanceur vers l'allié ciblé.
+      Le rapprochement est plus important sur les Tourelles.
+    lines: []
+    effects: []
+
+  - id: brise_l_ame
+    dofusdb_id: 13849
+    name: { fr: "Brise l'Âme", en: "Breakwater" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Automatique sur une Tourelle et la soigne :
+      • La Tourelle intercepte les dommages subis en mêlée par les alliés à son contact au lancer du sort.
+      • Si un des alliés subit des dommages à distance, la Tourelle s'active en utilisant son sort automatique sur l'allié ou sur son attaquant.
+      
+      L'activation peut être déclenchée qu'une seule fois par cible par tour et si l'allié ou l'attaquant est à portée de la Tourelle.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Automatique » (5294). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Brise l'Âme », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 765 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: amarrage
+    dofusdb_id: 13857
+    name: { fr: "Amarrage", en: "Mooring" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire la cible.
+      
+      Rend 1 PA au lanceur si le sort est lancé sur une Tourelle.
+    assumptions:
+      - "Effet 1160 : lance aussi « Amarrage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sabotage
+    dofusdb_id: 13858
+    name: { fr: "Sabotage", en: "Hoofbeat" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des Dommages aux ennemis en zone.
+      Les dommages du sort sont augmentés pour chaque Tourelle évoluée dans la zone avant d'appliquer les effets.
+      
+      Rétrograde les Tourelles touchées pour réduire leur temps de relance.
+    assumptions:
+      - "Tourelles évoluées dans la zone : +9 de base par tourelle offensive à l'Évolution II ou III, quand le joueur déclare ses tourelles au contact de la cible (`tourelles_au_contact`), puis chacune perd un palier, jamais sous l'Évolution I. Quatre paliers : 22-25 nu, 31-34 à une tourelle, jusqu'à 49-52 à trois."
+      - "Effet 406, la relance des tourelles retrogradees qui se reduit : non comptee, la Rotation ne repose pas une tourelle encore en jeu."
+      - "Effet 145, -N Dommages sur la cible : ce sont les DOMMAGES DE L'ADVERSAIRE qui baissent, pas ceux du lanceur. Aucun degat porte n'en depend."
+      - "Effet 1160 : lance aussi « -1 Évolution », « Sabotage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: chalutier
+    dofusdb_id: 13859
+    name: { fr: "Chalutier", en: "Trawler" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle tactique qui attire les cibles en zone autour d'elle et qui peut tacler.
+    assumptions:
+      - "Effet 1160 : lance aussi « Évolutions Chalutier », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: boussole
+    dofusdb_id: 13860
+    name: { fr: "Boussole", en: "Compass" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à une Tourelle.
+      
+      Sur une case adjacente à une Tourelle : téléporte le lanceur sur la case ciblée ou échange de position avec la cible.
+    assumptions:
+      - "Effets 1160/2160/2960 : lance aussi « Boussole », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: harmattan
+    dofusdb_id: 13861
+    name: { fr: "Harmattan", en: "Harmattan" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Repousse la cible et occasionne des dommages Air aux ennemis.
+      Rebondit sur les entités au contact de la cible.
+    assumptions:
+      - "Effet 1160 : le sort REBONDIT « sur les entites au contact de la cible », pour la meme fourchette Air 31-35. Le rebond frappe des entites AUTRES que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien. C'est le reglage « Ennemis touches » qui le fait compter."
+      - "Effets 950/951 : ce sort retire « Harmattan » (5309). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: assistance
+    dofusdb_id: 13862
+    name: { fr: "Assistance", en: "Assistance" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte l'allié ciblé sur la première case disponible entre le lanceur et lui. 
+      Soigne également la cible si c'est une Tourelle.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Assistance » (2230) ; retire « Assistance » (2230). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Assistance », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: blindage
+    dofusdb_id: 13863
+    name: { fr: "Blindage", en: "Armour-Plating" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur l'allié ciblé et le rend Indéplaçable.
+      Le bouclier est plus important sur les Tourelles.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Indéplaçable » (97). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: foreuse
+    dofusdb_id: 13864
+    name: { fr: "Foreuse", en: "Drill" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle offensive qui vole de la vie dans le meilleur élément du lanceur.
+    assumptions:
+      - "La tourelle joue son tour dans la Rotation : la meilleure combinaison de ses attaques à son palier d'Évolution, à la part transmise des caractéristiques, dès le tour qui suit sa pose. Une seule à la fois."
+      - "Effet 1160 : lance aussi « Évolutions Foreuse », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: torpille
+    dofusdb_id: 13865
+    name: { fr: "Torpille", en: "Torpedo" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse la cible.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: corrosion
+    dofusdb_id: 13866
+    name: { fr: "Corrosion", en: "Corrosion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et réduit les Résistances Poussée.
+    assumptions:
+      - "Effet 417, -40 Resistance Poussee : la poussee n'est pas un element de degats et aucun sort n'en tire de dommages ici."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: soupape
+    dofusdb_id: 13867
+    name: { fr: "Soupape", en: "Valve" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et réduit les chances de Critique.
+      
+      Sur une Tourelle : appliquer les effets sur les ennemis en zone et la rétrograde pour réduire son temps de relance.
+      • Évolution III : cercle de taille 3.
+      • Évolution II : cercle de taille 2.
+      • Évolution I : cercle de taille 1. Le temps de relance de la Tourelle n'est pas réduit.
+    assumptions:
+      - "Effet 1160 : trois variantes du meme sous-sort, Feu 13-15 chacune, conditionnees aux etats 134 et 135. Ce sont les trois EVOLUTIONS de la Tourelle, qui changent la taille du cercle : « Evolution III : cercle de taille 3 ». Une seule s'applique par lancer, elles ne se cumulent pas, et c'est la meme fourchette que la ligne propre du sort."
+      - "Effet 171, -N % de Critique sur la cible : ce sont les coups critiques de l'ADVERSAIRE qui baissent, pas ceux du lanceur. Aucun degat porte n'en depend."
+      - "Effet 1160 : lance aussi « -1 Évolution », « Soupape », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: surtension
+    dofusdb_id: 13868
+    name: { fr: "Surtension", en: "Hypertension" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Évolue au maximum et soigne une Tourelle.
+      Les soins sont plus importants sur une Tourelle qui évolue.
+      
+      Sur un allié : augmente sa Puissance.
+    assumptions:
+      - "Une tourelle offensive en jeu, pas encore évoluée dans le tour, passe à l'Évolution III, puis redescend à la II au tour suivant. Un mode par tourelle offensive du deck. Les soins, et la Puissance donnée à un allié, ne servent pas le lanceur seul."
+      - "Effets 950/951 : ce sort applique « Surtension » (2921). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : « +1 à 2 Évolutions » porte la tourelle a l'Evolution III ; « -1 Évolution », delai 1, lui retire un palier au tour suivant, apres qu'elle a joue le sien."
+    lines: []
+    effects: []
+
+  - id: bathyscaphe
+    dofusdb_id: 13869
+    name: { fr: "Bathyscaphe", en: "Bathyscaphe" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Tourelle défensive qui applique du bouclier.
+    assumptions:
+      - "Effet 1160 : lance aussi « Évolutions Bathyscaphe », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: periscope
+    dofusdb_id: 13870
+    name: { fr: "Périscope", en: "Periscope" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et leur applique l'état Mal de Mer :
+      • Vole des PM si la cible est attirée, poussée ou transposée (cumulable 3 fois).
+      
+      • Marée Basse : désactive la portée modifiable et la ligne de vue du sort.
+      • Marée Haute : rend sa portée modifiable et active sa ligne de vue.
+    assumptions:
+      - "Effet 77, vol de PM : le sort retire des PM a la cible sous l'etat Mal de Mer. Un PM retire ne change aucun degat porte, et ce calculateur ne simule pas le tour de l'adversaire."
+      - "Effets 950/951 : ce sort applique « Mal de Mer » (5313). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Périscope », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sauvetage
+    dofusdb_id: 13871
+    name: { fr: "Sauvetage", en: "Rescue" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Active les sorts spéciaux des Tourelles défensives du lanceur sur l'allié ciblé.
+      
+      Soigne la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Activation défensive » (131) ; retire « Activation défensive » (131). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Activation Steamer », « Spécial : Décompression », « Spécial : Intervention », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: court_circuit
+    dofusdb_id: 13872
+    name: { fr: "Court-circuit", en: "Short-Circuit" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis en zone autour d'une Tourelle.
+      
+      Évolue également la Tourelle et augmente ses chances de Critique.
+    assumptions:
+      - "Effet 115, +100 % de Critique a la tourelle : NON compte, ses attaques gardent leur taux propre."
+      - "Effet 1160 : le sort frappe « en zone autour d'une Tourelle », et ce sous-sort EST cette zone, Feu 33-37, la meme fourchette que sa ligne propre. Ce n'est pas une frappe de plus mais la facon dont celle-ci est portee."
+      - "Le sort frappe autour d'une tourelle et la fait évoluer d'un palier, une fois par tour ; sans tourelle en jeu, il ne part pas. Un mode par tourelle offensive du deck, et un autour d'une autre tourelle."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sonar
+    dofusdb_id: 13873
+    name: { fr: "Sonar", en: "Sonar" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 10 }
+    note: |
+      Active les sorts spéciaux des Tourelles offensives du lanceur sur l'ennemi ciblé.
+      
+      Occasionne des dommages dans le meilleur élément du lanceur aux ennemis.
+      
+      Sur un allié : repousse les cibles depuis le centre et dévoile les invisibles en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effets 1160 et 2794 : chaque tourelle offensive à l'Évolution III lance son sort spécial sur la cible (« Activation Steamer », cible « E135 ») : l'Armada de la Harponneuse, l'Excavation de la Foreuse, au grade du rang de la tourelle, dans le meilleur élément, sans critique, à la part transmise des caractéristiques."
+      - "Effets 950/951 : ce sort applique « Activation offensive » (130) ; retire « Activation offensive » (130). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [14, 16]
+        normal: [11, 13]
+    effects:
+      - effect: damage
+
+  - id: turbine
+    dofusdb_id: 13874
+    name: { fr: "Turbine", en: "Turbine" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire les cibles jusqu'au centre en zone.
+      
+      Évolue également les Tourelles dans la zone d'effet.
+    assumptions:
+      - "Effets 950/951 : ce sort retire « Évolution en cours » (6095). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : « +1 Évolution » sur les tourelles de la zone, compté par la Rotation quand le joueur déclare ses tourelles au contact de la cible (`tourelles_au_contact`)."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: cabestan
+    dofusdb_id: 13875
+    name: { fr: "Cabestan", en: "Capstan" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire les cibles jusqu'au centre en zone.
+      Téléporte également symétriquement les entités par rapport au centre si le sort est ciblé sur une Tourelle.
+      
+      Les dommages de zone ne sont pas dégressifs.
+      L'attirance n'affecte pas le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Cabestan », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: recursivite
+    dofusdb_id: 13876
+    name: { fr: "Récursivité", en: "Recursiveness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse la cible.
+      Si la cible termine son déplacement au contact d'une Tourelle, cette dernière la téléporte symétriquement et lui réapplique les effets du sort.
+      
+      La poussée initiale n'affecte pas le lanceur.
+    assumptions:
+      - "Effet 792 : lance aussi « Récursivité », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: compas
+    dofusdb_id: 13877
+    name: { fr: "Compas", en: "Compass" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange les positions de la première et de la dernière cible dans la zone d'effet.
+      
+      Sur le lanceur : téléporte les entités à son contact symétriquement par rapport à lui.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Compas », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: submersion
+    dofusdb_id: 14306
+    name: { fr: "Submersion", en: "Submersion" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Active les sorts spéciaux des Tourelles tactiques du lanceur sur la cible.
+      
+      Retire de la Portée aux ennemis.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Activation tactique » (132) ; retire « Activation tactique » (132). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Activation Steamer », « Spécial : Mortier », « Spécial : Écoutille », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: piston
+    dofusdb_id: 14308
+    name: { fr: "Piston", en: "Piston" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Éloigne le lanceur de la cible.
+      Le recul est plus important sur les Tourelles.
+    lines: []
+    effects: []

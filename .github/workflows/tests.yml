@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      # La suite compile aussi l'application Tauri, qui en a besoin sous Linux.
+      - name: Bibliothèques système de Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      # La version de Rust est celle de `rust-toolchain.toml`.
+      - name: Rust
+        run: rustup toolchain install && rustup show active-toolchain
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Le test d'interface ouvre la page dans le Chrome de la machine.
+      - name: Suite complète
+        run: cargo test --workspace --no-fail-fast
+
+      - name: Outils Python
+        run: python3 tools/test_import_items.py

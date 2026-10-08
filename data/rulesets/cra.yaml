@@ -1,0 +1,1223 @@
+# Crâ.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: cra
+name: { fr: "Crâ", en: "Crâ" }
+
+resources:
+  - id: glacee_enchainee
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Flèche Glacée : effet 293, durée 3 ; en 3.7, +3 / +4 / +5 par cran selon le
+      grade, deux crans au plus.
+
+  - id: immobilisation_enchainee
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: "Fleche d'Immobilisation : effet 293, valeur 2, duree 3."
+
+  - id: expiation_enchainee
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 5, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Trois paliers, 108-114 sans charge, 220-226 à une, 331-337 à deux : des
+      écarts de 112 et 111, donc un bonus constant, les 36 de l'effet 293.
+      « Dans 2 tours » puis « Dans 4 tours » dit combien de temps il faut pour
+      atteindre chaque palier : deux tours par charge, l'intervalle de relance du
+      sort. Le cumul doit donc survivre à cette attente.
+
+  - id: punitive_enchainee
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Sur un même build : 454-501 sans charge, 737-784 à une, 1114-1162 à deux.
+      Les écarts valent 283 puis 377, dont le rapport est exactement 32/24, les
+      deux valeurs que la donnée porte pour l'effet 293 aux délais 1 et 2 : deux
+      paliers cumulatifs, +24 au premier cran, +32 au second (`steps: [24, 32]`).
+
+      Plafond de deux : ce sort montre deux paliers, « 1 charge » et « 2
+      charges », qui se cumulent par-dessus les dégâts initiaux. Le champ
+      « Cumul : 1 » du pied de fiche ne compte pas : il dit autre chose que le
+      nombre de crans du bonus de dégâts.
+
+  - id: fulminante_enchainee
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Flèche Fulminante : « les dommages sont augmentés après chaque cible
+      touchée », effet 293 valeur 15 ; sur cible unique, une cible touchée par
+      lancer. Quatre paliers de charge, 26-29 nu puis 41-44, 56-59, 71-74 et
+      86-89, quinze points d'écart chacun.
+
+  - id: tirs_puissants
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # 250 Puissance sur un jet normal, 300 sur un critique (effet 138, dans les
+      # deux listes de la donnée). Le solveur applique une valeur : la critique
+      # quand le sort critique au moins 78 % du temps sur ce build, la normale
+      # sinon. L'ordre compte, cette ressource portant aussi quinze points de
+      # taux : le calcul se fait en deux passes, le taux d'abord.
+      - kind: characteristic
+        amount: 250
+        critical_amount: 300
+      # Effet 115, valeur 15, durée 1 : quinze points de taux de coup critique,
+      # « augmente sa Puissance, ses Dommages Poussée et ses Critiques ».
+      # Dix-sept sur un critique, dans la liste critique de la donnée.
+      - kind: critical_rate
+        percent: 15
+        critical_percent: 17
+      # Effet 414, Dommages Poussée : 150, 170 sur un critique.
+      - kind: push_damage
+        amount: 150
+        critical_amount: 170
+    note: |
+      "Sacrifie la Portee du lanceur pour augmenter sa Puissance." La portee
+      perdue n'est pas modelisee : le placement ne l'est pas non plus, donc ce
+      sort ressort ici sans son cout.
+
+  - id: acuite_absolue
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 115, valeur 15, durée 1.
+      - kind: critical_rate
+        percent: 15
+    note: |
+      « Augmente egalement ses Critiques. » C'est la seule moitie de ce sort qui
+      touche aux degats : la portee minimale relevee et la ligne de vue
+      desactivee relevent du placement, que ce calculateur ne simule pas.
+
+  - id: elan_assaillant
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 150
+    note: |
+      Fleche Assaillante : effet 138, 150 Puissance, duree 1. Comme la Puissance
+      du stuff, elle entre dans l'arrondi caracteristique et profite a TOUS les
+      sorts, pas seulement au sien.
+
+  - id: fleche_tyrannique
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: fire
+            critical: [24, 26]
+            normal: [20, 22]
+        note: |
+          Le poison de fin de tour. La donnée porte trois lignes Feu pour ce sort,
+          28-32 puis 20-22 puis 28-32 : sur un build, coup immédiat 215-234, « Fin de
+          tour » 176-185 avec une durée de 2, puis une troisième ligne égale à la
+          première. Le rapport le confirme : 234-215 = 19 pour un écart de base de 4,
+          185-176 = 9 pour un écart de 2. C'est donc 20-22 qui empoisonne et 28-32
+          qui frappe. Le poison tombe au début de nos deux tours suivants.
+
+
+  - id: fleche_harcelante
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            critical: [20, 23]
+            normal: [17, 19]
+        note: |
+          Le poison de début de tour, même forme que la Flèche Tyrannique. Ce sort n'a
+          aucun coup immédiat : son texte dit « réduit les soins reçus par la cible et
+          lui applique un poison Air de début de tour », et sa seule fourchette est
+          rangée sous « Début de tour », durée 2.
+
+  - id: redemption_enchainee
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    note: |
+      « Les dommages du sort sont augmentés pour chaque tentative de retrait de
+      PA ou de PM réussie. » Six crans, sept paliers 26-29, 32-35, 38-41, 44-47,
+      50-53, 56-59, 62-65 et leurs critiques de 31-35 à 67-71 : 6 par cran sur
+      les deux bornes. Seuls les retraits de PM comptent : le retrait de PA est
+      supposé ne jamais aboutir sur une cible de fin de jeu (`AP_THEFT_LANDS`).
+      « Les dommages sont réinitialisés après utilisation du sort » : la réserve
+      se vide au lancer.
+
+  - id: devorante
+    scope: target
+    max: 3
+    default: 0
+    monotone: increasing
+    note: |
+      « Le vol de vie est plus important après chaque lancer sur un même
+      ennemi. » Cumul 3 : « Flèche Dévorante I, II et III ». Porté par la cible
+      et non par le lanceur : changer de cible repart de zéro.
+
+  - id: attaques_subies
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Attaques ennemies subies au tour précédent"
+    note: |
+      Combien d'attaques ennemies vous avez subies au tour précédent : l'Œil pour
+      Œil monte de 6 dégâts de base par attaque, quatre au plus (27-30 nu, puis
+      33-36 à une attaque, jusqu'à 51-54 à quatre).
+
+  - id: poussee_subie
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible subit des dommages de poussée à chaque tour"
+    note: |
+      À cocher si vous poussez la cible contre un obstacle à chaque tour : elle
+      subit des dommages de poussée sans bouger, ce qui décharge le poison de la
+      Flèche Tyrannique.
+
+  - id: fleche_tyrannique_decharge
+    dofusdb_source: 32448
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        # Sous-sort 32488, grade 3 : 1 % de critique de base, et non les 15 %
+        # du sort.
+        crit_base_percent: 1
+        lines:
+          - element: fire
+            critical: [34, 38]
+            normal: [28, 32]
+    note: |
+      La decharge de la Fleche Tyrannique : quand la cible subit des dommages de
+      poussee, le sort « occasionne prematurement des dommages Feu et retire
+      les effets du sort ». 28-32 d'un coup, et plus de poison. Posee seulement
+      si le joueur declare la poussee, une fois par tour au debut du suivant.
+
+  - id: pieges_declenches
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible déclenche votre piège Vendetta"
+    note: |
+      Cochez si la cible marche sur votre Vendetta : ses dégâts comptent alors
+      quand vous la posez, une fois par tour au plus.
+
+  - id: vendetta_dommages_subis
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - { kind: final_multiplier, percent: 110 }
+    note: |
+      En 3.7, le piège de Vendetta « récupère l'augmentation de dommages subis de
+      Représailles : x110 % (1 tour) », cumul maximal 1. Posé quand le piège part,
+      après ses dégâts : il sert aux coups qui suivent dans le tour.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Les Represailles la posent sur les cibles de leur zone, et la rotation ne place pas le Cra dans sa propre zone. Le Pas Chasse, seul a l'exiger absente, n'a de toute facon aucun effet ici."
+
+spells:
+  - id: fleche_de_recul
+    dofusdb_id: 32426
+    name: { fr: "Flèche de Recul", en: "Retreat Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse la cible.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_cinglante
+    dofusdb_id: 32427
+    name: { fr: "Flèche Cinglante", en: "Lashing Arrow" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PM et occasionne des dommages Air.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: fleche_de_dispersion
+    dofusdb_id: 32428
+    name: { fr: "Flèche de Dispersion", en: "Dispersing Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles depuis le centre en zone.
+      La poussée est plus importante aux extrémités de la zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_perforante
+    dofusdb_id: 32429
+    name: { fr: "Flèche Perforante", en: "Piercing Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+      Les dommages de zone ne sont pas dégressifs et sont plus importants sur les cibles ayant du bouclier.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Ce sort porte deux fourchettes Air : 44-48 sur une cible sous bouclier, 38-42 sinon. Les boucliers de la cible ne sont pas simulés, c'est donc la seconde qui est comptée ici."
+    effects:
+      - effect: damage
+
+  - id: pluie_de_fleches
+    dofusdb_id: 32431
+    name: { fr: "Pluie de Flèches", en: "Raining Arrows" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Retire de l'Esquive PM et occasionne des dommages Air en zone.
+      N'affecte pas le lanceur.
+      
+      Les effets sont relancés à partir de la case ciblée au tour suivant.
+    assumptions:
+      - "Effet 2794 à `delay: 1`, Air 21-23 (25-28 en critique), en frappe différée : « les effets sont relancés à partir de la case ciblée au tour suivant », et la donnée porte deux effets 2794, l'un immédiat, l'autre à délai 1, à la même fourchette. Elle repart de la case ciblée, pas de la cible : si l'ennemi a bougé, elle le rate. Ce calculateur la compte comme touchant."
+      - "Effet 163, -N Esquive PM sur la cible : l'esquive decide si un retrait de PM aboutit, elle ne change aucun degat porte."
+      - "Effet 2794 : lance aussi « Pluie de Flèches », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+      # « Les effets sont relances a partir de la case ciblee AU TOUR SUIVANT » :
+      # effet 2794 a `delay: 1` dans la donnee, la meme volee une seconde fois.
+      - effect: schedule
+        id: pluie_relancee
+        delay: 1
+        payload:
+          - element: air
+            critical: [25, 28]
+            normal: [21, 23]
+
+  - id: fleche_boomerang
+    dofusdb_id: 32432
+    name: { fr: "Flèche Boomerang", en: "Boomerang Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PM et occasionne des dommages Air.
+      N'affecte pas le lanceur.
+      
+      Retire des PM et vole de la vie à la cible initiale et aux ennemis entre elle et la nouvelle cible si elles sont alignées.
+      Affecte également les Balises.
+      Applique ces effets entre la dernière cible et le lanceur à la fin du tour de ce dernier s'il est aligné avec elle.
+    assumptions:
+      - "Effet 2795 : encore un lanceur de sous-sort, meme signature que 1160 et 792, sa description officielle se reduisant a « #1 ». Il porte ici le meme retour de boomerang que ci-dessus."
+      - "Effets 950 et 951, etat « Fleche Boomerang » (6975) : il marque la cible initiale, celle vers qui le boomerang revient. Lu par le sort lui-meme et par personne d'autre."
+      - "Effets 792, 1160 et 2160, Air 26-29 en vol de vie : « vole de la vie a la CIBLE INITIALE et aux ennemis entre elle et la nouvelle cible si elles sont alignees ». Il faut donc une seconde cible et un alignement pour que cette ligne parte. Sur une cible unique elle n'a rien a atteindre."
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Flèche Boomerang » sur « a,A,E6975 » : Air 26-29 en vol de vie. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effets 792/1160/2160 : lance aussi « Flèche Boomerang », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: fleche_persecutrice
+    dofusdb_id: 32433
+    name: { fr: "Flèche Persécutrice", en: "Persecuting Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Air.
+      Occasionne des dommages Air au tour suivant si la cible n'est pas dans la ligne de vue du lanceur.
+    assumptions:
+      - "Effet 3793 à `delay: 1`, Air 34-38 (41-46 en critique) : « occasionne des dommages Air au tour suivant si la cible n'est pas dans la ligne de vue du lanceur ». Compté à chaque lancer, au début du tour suivant : le Crâ finit son tour hors de la ligne de vue de sa cible. Rangé sous « Dans 1 tour », à la même fourchette que le vol de vie immédiat, il critique au taux du sort."
+      - "Effet 1160 : lance aussi « Flèche Persécutrice », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « Au tour suivant si la cible n'est pas dans la ligne de vue » : le Crâ
+      # finit hors de sa ligne de vue.
+      - effect: schedule
+        id: persecution
+        delay: 1
+        payload:
+          - element: air
+            critical: [41, 46]
+            normal: [34, 38]
+
+  - id: fleche_glacee
+    dofusdb_id: 32435
+    name: { fr: "Flèche Glacée", en: "Frozen Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PA et occasionne des dommages Eau.
+      Les dommages du sort sont augmentés après son utilisation.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: glacee_enchainee
+            amount: 5
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: glacee_enchainee
+
+  - id: fleche_d_immobilisation
+    dofusdb_id: 32436
+    name: { fr: "Flèche d'Immobilisation", en: "Immobilising Arrow" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole des PM et occasionne des dommages Eau
+      Les dommages du sort sont augmentés après chaque lancer.
+    assumptions:
+      - "Effet 77, vol de PM : un PM retire ne change aucun degat porte, et ce calculateur ne simule pas le tour de l'adversaire."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: immobilisation_enchainee
+            amount: 2
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+      - effect: gain
+        resource: immobilisation_enchainee
+
+  - id: il_de_taupe
+    dofusdb_id: 32437
+    name: { fr: "Œil de Taupe", en: "Bat's Eye" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Dévoile les invisibles, retire de la Portée et vole de la vie dans l'élément Eau en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_d_expiation
+    dofusdb_id: 32438
+    name: { fr: "Flèche d'Expiation", en: "Atonement Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par la cible et occasionne des dommages Eau.
+      Les dommages du sort sont augmentés pour les prochains lancers.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: expiation_enchainee
+            amount: 36
+    assumptions:
+      - "Effet 3793, « les dommages du sort sont augmentés pour les prochains lancers » : compté, mesuré à 37,8 puis 73,8 puis 109,8 de dégâts de base, pour 36, 72 et 108 publiés. « Dans 2 tours » puis « Dans 4 tours » ne dit pas qu'un cran mûrit tout seul, mais dans combien de temps on peut relancer : l'intervalle de relance du sort vaut deux tours. Voir la ressource `expiation_enchainee`."
+      - "La montée est comptée : le total n'est pas un plancher."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: expiation_enchainee
+
+  - id: fleche_ralentissante
+    dofusdb_id: 32439
+    name: { fr: "Flèche Ralentissante", en: "Slow-Down Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PA et des PM et occasionne des dommages Eau en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: fleche_paralysante
+    dofusdb_id: 32441
+    name: { fr: "Flèche Paralysante", en: "Paralysing Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PA et des PM et occasionne des dommages Eau en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: fleche_de_redemption
+    dofusdb_id: 32442
+    name: { fr: "Flèche de Rédemption", en: "Redemption Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau.
+      Les dommages du sort sont augmentés pour chaque tentative de retrait de PA ou de PM réussie.
+      
+      Les dommages sont réinitialisés après utilisation du sort.
+    assumptions:
+      - "Effet 293, +6 dégâts de base par cran, plafonné à six : sept paliers, 26-29, 32-35, 38-41, 44-47, 50-53, 56-59, 62-65, et 31-35 à 67-71 en critique. L'écart est de 6 sur les deux bornes : un bonus de dégâts de base, pas une autre ligne."
+      - "Effet 1406, « enleve les effets du rang N du sort M » : c'est la remise a zero que le texte annonce, « les dommages sont reinitialises apres utilisation du sort ». Ecrite ici en `reset` de la ressource."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: redemption_enchainee
+            amount: 6
+    effects:
+      - effect: damage
+      - effect: reset
+        resource: redemption_enchainee
+
+  - id: fleche_de_barrage
+    dofusdb_id: 32443
+    name: { fr: "Flèche de Barrage", en: "Barricade Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Flèche de Barrage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_detonante
+    dofusdb_id: 32444
+    name: { fr: "Flèche Détonante", en: "Exploding Arrow" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Portée, occasionne des dommages Feu et applique l'état Flèche Détonante sur la cible :
+      • Applique les effets sans l'état sur les ennemis en zone autour de la cible à la fin de son tour.
+      
+      Les effets peuvent être déclenchés prématurément si la cible subit des dommages de poussée.
+    assumptions:
+      - "Effet 1160, Feu 14-17 : « applique les effets SANS l'etat sur les ennemis en zone autour de la cible A LA FIN DE SON TOUR ». C'est une zone differee autour de la cible, de la meme fourchette que la ligne propre. Non comptee : elle frappe autour, donc elle demande d'autres ennemis, et sur une cible unique elle ne touche personne de plus."
+      - "Effets 950/951 : ce sort applique « Flèche Détonante » (656). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Flèche Détonante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_explosive
+    dofusdb_id: 32445
+    name: { fr: "Flèche Explosive", en: "Explosive Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_devorante
+    dofusdb_id: 32446
+    name: { fr: "Flèche Dévorante", en: "Devouring Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: 10 }
+    note: |
+      Vole de la vie dans l'élément Feu.
+      N'affecte pas le lanceur.
+      Le vol de vie est plus important après chaque lancer sur un même ennemi.
+      
+      Occasionne également des dommages Feu à l'ennemi initial si le sort est lancé sur une autre cible, ou dans les prochains tours s'il n'est pas relancé.
+      Les dommages sont plus importants selon le nombre de lancers effectués sur un même ennemi.
+    assumptions:
+      - "La seconde famille du sort, des dégâts Feu de 34-38 à 70-74 selon le cran, n'est pas comptée : elle frappe « l'ennemi initial si le sort est lancé sur une autre cible, ou dans les prochains tours s'il n'est pas relancé ». Le calcul rend le résultat pour une seule cible et ne suit pas une abstention de lancer : c'est le chiffre d'un Crâ qui relance la flèche sur le même ennemi."
+      - "Effet 3793, sans libellé officiel : il apparaît deux fois sur le lanceur, en regard des deux effets 293 qui portent les crans, et c'en est donc la comptabilité. Les quatre crans sont écrits ci-dessous, une ligne chacun : l'effet ne manque pas, son nom manque. Même classement que la Flèche Punitive et la Flèche d'Expiation."
+      - "Effet 406, « retire les effets d'un sort », present deux fois et ne nommant aucun sort : c'est l'annulation de la frappe DIFFEREE quand le sort est relance. Cette frappe n'etant pas comptee, l'annulation n'a rien a annuler et ne coute donc RIEN ; le trou est la frappe elle-meme, declare en question ouverte. L'effet ne touche PAS au compteur de crans, qui doit survivre d'un lancer a l'autre pour que les paliers montent."
+      - "Les quatre paliers du vol de vie immédiat sont écrits, un par cran de l'état : 11-13 sans état, 23-27 sous I, 34-38 sous II et sous III. Le cran se prend sur la cible : changer d'ennemi repart de zéro."
+      - "Les paliers ne mûrissent pas avec le temps : ils suivent les lancers sur le même ennemi."
+      - "Effet 1160 : lance aussi « <color=#e6893d>Décharge :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      # Quatre paliers, une ligne chacun : ils changent de largeur, deux points
+      # puis quatre, ce qu'un bonus de dégâts de base ne peut pas écrire. Chaque
+      # cran est étiqueté « Cible sous Flèche Dévorante I », « II », « III ».
+      - element: fire
+        active_at: { resource: devorante, exactly: 0 }
+        critical: [14, 16]
+        normal: [11, 13]
+      - element: fire
+        active_at: { resource: devorante, exactly: 1 }
+        critical: [28, 32]
+        normal: [23, 27]
+      # Les crans II et III sur une seule case, comme les deux premiers. Leur
+      # zone est écrite parce que la donnée porte aussi 34-38 en cercle de
+      # taille 63 : c'est la frappe différée, sur toute la carte et non
+      # comptée, que la fusion ne distingue pas de ce vol de vie par la seule
+      # fourchette.
+      - element: fire
+        active_at: { resource: devorante, exactly: 2 }
+        area: { shape: P, size: 1, max_targets: 1, falloff_percent: 10, falloff_steps: 4 }
+        critical: [41, 46]
+        normal: [34, 38]
+      - element: fire
+        active_at: { resource: devorante, exactly: 3 }
+        area: { shape: P, size: 1, max_targets: 1, falloff_percent: 10, falloff_steps: 4 }
+        critical: [41, 46]
+        normal: [34, 38]
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: devorante
+        at_cap: skip
+
+  - id: fleches_enflammees
+    dofusdb_id: 32447
+    name: { fr: "Flèches Enflammées", en: "Burning Arrows" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur des cibles, occasionne des dommages Feu aux ennemis et repousse les cibles en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_tyrannique
+    dofusdb_id: 32448
+    name: { fr: "Flèche Tyrannique", en: "Tyrannical Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages et applique un poison Feu de fin de tour sur la cible.
+      Le poison est renouvelé si la cible est déplacée sous les effets du sort.
+      
+      Occasionne prématurément des dommages Feu et retire les effets du sort si la cible subit des dommages de poussée.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Les trois fourchettes Feu sont trois effets distincts : 28-32 le coup immédiat, 20-22 le poison de fin de tour qui dure 2 tours, et la troisième, de nouveau 28-32, la décharge anticipée quand la cible subit des dommages de poussée. Sans le réglage de poussée, le coup et le poison comptent ; avec lui, le coup et la décharge, une fois par tour au début du suivant, et plus de poison : la poussée le retire."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: fleche_tyrannique
+        requires: { kind: exactly, resource: poussee_subie, amount: 0 }
+      - effect: gain
+        resource: fleche_tyrannique_decharge
+        requires: { kind: caster_has, resource: poussee_subie }
+
+  - id: fleche_eclatante
+    dofusdb_id: 32449
+    name: { fr: "Flèche Éclatante", en: "Radiant Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu aux ennemis et repousse les cibles depuis le centre en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_fulminante
+    dofusdb_id: 32450
+    name: { fr: "Flèche Fulminante", en: "Fulminating Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Rebondit sur l'ennemi le plus proche dans un cercle de taille 2.
+      Peut également rebondir sur les Balises.
+      
+      Les dommages du sort sont augmentés après chaque cible touchée.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Flèche Fulminante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "« Les dommages du sort sont augmentés après chaque cible touchée » : compté, un cran par lancer, quatre au plus. Sur cible unique, un lancer touche une cible et vaut un cran (voir `fulminante_enchainee`). Cinq paliers, 26-29 nu puis 41-44, 56-59, 71-74 et 86-89, sans condition de placement."
+      - "Le cran est donné à chaque cible touchée, la première comprise, et pas aux seuls rebonds."
+      - "Le rebond lui-même reste hors de portée : il frappe un ennemi de plus à deux cases du précédent, donc du placement. Ce qu'il ajouterait est du domaine du réglage « Ennemis touchés », pas de ce compteur."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: fulminante_enchainee
+            amount: 15
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: fulminante_enchainee
+
+  - id: fleche_d_abolition
+    dofusdb_id: 32453
+    name: { fr: "Flèche d'Abolition", en: "Abolition Arrow" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre.
+      Les dommages sont plus importants sur les cibles ayant du bouclier.
+      
+      La taille de la zone est augmentée après chaque lancer pour le tour en cours.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Les états « Flèche d'Abolition I » (7120) et « II » (7121) ne changent PAS les dégâts. Les six lignes du sort le montrent : les trois régimes, sans état, sous le premier et sous le second, portent la MÊME fourchette. Ces états comptent les lancers du tour pour agrandir la ZONE, ce que le texte dit, et la zone ne pèse pas sur une cible unique."
+      - "Le sort porte deux fourchettes Terre : 18-22 sur une cible sous bouclier, 9-11 sinon. Les boucliers de la cible ne sont pas simulés, c'est donc la seconde qui est comptée ici. Les trois écritures de chaque fourchette sont un doublon, une par taille de zone, pas trois effets."
+      - "Effet 406 : le sort retire ses propres effets (sort 32453, lui-même) sur le lanceur, ce qui remet le compteur de zone à zéro. Aucun chiffre n'en dépend."
+    effects:
+      - effect: damage
+
+  - id: il_pour_il
+    dofusdb_id: 32454
+    name: { fr: "Œil pour Œil", en: "Eye for Eye" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre en zone.
+      N'affecte pas le lanceur.
+      
+      Les dommages du sort sont augmentés pour chaque attaque ennemie subie au tour précédent.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: attaques_subies, amount: 5 }]
+    effects:
+      - effect: damage
+
+  - id: fleche_vagabonde
+    dofusdb_id: 32455
+    name: { fr: "Flèche Vagabonde", en: "Vagabond Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Terre aux ennemis.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_punitive
+    dofusdb_id: 32456
+    name: { fr: "Flèche Punitive", en: "Punitive Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Érode la cible et occasionne des dommages Terre.
+      Les dommages du sort sont augmentés pour les prochains lancers.
+    assumptions:
+      - "Effet 3793, sans libellé officiel ni magnitude : il apparaît en regard des effets 293 qui portent les crans, et c'en est la comptabilité. Les crans sont écrits et mesurés, 33,3 puis 57,3 puis 89,3 de dégâts de base : ce qui reste inconnu est le nom de l'effet, pas ce qu'il fait. La Flèche d'Expiation range le même effet 3793 en déclaration."
+      - "Les deux paliers sont étiquetés « 1 charge - Dans 1 tours » pour 54-58 et « 2 charges - Dans 2 tours » pour 86-90, le lancer nu valant 30-34. Ce retard est celui de l'intervalle de relance, pas d'un cran qui mûrit : le sort ne se lance qu'une fois par tour, si bien que le lancer suivant tombe un tour plus tard, le troisième deux. Même lecture que l'Épée du Destin et la Colère de Iop, dont les « Dans 2 tours » et « Dans 3 tours » valent exactement leur `cooldown_turns`."
+      - "Les trois paliers gardent la même largeur, quatre points, ce qu'un bonus de dégâts de base peut dire : mesuré à 33,3 puis 57,3 puis 89,3, pour 32, 56 et 88 publiés."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: steps
+            resource: punitive_enchainee
+            steps: [24, 32]
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: punitive_enchainee
+
+  - id: fleche_massacrante
+    dofusdb_id: 32457
+    name: { fr: "Flèche Massacrante", en: "Slaughtering Arrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente les dommages du sort pour chaque entité dans la zone d'effet et occasionne des dommages Terre en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Flèche Massacrante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 293, +12 dégâts de base par ennemi touché au-delà du premier, plafonné à quatre crans : 25-29, puis « 2 ennemis dans la zone d'effet » 37-41, « 3 ennemis » 49-53, « 4 ennemis » 61-65 et « 5 ennemis » 73-77 ; le coup critique monte du même montant, 30-35 puis 42-47. Le cran se lit sur le réglage « Ennemis touchés », comme pour le Muspel du Forgelance."
+      - "Effet 406 : le sort retire les effets du sous-sort 32461, celui-là même qui compte les entités de la zone. C'est la remise à zéro du compteur entre deux lancers, et le comptage est déjà porté par le bonus ci-dessus."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_extra_target
+            amount: 10
+            cap: 4
+    effects:
+      - effect: damage
+
+  - id: fleche_assaillante
+    dofusdb_id: 32458
+    name: { fr: "Flèche Assaillante", en: "Assailing Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon la position du lanceur par rapport à la cible, occasionne des dommages Terre aux ennemis et augmente la Puissance du lanceur :
+      • Repousse la cible si le lanceur est en mêlée.
+      • Rapproche le lanceur vers la cible s'il est à distance.
+    assumptions:
+      - "Effet 1160 : lance aussi « Flèche Assaillante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: elan_assaillant
+
+  - id: carreaux_destructeurs
+    dofusdb_id: 32459
+    name: { fr: "Carreaux Destructeurs", en: "Destructive Bolts" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des dommages aux ennemis et repousse les cibles en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleche_du_jugement
+    dofusdb_id: 32460
+    name: { fr: "Flèche du Jugement", en: "Arrow of Judgement" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Puissance et occasionne des dommages Terre.
+      La première attaque dépend des PM restants du lanceur.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+      # La seconde ligne, celle que le texte appelle « la première attaque » et
+      # qui « dépend des PM restants du lanceur » : rien à zéro PM restant, 36-40
+      # (43-48 en critique) à 100 %, et une proportion linéaire entre les deux,
+      # comme sur le Zénith du Iop.
+      - element: earth
+        scales_with_mp_left: true
+        differs_from_snapshot: "Seconde ligne du sort, absente de l'instantane DofusDB qui n'en porte qu'une pour cet element. Les 36-40 viennent de DofusBook, groupe « 100 % des PM restants ». L'appariement par POSITION n'a donc rien a apparier, et le controle des magnitudes continue d'exiger que la fourchette existe sur ce sort."
+        critical: [43, 48]
+        normal: [36, 40]
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: pas_chasse
+    dofusdb_id: 32464
+    name: { fr: "Pas Chassé", en: "Sidestep" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur sur la case ciblée.
+      Augmente les PM du lanceur au tour suivant.
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: tirs_eloignes
+    dofusdb_id: 32465
+    name: { fr: "Tirs Éloignés", en: "Distant Shots" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les portées minimale et maximale de tous les sorts offensifs Crâ du lanceur.
+      Augmente également la Portée des alliés (hors Crâs) en zone autour du lanceur et de ses Balises.
+    assumptions:
+      - "Effet 1016, seconde ligne Terre 36-40 (43-48 en critique) au prorata des PM restants : « la première attaque dépend des PM restants du lanceur ». « Aucun PM restant » ne porte que la ligne de base, « 100 % des PM restants » ajoute 36-40. Même mécanique que le Zénith du Iop : entre les deux bornes, la proportion linéaire est une lecture, aucune source ne donnant la courbe. Le chiffre vient du réglage « PM dépensés »."
+      - "Effet 1160 : lance aussi « Tirs Éloignés », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 281 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: tirs_puissants
+    dofusdb_id: 32466
+    name: { fr: "Tirs Puissants", en: "Powerful Shots" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie la Portée du lanceur pour augmenter sa Puissance, ses Dommages Poussée et ses Critiques.
+    lines: []
+    assumptions:
+      - "Effet 115, +15 % de Critiques au lanceur pendant un tour, porté par la ressource `tirs_puissants` aux côtés de sa Puissance."
+    effects:
+      - effect: gain
+        resource: tirs_puissants
+
+  - id: balise_tactique
+    dofusdb_id: 32467
+    name: { fr: "Balise Tactique", en: "Tactical Beacon" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Balise statique qui peut appliquer des effets en zone autour d'elle selon ce qu'elle subit :
+      • Elle attire les cibles si un allié lui occasionne des dommages à distance ou la pousse.
+      • Elle pousse les cibles si un allié lui occasionne des dommages en mêlée ou de poussée.
+      
+      La balise est détruite 3 tours après son invocation.
+      
+      Augmente également la Puissance du lanceur pour chaque ennemi dans la ligne de vue de la case ciblée.
+    assumptions:
+      - "Effet 1160 : lance aussi « Balise Tactique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1103 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 138, +40 Puissance au lanceur pendant deux tours : conditionne a ce que subit la BALISE que le sort invoque, et les invocations ne sont pas modelisees. Hors de portee, pas simplement pas ecrit."
+    effects: []
+
+  - id: acuite_absolue
+    dofusdb_id: 32469
+    name: { fr: "Acuité Absolue", en: "Absolute Acuteness" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la portée minimale de tous les sorts offensifs Crâ du lanceur pour désactiver la ligne de vue sur tous ses sorts.
+      Augmente également ses Critiques.
+    lines: []
+    assumptions:
+      - "Effet 115, +15 % de Critiques au lanceur pendant un tour : la seule moitié de ce sort qui touche aux dégâts."
+      - "Effet 289, « augmente la portée minimale de tous les sorts offensifs » : du placement, que ce calculateur ne simule pas. Il désactive la ligne de vue, ce qui ne change aucune fourchette."
+      - "Effet 406, « retire les effets d'un sort » : la remise à zéro de ce que le sort a posé, sans conséquence sur un chiffre."
+    effects:
+      - effect: gain
+        resource: acuite_absolue
+
+  - id: tir_de_repli
+    dofusdb_id: 32470
+    name: { fr: "Tir de Repli", en: "Withdrawal Shot" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Éloigne le lanceur de l'ennemi ciblé ou rapproche le lanceur vers l'allié ciblé.
+      Augmente également la Portée du lanceur.
+    lines: []
+    effects: []
+
+  - id: tir_percant
+    dofusdb_id: 32471
+    name: { fr: "Tir Perçant", en: "Piercing Shot" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Érode la cible et augmente les dommages qu'elle subit jusqu'à la prochaine attaque.
+    lines: []
+    open_questions:
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: represailles
+    dofusdb_id: 32472
+    name: { fr: "Représailles", en: "Reprisal" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Neutre aux ennemis selon leur vie érodée en zone.
+      Applique également l'état Pesanteur sur les cibles et augmente les dommages subis par les ennemis en zone.
+
+      En 3.7, l'augmentation de dommages subis est retirée (effet 1163), reprise
+      par Vendetta ; Pesanteur s'applique avant les dommages.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 1092 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: vendetta
+    dofusdb_id: 32473
+    name: { fr: "Vendetta", en: "Vendetta" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui occasionne des dommages dans le meilleur élément du lanceur aux ennemis et attire les entités vers son centre en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (16-18 en meilleur élément, sous-sort 32478), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+    lines: []
+    trap_lines:
+      - best_element: true
+        critical: [16, 18]
+        normal: [16, 18]
+    trap_effects:
+      - effect: gain
+        resource: vendetta_dommages_subis
+    effects: []
+
+  - id: balise_de_survie
+    dofusdb_id: 32474
+    name: { fr: "Balise de Survie", en: "Survival Beacon" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Balise qui peut soigner tous les alliés dans sa ligne de vue au début de son tour.
+      Elle peut également échanger de position avec le lanceur s'il l'attaque en étant dans sa ligne de vue.
+      
+      La balise est détruite 2 tours après son invocation.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: sentinelle
+    dofusdb_id: 32475
+    name: { fr: "Sentinelle", en: "Sentinel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les dommages à distance et la Portée du lanceur et dévoile tous les ennemis dans sa ligne de vue.
+      Les effets sont réduits pour chaque PM utilisé.
+    assumptions:
+      - "Effet 1160 : lance aussi « Sentinelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2804 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2805 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: fleche_evasive
+    dofusdb_id: 32531
+    name: { fr: "Flèche Évasive", en: "Evasive Arrow" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon la position du lanceur par rapport à la cible et occasionne des dommages Eau aux ennemis :
+      • Éloigne le lanceur de la cible et retire des PM aux ennemis s'il est en mêlée.
+      • Repousse la cible et retire des PA aux ennemis si le lanceur est à distance.
+    assumptions:
+      - "Effet 1160 : lance aussi « Flèche Évasive », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: redemption_enchainee
+        at_cap: skip
+      - effect: damage
+
+  - id: fleches_amoureuses
+    dofusdb_id: 32618
+    name: { fr: "Flèches Amoureuses", en: "Loving Arrows" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne l'allié ciblé.
+      
+      Partage également les dommages entre le combattant allié initial et un autre combattant allié en augmentant leur Puissance si le sort est lancé sur cet autre combattant.
+      
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "Effets 792/2160 : lance aussi « Flèches Amoureuses », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Flèches Amoureuses » (7010), lu par Flèches Amoureuses. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1061 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 138, +100 Puissance : le sort partage les degats entre deux combattants ALLIES et n'augmente leur Puissance que s'il est lance sur le second. Un solveur qui ne resout qu'un lanceur n'en tire rien."
+    effects: []
+
+  - id: fleche_harcelante
+    dofusdb_id: 32708
+    name: { fr: "Flèche Harcelante", en: "Plaguing Arrow" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par la cible et lui applique un poison Air de début de tour.
+    assumptions:
+      - "Effet 3793 : c'est le poison lui-même, écrit en état posé sur la cible qui frappe au début de chacun de nos deux tours suivants. Ses bornes, 17-19 et 20-23 en critique, sont rangées sous un unique groupe « Début de tour » d'une durée de 2."
+      - "Le sort ne frappe pas au lancer : aucune source ne porte de coup immédiat."
+      - "La réduction des soins reçus n'est pas modélisée : ce calculateur ne soigne personne."
+    lines: []
+    effects:
+      - effect: gain
+        resource: fleche_harcelante

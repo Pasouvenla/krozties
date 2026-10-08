@@ -1,0 +1,1142 @@
+# Féca.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: feca
+name: { fr: "Féca", en: "Féca" }
+
+resources:
+
+  - id: hypoglyphe
+    # Hypoglyphe, que les huit glyphes elementaires exigent absent (HS!238).
+    game_states: [238]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # « Dans le même tour », dit le texte : `turns: 0` fait vivre l'état le tour
+    # de la pose et lui seul. La donnée écrit `duration: 1` sur l'effet 950, mais
+    # le texte du sort tranche.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'état « Hypoglyphe » (238), que les huit glyphes élémentaires du Féca
+      s'appliquent à eux-mêmes en se lançant, et qui leur interdit à tous de
+      repartir dans le tour. C'est dans la donnée : les huit portent le critère de
+      lancer `states_criterion: "HS!238"` (« le lanceur n'a pas l'état 238 ») et
+      l'effet 950 valeur 238 sur `C`. Le texte dit la même chose : « Empêche
+      l'utilisation d'autres glyphes élémentaires dans le même tour. »
+
+  - id: sur_le_glyphe_aura
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Tu te tiens sur ton glyphe-aura"
+    note: |
+      Le glyphe-aura du Pâturage donne 10 % de dommages finaux aux alliés, et vous
+      en faites partie si vous vous tenez dessus : sa portée minimale est de zéro,
+      vous pouvez le poser sous vos pieds. Cochez si vous jouez ainsi.
+
+  - id: aura_paturage
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Pas de glyphe, pas d'aura : le glyphe ne vivant que le tour de sa pose, le
+    # bonus non plus, là où la donnée écrit 2. Il ne profite qu'à ce qui part
+    # après le Pâturage, dans son tour.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1171, « #1% Dommages finaux », paramètre 10, durée 2, cible `a`,
+      # sur le sous-sort 13028, que l'instantané ne porte pas.
+      - kind: final_multiplier
+        percent: 110
+        # Effet 1171, « % Dommages finaux » : ils s'additionnent à ceux des
+        # Dofus et de l'équipement.
+        finaux: true
+    note: |
+      Le glyphe-aura du Pâturage, et lui seul des trois : le Refuge porte l'effet
+      1163 à 85, « Dommages subis x85% », qui protège ; le Verglas l'effet 752 à
+      50, « + 50 Fuite ». Aucun des deux ne touche aux dégâts.
+
+  # Les glyphes qui frappent : la rotation suppose une cible qui ne bouge pas,
+  # et qui reste donc dans chaque glyphe posé sur elle ; un piège, lui, ne part
+  # que si l'ennemi entre dedans.
+  #
+  # Chaque glyphe se lit comme un poison du parc : posé au tour N avec une durée
+  # de 2, il frappe au début de chacun des deux tours suivants de la cible
+  # (« fin de tour » tombe au même endroit pour une recherche par tours). Au
+  # sol, il reste jusqu'à la fin du tour N+1 du lanceur, et la Transhumance peut
+  # le déclencher tant qu'il y est : un seul compteur dit les deux choses.
+  #
+  # Les fourchettes sont celles des sous-sorts, au grade que chaque sort nomme.
+
+  - id: glyphe_terre_brulee
+    dofusdb_source: 12985
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 12996, grade 3 : taux de critique nul et aucune ligne
+          # critique. Le moteur exige une valeur ici : c'est la meme.
+          - element: fire
+            critical: [30, 34]
+            normal: [30, 34]
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        lines:
+          - element: fire
+            critical: [30, 34]
+            normal: [30, 34]
+
+  - id: glyphe_terre_battue
+    dofusdb_source: 12987
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 13000, grade 3, sans critique.
+          - element: earth
+            critical: [29, 33]
+            normal: [29, 33]
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        lines:
+          - element: earth
+            critical: [29, 33]
+            normal: [29, 33]
+
+  - id: glyphe_vallee
+    dofusdb_source: 12990
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 12998, grade 3, sans critique.
+          - element: water
+            critical: [28, 32]
+            normal: [28, 32]
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        lines:
+          - element: water
+            critical: [28, 32]
+            normal: [28, 32]
+
+  - id: glyphe_prairie
+    dofusdb_source: 12992
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 12999, grade 3, sans critique.
+          - element: air
+            critical: [31, 35]
+            normal: [31, 35]
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        lines:
+          - element: air
+            critical: [31, 35]
+            normal: [31, 35]
+
+  - id: glyphe_defiance
+    dofusdb_source: 12988
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 13001, grade 2 : les quatre elements a 21-22, sans
+          # critique. Glyphe de FIN de tour, d'une duree de 1 : un coup.
+          - element: earth
+            critical: [21, 22]
+            normal: [21, 22]
+          - element: fire
+            critical: [21, 22]
+            normal: [21, 22]
+          - element: water
+            critical: [21, 22]
+            normal: [21, 22]
+          - element: air
+            critical: [21, 22]
+            normal: [21, 22]
+    note: |
+      Glyphe de fin de tour, les quatre autres étant de début de tour. La cible y
+      prend son coup à la fin de son tour, donc toujours entre deux tours du
+      Féca : le compte est le même. La Transhumance ne le déclenche pas : la
+      Défiance n'est pas dans la liste de ses effets 1026.
+
+  # Les trois glyphes-auras ne frappent que déclenchés : leur ligne de dégâts
+  # porte le masque `A,*E5260`, « si le lanceur a l'état Glyphes déclenchés »,
+  # que la Transhumance ne lui donne que le temps de ses propres effets. Leur
+  # sous-sort critique a un taux de base de 1 %, et non celui du sort.
+  #
+  # Ils ne vivent que le tour de leur pose : la Transhumance ne déclenche une
+  # aura que dans le tour où elle est posée, après elle, bien que la donnée
+  # écrive 2 sur leur pose (effet 401), d'où `turns: 0`. Un seul glyphe
+  # élémentaire partant par tour, une Transhumance ne déclenche jamais plus
+  # d'une aura.
+
+  - id: glyphe_paturage
+    dofusdb_source: 13013
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        crit_base_percent: 1
+        lines:
+          # Sous-sort 29068 : 31-35, critique 37-42.
+          - element: air
+            critical: [37, 42]
+            normal: [31, 35]
+
+  - id: glyphe_refuge
+    dofusdb_source: 13021
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        crit_base_percent: 1
+        lines:
+          # Sous-sort 29067 : 32-36, critique 38-43.
+          - element: earth
+            critical: [38, 43]
+            normal: [32, 36]
+
+  - id: glyphe_verglas
+    dofusdb_source: 13023
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: spell_tagged
+        tag: triggers_glyphs
+        spends: 0
+        once_per_turn: true
+        crit_base_percent: 1
+        lines:
+          # Sous-sort 29066 : 31-35, critique 37-42.
+          - element: water
+            critical: [37, 42]
+            normal: [31, 35]
+
+
+  - id: pieges_declenches
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible traverse votre Barrière"
+    note: |
+      Cochez si la cible traverse le glyphe de votre Barrière : ses dégâts
+      comptent alors quand vous la lancez.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Barriere, Ataraxie et Bergerie la posent sur leur cible ou dans leur glyphe. Aucune n'a d'effet dans ce calculateur, qui ne les lance donc pas, et la rotation ne place jamais le Feca dans son propre glyphe."
+
+spells:
+  - id: typhon
+    dofusdb_id: 12976
+    name: { fr: "Typhon", en: "Typhoon" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de l'Agilité et des Dommages et occasionne des dommages Air aux ennemis en zone.
+    assumptions:
+      - "Les caractéristiques et les statistiques retirées à la cible ne sont pas modélisées : réduire ce que l'adversaire inflige ou esquive ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: somnolence
+    dofusdb_id: 12977
+    name: { fr: "Somnolence", en: "Drowsiness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PA aux ennemis en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: langueur
+    dofusdb_id: 12978
+    name: { fr: "Langueur", en: "Languor" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de l'Intelligence et des Critiques et occasionne des dommages Feu.
+    assumptions:
+      - "Les caractéristiques et les statistiques retirées à la cible ne sont pas modélisées : réduire ce que l'adversaire inflige ou esquive ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: barricade
+    dofusdb_id: 12979
+    name: { fr: "Barricade", en: "Barricade" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'allié ciblé Invulnérable en mêlée.
+      Augmente ses PM s'il est attaqué à distance ou désenvoûté.
+      
+      Sur une case libre : invoque un bouclier statique qui pose un glyphe-aura rendant les alliés Invulnérables en mêlée.
+      Le glyphe suit le bouclier et il est détruit au tour suivant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Invulnérable en Mêlée » (376). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Barricade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: treve
+    dofusdb_id: 12980
+    name: { fr: "Trêve", en: "Truce" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe-aura qui rend les entités Pacifistes.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: rempart
+    dofusdb_id: 12981
+    name: { fr: "Rempart", en: "Rampart" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit les dommages reçus par le lanceur et ses alliés en zone.
+    lines: []
+    effects: []
+
+  - id: bouclier_feca
+    dofusdb_id: 12982
+    name: { fr: "Bouclier Féca", en: "Feca Shield" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit les dommages subis par l'allié ciblé.
+      Applique également l'Étoile du Berger sur l'allié ciblé et tous les alliés dans un glyphe élémentaire allié.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,29073,1::Étoile du Berger}} » (5261). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Bouclier Féca », « Étoile du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: retour_du_baton
+    dofusdb_id: 12983
+    name: { fr: "Retour du Bâton", en: "Backlash" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Force et de la Fuite et occasionne des dommages Terre.
+    assumptions:
+      - "Les caractéristiques et les statistiques retirées à la cible ne sont pas modélisées : réduire ce que l'adversaire inflige ou esquive ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: nimbus
+    dofusdb_id: 12984
+    name: { fr: "Nimbus", en: "Nimbus" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Chance et du Tacle et occasionne des dommages Eau aux ennemis en zone.
+    assumptions:
+      - "Les caractéristiques et les statistiques retirées à la cible ne sont pas modélisées : réduire ce que l'adversaire inflige ou esquive ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: terre_brulee
+    dofusdb_id: 12985
+    name: { fr: "Terre Brûlée", en: "Scorched Dirt" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe de début de tour qui occasionne des dommages Feu aux ennemis.
+      Retire des PM aux ennemis présents ou entrant dans le glyphe.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe est compté posé sous la cible, qui y reste : Feu 30-34 (sous-sort 12996) au début de chacun des deux tours suivants de la cible, et une fois de plus si la Transhumance le déclenche pendant qu'il est au sol. Ce qu'il retire ou réduit à l'ennemi ne change pas ce qu'on lui inflige. Voir les glyphes en tête de fichier."
+    lines: []
+    effects:
+      - effect: gain
+        resource: glyphe_terre_brulee
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: transhumance
+    dofusdb_id: 12986
+    name: { fr: "Transhumance", en: "Greener Pastures" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur et déclenche ses glyphes élémentaires sur la case ciblée.
+      Applique également l'Étoile du Berger sur les alliés présents dans les glyphes déclenchés.
+      
+      Les glyphes ne peuvent être déclenchés manuellement qu'une seule fois par tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Transhumance » (5372) ; retire « Transhumance » (5372) ; applique « {{spell,29073,1::Étoile du Berger}} » (5261). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1026 : déclenche les glyphes de huit sorts sur la case ciblée, Terre Battue, Refuge, Terre Brûlée, Vigie, Vallée, Verglas, Prairie et Pâturage. Compté comme un coup de chacun de ces glyphes encore au sol, la cible se tenant dans tous : la Transhumance vise une case libre au contact de la cible, que couvrent toutes leurs zones. Le glyphe de la Vigie ne frappe pas."
+      - "Effets 950/951 : l'etat « Glyphes declenches » (5260) ne vit que le temps des effets du sort, et c'est lui qui fait frapper les glyphes-auras du Paturage, du Refuge et du Verglas, dont la ligne de degats porte `*E5260`. Ecrit en etiquette `triggers_glyphs`, que chaque glyphe declenchable ecoute."
+      - "Un glyphe ne se declenche qu'une fois par tour, dit le texte, et la donnee le porte : chaque glyphe declenche pose au lanceur un etat (5364 a 5371) que l'effet 1026 exclut. Ecrit en `once_per_turn`."
+    tags: [triggers_glyphs]
+    lines: []
+    effects: []
+
+  - id: terre_battue
+    dofusdb_id: 12987
+    name: { fr: "Terre Battue", en: "Dirt Floor" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe de début de tour qui occasionne des dommages Terre aux ennemis.
+      Retire des PA aux ennemis présents ou entrant dans le glyphe.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe est compté posé sous la cible, qui y reste : Terre 29-33 (sous-sort 13000) au début de chacun des deux tours suivants de la cible, et une fois de plus si la Transhumance le déclenche pendant qu'il est au sol. Ce qu'il retire ou réduit à l'ennemi ne change pas ce qu'on lui inflige. Voir les glyphes en tête de fichier."
+    lines: []
+    effects:
+      - effect: gain
+        resource: glyphe_terre_battue
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: defiance
+    dofusdb_id: 12988
+    name: { fr: "Défiance", en: "Distrust" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente le Tacle de l'allié ciblé pour chaque ennemi à son contact et pose un glyphe de fin de tour qui occasionne des dommages Terre, Feu, Eau et Air aux ennemis.
+      Augmente les résistances en mêlée des alliés présents ou entrant dans le glyphe.
+      
+      Invoque également la Lanterne du Berger, lui applique les effets du sort et lui permet de tacler si la case est libre.
+    assumptions:
+      - "Effet 753, « + 10 Tacle » puis « + 15 Tacle », un tour, sur les alliés : le Tacle retient un ennemi au corps à corps, il ne change pas ce qu'un sort inflige, et ce calculateur ne résout qu'un lanceur seul."
+      - "Effet 1160 : lance aussi « Défiance », « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe de fin de tour est compté posé au contact de la cible, qui y reste : 21-22 dans les quatre éléments (sous-sort 13001) à la fin du tour suivant de la cible, sa durée étant de 1. La Transhumance ne le déclenche pas."
+    lines: []
+    effects:
+      - effect: gain
+        resource: glyphe_defiance
+
+  - id: frisson
+    dofusdb_id: 12989
+    name: { fr: "Frisson", en: "Shiver" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et attire les cibles vers la case ciblée en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: vallee
+    dofusdb_id: 12990
+    name: { fr: "Vallée", en: "Valley" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe de début de tour qui occasionne des dommages Eau aux ennemis.
+      Retire de la Portée aux ennemis présents ou entrant dans le glyphe.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe est compté posé sous la cible, qui y reste : Eau 28-32 (sous-sort 12998) au début de chacun des deux tours suivants de la cible, et une fois de plus si la Transhumance le déclenche pendant qu'il est au sol. Ce qu'il retire ou réduit à l'ennemi ne change pas ce qu'on lui inflige. Voir les glyphes en tête de fichier."
+    lines: []
+    effects:
+      - effect: gain
+        resource: glyphe_vallee
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: bergerie
+    dofusdb_id: 12991
+    name: { fr: "Bergerie", en: "Into the Fold" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe-aura qui applique les états Inébranlable et Pesanteur sur les entités.
+      Applique également l'Étoile du Berger sur les alliés présents ou entrant dans le glyphe.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: prairie
+    dofusdb_id: 12992
+    name: { fr: "Prairie", en: "Prairie" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe de début de tour qui occasionne des dommages Air aux ennemis.
+      Réduit les dommages finaux des ennemis présents ou entrant dans le glyphe.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe est compté posé sous la cible, qui y reste : Air 31-35 (sous-sort 12999) au début de chacun des deux tours suivants de la cible, et une fois de plus si la Transhumance le déclenche pendant qu'il est au sol. Ce qu'il retire ou réduit à l'ennemi ne change pas ce qu'on lui inflige. Voir les glyphes en tête de fichier."
+    lines: []
+    effects:
+      - effect: gain
+        resource: glyphe_prairie
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: lethargie
+    dofusdb_id: 12993
+    name: { fr: "Léthargie", en: "Lethargy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bulle
+    dofusdb_id: 12994
+    name: { fr: "Bulle", en: "Bubble" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire de la Portée.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bastion
+    dofusdb_id: 12995
+    name: { fr: "Bastion", en: "Bastion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'allié ciblé Invulnérable à distance.
+      Augmente sa Puissance s'il est attaqué en mêlée ou désenvoûté.
+      
+      Sur une case libre : invoque un bouclier statique qui pose un glyphe-aura rendant les alliés Invulnérables à distance.
+      Le glyphe suit le bouclier et il est détruit au tour suivant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Invulnérable à Distance » (375). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Bastion », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 138, +200 Puissance : va a l'ALLIE CIBLE, et seulement s'il est attaque en melee ou desenvoute, ce qui se joue pendant le tour de l'adversaire. Deux raisons de ne rien valoir ici."
+    effects: []
+
+  - id: mise_en_garde
+    dofusdb_id: 12997
+    name: { fr: "Mise en Garde", en: "Reinforced Protection" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les caractéristiques du lanceur selon ses armures élémentaires actives, déclenche ses glyphes élémentaires sur la case ciblée et applique l'Étoile du Berger sur les alliés dans ces glyphes.
+      
+      Les glyphes ne peuvent être déclenchés manuellement qu'une seule fois par tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Mise en Garde » (5373) ; applique « {{spell,29073,1::Étoile du Berger}} » (5261) ; retire « Mise en Garde » (5373). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Étoile du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Glyphes déclenchés » (5260), lu par Pâturage, Refuge, Verglas ; retire « Glyphes déclenchés » (5260), lu par Pâturage, Refuge, Verglas. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 118 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 119 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 123 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 126 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1026 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: houlette
+    dofusdb_id: 13007
+    name: { fr: "Houlette", en: "Shepherd's Crook" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: regroupement
+    dofusdb_id: 13008
+    name: { fr: "Regroupement", en: "Gather the Flock" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Attire les cibles vers le centre et occasionne des dommages Terre aux ennemis en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fortification
+    dofusdb_id: 13009
+    name: { fr: "Fortification", en: "Fortification" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit les dommages reçus par l'allié ciblé.
+    lines: []
+    effects: []
+
+  - id: bourrasque
+    dofusdb_id: 13010
+    name: { fr: "Bourrasque", en: "Gust" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles vers les extrémités en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: silbo
+    dofusdb_id: 13011
+    name: { fr: "Silbo", en: "Silbo" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles depuis le centre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: man_uvre
+    dofusdb_id: 13012
+    name: { fr: "Manœuvre", en: "Manœuvre" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et échange de position avec la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: paturage
+    dofusdb_id: 13013
+    name: { fr: "Pâturage", en: "Pastureland" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis en zone et pose un glyphe-aura sous la cible qui augmente les dommages finaux des alliés.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+      Dissipe le glyphe-aura du sort précédemment posé.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe-aura du Pâturage donne 10 % de dommages finaux aux alliés, lanceur compris s'il se tient dessus, et seulement le tour de sa pose : pas de glyphe, pas d'aura, là où la donnée écrit 2. Effet 1171, « #1% Dommages finaux », paramètre 10, durée 2, cible `a`, sur le sous-sort 13028. Le seul des trois glyphes-auras à toucher aux dégâts infligés."
+      - "⚠️ La grille n'est pas simulee et ne le sera pas : c'est au joueur de dire s'il se tient sur son glyphe, avec le reglage `sur_le_glyphe_aura`. A zero, le sort rend exactement son chiffre d'avant. La portee minimale du Paturage etant de ZERO, le Feca peut poser le glyphe sous ses propres pieds, donc le bonus lui est accessible par construction et le reglage ne dit que son choix."
+      - "⚠️ Le reglage vaut pour TOUTE la rotation, pas par lancer. Un Feca qui pose son glyphe, s'en eloigne, puis y revient n'est pas distingue de celui qui ne le quitte jamais."
+      - "L'invocation qui accompagne le sort n'est pas modélisée : ce calculateur résout une rotation à un seul lanceur."
+      - "Le glyphe-aura frappe aussi, mais seulement déclenché : sa ligne porte `*E5260`, l'état Glyphes déclenchés que la Transhumance donne au lanceur le temps de ses effets. Compté 31-35, critique 37-42 avec 1 % de critique de base (sous-sort 29068), quand la Transhumance le déclenche dans le tour de sa pose, la cible s'y tenant. Il ne vit que ce tour-là, là où la donnée écrit 2 sur sa pose."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Le glyphe est pose quoi qu'il arrive ; ce qui depend du joueur, c'est
+      # de se tenir dessus. Meme tournure que les poisons de portail de
+      # l'Eliotrope, dont le gain se conditionne au compteur declare.
+      - effect: gain
+        resource: aura_paturage
+        requires: { kind: caster_has, resource: sur_le_glyphe_aura }
+      - effect: gain
+        resource: glyphe_paturage
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: atonie
+    dofusdb_id: 13014
+    name: { fr: "Atonie", en: "Lifelessness" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM aux ennemis en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: stratus
+    dofusdb_id: 13015
+    name: { fr: "Stratus", en: "Stratus" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire de la Portée aux ennemis en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: pavois
+    dofusdb_id: 13016
+    name: { fr: "Pavois", en: "Pavise" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque plusieurs boucliers statiques en zone.
+      Les boucliers sont détruits au tour suivant.
+      
+      Sur une cible : invoque ces boucliers à son contact.
+      • Sur un allié : les Pavois sont détruits au début de son tour ou à sa mort.
+      • Sur un ennemi : ils sont détruits au tour suivant.
+    assumptions:
+      - "Effets 1160/2960 : lance aussi « Pavois », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: tetanie
+    dofusdb_id: 13017
+    name: { fr: "Tétanie", en: "Tetany" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PA.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: egide
+    dofusdb_id: 13018
+    name: { fr: "Égide", en: "Aegis" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un bouclier statique qui intercepte les dommages subis par les alliés présents dans son glyphe-aura et leur applique l'état Étoile du Berger.
+      Le glyphe suit le bouclier et il est détruit 2 tours après son invocation.
+      
+      Sur une cible : pose un glyphe-aura qui intercepte les dommages subis par les alliés et leur applique l'état Étoile du Berger.
+      
+      N'affecte pas la Barricade et le Bastion.
+    assumptions:
+      - "Effet 1160 : lance aussi « Sanctuaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: barriere
+    dofusdb_id: 13019
+    name: { fr: "Barrière", en: "Barrier" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique les états Pesanteur et Barrière sur la cible.
+      
+      Sur un ennemi :
+      • Pose un glyphe autour de lui au début de son tour qui occasionne des dommages Terre, Feu, Eau et Air.
+      • Augmente les résistances à distance des alliés présents ou entrant à l'intérieur de la zone.
+      • Le glyphe n'occasionne des dommages qu'à cet ennemi s'il le traverse.
+      • Les états et le glyphe sont retirés si l'ennemi traverse la Barrière ou s'il est achevé.
+      
+      Sur un allié :
+      • Le glyphe est posé à la fin du tour du lanceur et n'occasionne des dommages qu'au premier ennemi qui le traverse.
+      • Les états et le glyphe sont retirés si la cible ou un ennemi traverse la Barrière.
+      
+      Sur une case libre : invoque la Lanterne du Berger et lui applique les effets du sort.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de fois la cible traverse sa Barrière par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses quatre lignes posées, 21-22 dans chaque élément, sous-sort 29579), une fois, la Barrière retirée après, sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7) ; applique « Barrière » (717) ; applique « Barrière allié » (4028) ; applique « Barrière ennemi » (5375). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Barrière », « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: renfort
+    dofusdb_id: 13020
+    name: { fr: "Renfort", en: "Backup" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur jusqu'à l'allié ciblé.
+    assumptions:
+      - "Effet 1160 : lance aussi « Renfort », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: refuge
+    dofusdb_id: 13021
+    name: { fr: "Refuge", en: "Refuge" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis en zone et pose un glyphe-aura sous la cible qui réduit les dommages subis par les alliés.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+      Dissipe le glyphe-aura du sort précédemment posé.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe-aura du Refuge ne touche pas aux dégâts infligés : il porte l'effet 1163 à 85, « Dommages subis x85% », sur les alliés (sous-sort 13032). Il protège, et ce calculateur compte ce que le lanceur inflige."
+      - "L'invocation qui accompagne le sort n'est pas modélisée : ce calculateur résout une rotation à un seul lanceur."
+      - "Le glyphe-aura frappe aussi, mais seulement déclenché : sa ligne porte `*E5260`, l'état Glyphes déclenchés que la Transhumance donne au lanceur le temps de ses effets. Compté 32-36, critique 38-43 avec 1 % de critique de base (sous-sort 29067), quand la Transhumance le déclenche dans le tour de sa pose, la cible s'y tenant. Il ne vit que ce tour-là, là où la donnée écrit 2 sur sa pose."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: glyphe_refuge
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: giboulee
+    dofusdb_id: 13022
+    name: { fr: "Giboulée", en: "Sudden Shower" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse la cible.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: verglas
+    dofusdb_id: 13023
+    name: { fr: "Verglas", en: "Black Ice" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis en zone et pose un glyphe-aura sous la cible qui augmente la Fuite des alliés.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+      Dissipe le glyphe-aura du sort précédemment posé.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effet 1160 : lance aussi « Invoque la Lanterne du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe-aura du Verglas ne touche pas aux dégâts : il porte l'effet 752 à 50, « + 50 Fuite », sur les alliés (sous-sort 13034). La Fuite décide si l'on se dégage d'un corps à corps, pas ce que frappe un sort, comme le glyphe-aura de Portée de la Vigie."
+      - "L'invocation qui accompagne le sort n'est pas modélisée : ce calculateur résout une rotation à un seul lanceur."
+      - "Le glyphe-aura frappe aussi, mais seulement déclenché : sa ligne porte `*E5260`, l'état Glyphes déclenchés que la Transhumance donne au lanceur le temps de ses effets. Compté 31-35, critique 37-42 avec 1 % de critique de base (sous-sort 29066), quand la Transhumance le déclenche dans le tour de sa pose, la cible s'y tenant. Il ne vit que ce tour-là, là où la donnée écrit 2 sur sa pose."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: glyphe_verglas
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: excursion
+    dofusdb_id: 13024
+    name: { fr: "Excursion", en: "Excursion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe qui échange la position des alliés avec celle du lanceur.
+      Applique également l'Étoile du Berger sur les alliés qui déclenchent le glyphe.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 1165 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: vigie
+    dofusdb_id: 13025
+    name: { fr: "Vigie", en: "Lookout" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    blocked_by: hypoglyphe
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis en zone et pose un glyphe-aura sous le lanceur qui augmente la Portée des alliés.
+      Le glyphe-aura se pose sur la case ciblée si elle est libre ou si la cible est un allié.
+      
+      Invoque également la Lanterne du Berger si la case est libre.
+      
+      Empêche l'utilisation d'autres glyphes élémentaires dans le même tour.
+      Dissipe le glyphe-aura du sort précédemment posé.
+    assumptions:
+      - "Effets 950/951 : ce sort s'applique « Hypoglyphe » (238) à lui-même, ce qui interdit les sept autres glyphes élémentaires jusqu'à la fin du tour (`blocked_by`) : le critère de lancer de la donnée vaut « HS!238 », « le lanceur n'a pas l'état 238 », lu au lancer et non dans le masque de cible."
+      - "Effets 1160/2960 : lance aussi « Invoque la Lanterne du Berger », « Vigie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le glyphe-aura de Portée n'est pas modélisé : la portée décide d'où l'on lance, pas de ce que le lancer inflige, et le placement n'est pas simulé."
+      - "L'invocation qui accompagne le sort n'est pas modélisée : ce calculateur résout une rotation à un seul lanceur."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: hypoglyphe
+
+  - id: ataraxie
+    dofusdb_id: 13027
+    name: { fr: "Ataraxie", en: "Ataraxia" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Pesanteur sur l'allié ciblé et réduit tout type de dommages subis sur la première attaque.
+      Les effets du sort sont retirés à la moindre attaque subie.
+      
+      Les effets d'interception et de partage de dommages sont incompatibles avec le sort.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7) ; applique « Ataraxie » (2742). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: torpeur
+    dofusdb_id: 14434
+    name: { fr: "Torpeur", en: "Torpor" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Attire la cible et occasionne des dommages Terre aux ennemis.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sonnailles
+    dofusdb_id: 14436
+    name: { fr: "Sonnailles", en: "Cowbell" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire les cibles jusqu'au centre en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Sonnailles cibles » (1461). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 2960 : lance aussi « Sonnailles », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'attirance des cibles vers le centre n'est pas modélisée : ce calculateur ne simule pas la grille."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: escapade
+    dofusdb_id: 29045
+    name: { fr: "Escapade", en: "Getaway" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Eau aux ennemis.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

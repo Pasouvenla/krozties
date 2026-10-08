@@ -1,0 +1,160 @@
+Glas by stack count: 1864, 2124, 2383, 2644, 2904, 3164
+
+=== 12 AP/turn | up to 3 Telefrag per turn | 7 turns | no parity (constant x1.155) ===
+searching...
+solved in 10.2s
+
+Turn 1   5052-5293 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Souvenir (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Sablier (2 PA)
+   6. Refraction (2 PA)
+   7. Poussiere (4 PA) [TF, +2 PA]
+   8. Refraction (2 PA) [+ Sablier resolves]
+
+Turn 2   5069-5323 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Sablier (2 PA)
+   5. Refraction (2 PA)
+   6. Poussiere (4 PA) [TF, +2 PA]
+   7. Aiguille (2 PA)
+   8. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+
+Turn 3   8089-8355 crit damage
+      (Aiguille poison)
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Sablier (2 PA)
+   4. Refraction (2 PA) [+ Aiguille proc]
+   5. Engrenage (3 PA) [TF, +2 PA]
+   6. Refraction (2 PA) [+ Sablier resolves]
+   7. Glas [6 stacks]
+
+Turn 4   5069-5323 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Sablier (2 PA)
+   5. Refraction (2 PA)
+   6. Poussiere (4 PA) [TF, +2 PA]
+   7. Aiguille (2 PA)
+   8. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+
+Turn 5   6194-6520 crit damage
+      (Aiguille poison)
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Sablier (2 PA)
+   4. Refraction (2 PA) [+ Aiguille proc]
+   5. Engrenage (3 PA) [TF, +2 PA]
+   6. Refraction (2 PA) [+ Sablier resolves]
+   7. Poussiere (4 PA) [TF, +2 PA]
+   8. Souvenir (2 PA) [no TF]
+
+Turn 6   4908-5161 crit damage
+   1. Ralentissement (2 PA)
+   2. Sablier (2 PA)
+   3. Refraction (2 PA)
+   4. Souvenir (2 PA) [TF, +2 PA]
+   5. Aiguille (2 PA)
+   6. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+   7. Engrenage (3 PA) [TF, +2 PA]
+   8. Souvenir (2 PA) [no TF]
+
+Turn 7   8089-8355 crit damage
+      (Aiguille poison)
+   1. Ralentissement (2 PA)
+   2. Sablier (2 PA)
+   3. Refraction (2 PA) [+ Aiguille proc]
+   4. Souvenir (2 PA) [TF, +2 PA]
+   5. Refraction (2 PA) [+ Sablier resolves]
+   6. Engrenage (3 PA) [TF, +2 PA]
+   7. Glas [6 stacks]
+
+Total over 7 turns : 42470-44330
+Per turn                  : 6067-6333
+(before target resistances)
+
+=== 12 AP/turn | up to 2 Telefrag per turn | 7 turns | no parity (constant x1.155) ===
+searching...
+solved in 9.8s
+
+Turn 1   5052-5293 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Souvenir (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Sablier (2 PA)
+   6. Refraction (2 PA)
+   7. Poussiere (4 PA) [TF, +2 PA]
+   8. Refraction (2 PA) [+ Sablier resolves]
+
+Turn 2   5069-5323 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Sablier (2 PA)
+   5. Refraction (2 PA)
+   6. Poussiere (4 PA) [TF, +2 PA]
+   7. Aiguille (2 PA)
+   8. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+
+Turn 3   8089-8355 crit damage
+      (Aiguille poison)
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Sablier (2 PA)
+   4. Refraction (2 PA) [+ Aiguille proc]
+   5. Engrenage (3 PA) [TF, +2 PA]
+   6. Refraction (2 PA) [+ Sablier resolves]
+   7. Glas [6 stacks]
+
+Turn 4   5069-5323 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Sablier (2 PA)
+   5. Refraction (2 PA)
+   6. Poussiere (4 PA) [TF, +2 PA]
+   7. Aiguille (2 PA)
+   8. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+
+Turn 5   6010-6319 crit damage
+      (Aiguille poison)
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Souvenir (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Sablier (2 PA)
+   6. Refraction (2 PA) [+ Aiguille proc]
+   7. Poussiere (4 PA) [TF, +2 PA]
+   8. Refraction (2 PA) [+ Sablier resolves]
+
+Turn 6   5069-5323 crit damage
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Sablier (2 PA)
+   5. Refraction (2 PA)
+   6. Poussiere (4 PA) [TF, +2 PA]
+   7. Aiguille (2 PA)
+   8. Refraction (2 PA) [+ Aiguille proc] [+ Sablier resolves]
+
+Turn 7   8089-8355 crit damage
+      (Aiguille poison)
+   1. Souvenir (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Sablier (2 PA)
+   4. Refraction (2 PA) [+ Aiguille proc]
+   5. Engrenage (3 PA) [TF, +2 PA]
+   6. Refraction (2 PA) [+ Sablier resolves]
+   7. Glas [6 stacks]
+
+Total over 7 turns : 42447-44291
+Per turn                  : 6064-6327
+(before target resistances)
+

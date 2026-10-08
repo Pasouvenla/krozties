@@ -1,0 +1,1102 @@
+# Sram.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: sram
+name: { fr: "Sram", en: "Sram" }
+
+resources:
+  - id: fourberie_intelligence
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12905
+    modifies_damage:
+      - kind: characteristic
+        amount: 100
+        element: fire
+    note: |
+      Les cent points de Intelligence que la Fourberie vole à la cible et donne au
+      lanceur, pendant trois tours, cumul 2 (`maxStack`) : deux cents au plus. Le
+      vol donne au lanceur ce qu'il retire, et ne lève que les lignes Feu.
+
+  - id: arnaque_agilite
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12911
+    modifies_damage:
+      - kind: characteristic
+        amount: 100
+        element: air
+    note: |
+      Les cent points de Agilité que l'Arnaque vole à la cible et donne au
+      lanceur, pendant trois tours, cumul 2 (`maxStack`) : deux cents au plus. Le
+      vol donne au lanceur ce qu'il retire, et ne lève que les lignes Air.
+
+  - id: pillage_chance
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12934
+    modifies_damage:
+      - kind: characteristic
+        amount: 100
+        element: water
+    note: |
+      Les cent points de Chance que le Pillage vole à la cible et donne au
+      lanceur, pendant trois tours, cumul 2 (`maxStack`) : deux cents au plus. Le
+      vol donne au lanceur ce qu'il retire, et ne lève que les lignes Eau.
+
+  - id: extorsion_force
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 12938
+    modifies_damage:
+      - kind: characteristic
+        amount: 100
+        element: earth
+    note: |
+      Les cent points de Force que l'Extorsion vole à la cible et donne au
+      lanceur, pendant trois tours, cumul 2 (`maxStack`) : deux cents au plus. Le
+      vol donne au lanceur ce qu'il retire, et ne lève que les lignes Terre.
+      La Terre emporte le Neutre avec elle, les deux tirant de la Force.
+
+  - id: truanderie
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138 : de la Puissance, donc DANS l'arrondi caracteristique.
+      - kind: characteristic
+        amount: 80
+    note: |
+      « Vole de la Puissance. » La donnée porte les deux moitiés séparément :
+      l'effet 186 retire 80 Puissance à la cible, l'effet 138 en donne 80 au
+      lanceur, marqué « C », pendant trois tours. Cumul 2 (`maxStack`) : le moteur
+      applique les modificateurs par charge, et deux crans valent le double.
+
+
+  - id: vulnerabilite_marque_mortuaire
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Meme lecture que pour Coupe-gorge : zero tour veut dire « le tour de la
+    # pose, et lui seul ».
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, « Dommages subis x102 % ». Le sort en porte cinq paliers, 102 à
+      # 110 %, gouvernés par le nombre de pièges déclenchés du lanceur (états 1407 à
+      # 1410 sur le lanceur). C'est le palier sans piège qui compte, le plus bas des
+      # cinq : ces états ne sont pas suivis.
+      - kind: final_multiplier
+        percent: 102
+    note: |
+      La vulnerabilite que la Marque Mortuaire pose sur sa cible. Tout ce qui
+      tombe ensuite sur elle dans le meme tour est multiplie par 1.02, et
+      jusqu'a 1.10 pour qui joue ses pieges.
+
+  - id: vulnerabilite_coupe_gorge
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Zéro tour veut dire « le tour de la pose, et lui seul » : la vulnérabilité
+    # tient jusqu'au début du prochain tour du lanceur, qui n'en profite que dans
+    # le même tour d'actions.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, « Dommages subis x110 % » : un multiplicateur, donc tout a
+      # la fin du pipeline.
+      - kind: final_multiplier
+        percent: 110
+    note: |
+      La vulnerabilite que Coupe-gorge pose sur sa cible. Tout ce qui tombe ensuite
+      sur elle dans le meme tour est multiplie par 1.1.
+
+  - id: injection_toxique
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            critical: [34, 38]
+            normal: [28, 32]
+        note: |
+          Le poison de début de tour, même forme que la Flèche Harcelante et la
+          Flèche Tyrannique du Crâ. « Retire des PM et applique un poison Air de début
+          de tour sur la cible » : le sort ne frappe pas au lancer, et sa seule
+          fourchette, 28-32, est rangée sous « Début de tour », durée 3. Le poison
+          tombe au début de chacun de nos trois tours suivants.
+    note: |
+      Un seul poison : le cumul de 2 de la donnée (`maxStack`) porte sur le temps
+      de relance, pas sur le poison. La relance vaut 5 de base et descend à 3 au
+      mieux, un cran par cible qui prend des dégâts de piège ; cette relance
+      raccourcie n'est pas comptée.
+
+  - id: toxines
+    scope: target
+    max: 6
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            active_at: { resource: toxines, exactly: 1 }
+            critical: [7, 9]
+            normal: [7, 9]
+          - element: air
+            active_at: { resource: toxines, exactly: 2 }
+            critical: [13, 15]
+            normal: [13, 15]
+          - element: air
+            active_at: { resource: toxines, exactly: 3 }
+            critical: [19, 21]
+            normal: [19, 21]
+          - element: air
+            active_at: { resource: toxines, exactly: 4 }
+            critical: [25, 27]
+            normal: [25, 27]
+          - element: air
+            active_at: { resource: toxines, exactly: 5 }
+            critical: [31, 33]
+            normal: [31, 33]
+          - element: air
+            active_at: { resource: toxines, exactly: 6 }
+            critical: [37, 39]
+            normal: [37, 39]
+        note: |
+          Le poison de fin de tour, avec ses six paliers, même forme que l'Arsenic et
+          l'Injection Toxique ci-dessous, durée 2. Le sort ne frappe pas au lancer :
+          « applique un poison Air de fin de tour sur l'ennemi ciblé ». Le compteur
+          porte à la fois la présence du poison et son cran : quand le poison tombe,
+          la durée le ramène à zéro et le cran part avec lui.
+
+          Le compteur suit les lancers, pas les tours passés sous poison : les paliers
+          sont étiquetés « N tours avec cible sous poison », et le sort ne se lançant
+          qu'une fois par tour, les deux coïncident tant qu'on le relance. Sur un tour
+          sauté, le jeu compte un tour de plus et ce fichier aucun : le modèle est un
+          plancher.
+
+          Le texte du sort dit que le poison « est réappliqué tant qu'il est actif et
+          que la cible subit des dommages de pièges » ; les paliers publiés nomment la
+          condition autrement, par tours sous poison, et c'est cette lecture qui est
+          retenue.
+
+  - id: arsenic
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            critical: [19, 22]
+            normal: [16, 18]
+        note: |
+          « Retire de la Portee et applique un poison Air de debut de tour sur
+          la cible. » Meme forme que l'Injection Toxique ci-dessus, duree 2.
+
+  - id: pieges_declenches
+    scope: caster
+    max: 5
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Pièges que la cible déclenche par tour"
+    note: |
+      Combien de vos pièges la cible déclenche à chaque tour : ils comptent
+      leurs dégâts quand vous les posez, dans cette limite, et la Chausse-trappe
+      frappe de 8 de plus par piège.
+    # Ce que le réglage porte, pour le mainteneur : combien de pièges du lanceur
+    # ont été déclenchés, ce que le joueur déclare.
+    #
+    # La Chausse-trappe monte de 8 dégâts de base par piège, cinq au plus : 28-32
+    # nu, puis 36-40 à un piège, jusqu'à 68-72 à cinq. La Rotation compte aussi
+    # les pièges eux-mêmes : ce réglage borne ceux qui partent dans un tour (« la
+    # cible déclenche N pièges par tour »), sur une réserve à part,
+    # `pieges_du_tour`, que la Rotation greffe et que les pièges consomment.
+    #
+    # « Les effets sont retirés après utilisation du sort » : la Chausse-trappe
+    # remet le compteur à zéro en partant, et le réglage revient à la valeur
+    # déclarée au début du tour suivant, un compteur déclaré disant ce que le
+    # joueur fait dans un tour et non une réserve qui s'épuise.
+
+  - id: concentration_de_chakra
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 950 du sort 12903, etat 643, duree 1 : le tour du lancer.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'etat de la Concentration de Chakra : chaque piege que la cible declenche
+      tant qu'il tient lui vole 12 en meilleur element, comme dans KrozTrap.
+
+  - id: double_au_contact
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Votre double meurt au contact de la cible"
+    note: |
+      Le double du Comploteur meurt à la fin de son troisième tour et frappe
+      alors les entités à son contact : cochez si vous le gardez au contact de la
+      cible.
+
+costly:
+  - id: vols_de_caracteristique
+    name: { fr: "Vols de caractéristique", en: "Characteristic steals" }
+    resources: [fourberie_intelligence, arnaque_agilite, pillage_chance, extorsion_force, truanderie]
+    note: |
+      Les cinq sorts qui volent une caractéristique à la cible, Fourberie,
+      Arnaque, Pillage, Extorsion et Truanderie, et le bonus qu'ils rendent au
+      lanceur pendant trois tours. Sans eux, le total est très en dessous de ce
+      qu'un Sram fait vraiment.
+
+spells:
+  - id: truanderie
+    dofusdb_id: 12902
+    name: { fr: "Truanderie", en: "Gangsterdom" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la Puissance et occasionne des dommages Terre.
+    assumptions:
+      - "Effet 186, -80 Puissance sur la CIBLE : c'est l'autre moitie du vol, celle qui affaiblit l'adversaire. Elle ne change pas ce que le lanceur inflige, et ce calculateur ne simule pas le tour de l'adversaire."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: truanderie
+
+  - id: concentration_de_chakra
+    dofusdb_id: 12903
+    name: { fr: "Concentration de Chakra", en: "Chakra Concentration" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Concentration de Chakra sur l'ennemi ciblé :
+      • Vole de la vie dans le meilleur élément du lanceur à la cible si elle subit des dommages de pièges.
+      
+      Dissipe l'invisibilité du lanceur.
+    assumptions:
+      - "Dans la Rotation : l'état sur la cible le tour du lancer (effet 950, durée 1), et 12 en meilleur élément volés à chaque piège qu'elle déclenche alors (effet 2828), comme KrozTrap. Sans piège déclaré, rien."
+      - "Effets 950/951 : ce sort applique « Concentration de Chakra » (643), lu ici comme la ressource `concentration_de_chakra` pour le vol sur les pieges. AUCUN sort de la classe ne lit ces etats dans son masque de cible."
+      - "Effet 1160 : lance aussi « Concentration de Chakra », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      - effect: gain
+        resource: concentration_de_chakra
+
+  - id: sournoiserie
+    dofusdb_id: 12904
+    name: { fr: "Sournoiserie", en: "Deviousness" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fourberie
+    dofusdb_id: 12905
+    name: { fr: "Fourberie", en: "Furrow" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de l'Intelligence et de la vie dans l'élément Feu en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 269, « Vole 100 Intelligence » pendant trois tours, sur l'état `fourberie_intelligence` : le lanceur gagne ce qu'il vole, pour la durée inscrite, cumul 2. Le bonus ne lève que les lignes Feu."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: fourberie_intelligence
+
+  - id: piege_sournois
+    dofusdb_id: 12906
+    name: { fr: "Piège Sournois", en: "Tricky Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui occasionne des dommages Feu aux ennemis et attire les entités vers son centre en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: arsenic
+    dofusdb_id: 12907
+    name: { fr: "Arsenic", en: "Arsenic" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Portée et applique un poison Air de début de tour sur la cible.
+    assumptions:
+      - "Effet 3793, sans description officielle : c'est le poison, écrit en état posé sur la cible qui frappe au début de chacun de nos deux tours suivants. La Portée ne change aucun dégât porté."
+      - "Le sort ne frappe pas au lancer : son poison tombe deux fois."
+    lines: []
+    effects:
+      - effect: gain
+        resource: arsenic
+
+  - id: peur
+    dofusdb_id: 12908
+    name: { fr: "Peur", en: "Fear" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pousse la cible jusqu'à la case ciblée.
+    lines: []
+    open_questions:
+      - "Effet 783 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: fourvoiement
+    dofusdb_id: 12909
+    name: { fr: "Fourvoiement", en: "Mistake" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Air en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: piege_d_immobilisation
+    dofusdb_id: 12910
+    name: { fr: "Piège d'Immobilisation", en: "Paralysing Trap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui retire des PM aux ennemis en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: arnaque
+    dofusdb_id: 12911
+    name: { fr: "Arnaque", en: "Con" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de l'Agilité et de la vie dans l'élément Air.
+    assumptions:
+      - "Effet 268, « Vole 100 Agilité » pendant trois tours, sur l'état `arnaque_agilite` : le lanceur gagne ce qu'il vole, pour la durée inscrite, cumul 2. Le bonus ne lève que les lignes Air."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: arnaque_agilite
+
+  - id: invisibilite
+    dofusdb_id: 12913
+    name: { fr: "Invisibilité", en: "Invisibility" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend la cible invisible.
+      Augmente également ses PM si c'est un allié.
+      
+      Le temps de relance est réinitialisé lorsque le lanceur achève un combattant.
+    lines: []
+    open_questions:
+      - "Effet 150 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: piege_repulsif
+    dofusdb_id: 12914
+    name: { fr: "Piège Répulsif", en: "Repelling Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui repousse les entités depuis son centre et occasionne des dommages Air aux ennemis en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: double
+    dofusdb_id: 12915
+    name: { fr: "Double", en: "Double" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un double contrôlable qui possède les mêmes caractéristiques que l'invocateur.
+      
+      Il n'attaque pas et meurt à la fin de son deuxième tour pour échanger de position avec le lanceur et lui augmenter ses PM.
+    assumptions:
+      - "Effet 1160 : lance aussi « Doublure », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Épidémie Double et Comploteur » (1486), lu par Épidémie. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 180 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: piege_fangeux
+    dofusdb_id: 12916
+    name: { fr: "Piège Fangeux", en: "Miry Trap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui occasionne des dommages Eau et retire des PM.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: attaque_mortelle
+    dofusdb_id: 12917
+    name: { fr: "Attaque Mortelle", en: "Lethal Attack" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages sont plus importants sur les cibles ayant moins de 50% de leur vie.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Ce sort porte deux fourchettes Terre : 54-60 sur une cible sous la moitié de sa vie, 43-48 au-dessus. La cible étant supposée au-dessus de 50 % de vie pendant tout le combat, c'est la seconde qui est comptée ici."
+    effects:
+      - effect: damage
+
+  - id: piege_insidieux
+    dofusdb_id: 12918
+    name: { fr: "Piège Insidieux", en: "Insidious Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui applique un poison Air de fin de tour sur les ennemis, leur occasionne des dommages Air et attire les entités vers le centre en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: cruaute
+    dofusdb_id: 12919
+    name: { fr: "Cruauté", en: "Cruelty" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et augmente les PM du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 128, +1 PM au lanceur pendant un tour : les points de mouvement servent a se placer, et ce calculateur ne simule pas la grille. Aucun degat n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: piege_effroyable
+    dofusdb_id: 12920
+    name: { fr: "Piège Effroyable", en: "Frightful Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui occasionne des dommages Terre aux ennemis et repousse les entités depuis le centre en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: piege_mortel
+    dofusdb_id: 12921
+    name: { fr: "Piège Mortel", en: "Lethal Trap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui occasionne des dommages Terre.
+      Les dommages sont plus importants sur les entités ayant moins de 50% de leurs points de vie.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: poisse
+    dofusdb_id: 12922
+    name: { fr: "Poisse", en: "Jinx" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau et minimise les effets aléatoires de l'ennemi ciblé.
+      Soigne également les alliés (hors lanceur) selon les dommages occasionnés à l'ennemi ciblé en zone.
+      
+      La minimisation des effets ne fonctionne qu'un tour sur deux sur une même cible.
+    assumptions:
+      - "Effet 406 : il retire l'etat Poisse quand la minimisation cesse. Sans mecanique de minimisation modelisee, il n'a rien a retirer."
+      - "Effets 950 et 951, etat « Poisse » (5183) : lu par le sort lui-meme et par personne d'autre, il marque la cible deja minimisee pour que la minimisation ne se reapplique pas."
+      - "Effet 781, « minimise les effets aléatoires de la cible » : la cible tire au minimum de ses fourchettes, ce qui change ce qu'elle inflige, jamais ce qu'on lui inflige."
+      - "Effet 2973, « soin : 50 % des dommages occasionnes » aux allies hors lanceur : des points de vie rendus, pas des degats portes."
+      - "Effet 1160 : lance aussi « Poisse », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: brume
+    dofusdb_id: 12930
+    name: { fr: "Brume", en: "Mist" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe-aura qui rend les alliés invisibles et retire de la Portée aux ennemis.
+      
+      Le temps de relance est réduit lorsque le lanceur achève un combattant.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: piege_scelerat
+    dofusdb_id: 12931
+    name: { fr: "Piège Scélérat", en: "Sickrat Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui attire les entités vers son centre et occasionne des dommages Eau aux ennemis en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: chausse_trappe
+    dofusdb_id: 12932
+    name: { fr: "Chausse-trappe", en: "Pitfall" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages du sort sont augmentés pour chaque piège déclenché du lanceur.
+      
+      Les effets sont retirés après utilisation du sort.
+    assumptions:
+      - "Effet 406 : c'est la remise a zero que le texte annonce, « les effets sont retires apres utilisation du sort ». Sans le bonus ci-dessus, elle n'a rien a retirer."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: pieges_declenches, amount: 8 }]
+    effects:
+      - effect: damage
+      # « Les effets sont retirés après utilisation du sort » : après la ligne de
+      # dégâts, pour que le lancer profite de ce qu'il efface. Le réglage revient à
+      # sa valeur au début du tour suivant.
+      - effect: reset
+        resource: pieges_declenches
+
+  - id: toxines
+    dofusdb_id: 12933
+    name: { fr: "Toxines", en: "Toxines" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un poison Air de fin de tour sur l'ennemi ciblé.
+      
+      Les dommages du sort sont augmentés (cumulable 5 fois) et le poison est réappliqué tant qu'il est actif et que la cible subit des dommages de pièges
+      Cet effet ne peut être déclenché qu'une seule fois par tour.
+    assumptions:
+      - "Les six paliers du poison sont écrits, de 7-9 à 37-39. Le compteur qui les porte monte d'un lancer, pas d'un tour passé sous poison : le sort ne se lance qu'une fois par tour, les deux coïncident tant qu'on le relance, et divergent d'un cran sur un tour sauté où la durée de 2 garde le poison en vie. Le total reste un plancher."
+      - "Le texte du sort conditionne la réapplication du poison à des dommages de pièges ; les paliers publiés portent « N tours avec cible sous poison », et c'est cette lecture qui est retenue."
+      - "Aucune source ne conditionne ce sort à une poussée subie par la cible."
+      - "Effet 1160 : les douze paliers du poison, de 5-7 a 37-39, un par cran de cumul et par rang du sort. Ils sont l'autre face du bonus de degats de base declare ci-dessus, pas une frappe de plus."
+      - "Le sort ne frappe pas au lancer : « applique un poison Air de fin de tour », une seule fourchette, 7-9, sous un unique groupe d'une durée de 2. Le poison est un état posé sur la cible, qui frappe au début de chacun de nos deux tours suivants."
+    lines: []
+    open_questions: []
+    effects:
+      - effect: gain
+        resource: toxines
+
+  - id: pillage
+    dofusdb_id: 12934
+    name: { fr: "Pillage", en: "Raiding" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la Chance et de la vie dans l'élément Eau.
+    assumptions:
+      - "Effet 266, « Vole 100 Chance » pendant trois tours, sur l'état `pillage_chance` : le lanceur gagne ce qu'il vole, pour la durée inscrite, cumul 2. Le bonus ne lève que les lignes Eau."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: pillage_chance
+
+  - id: coupe_gorge
+    dofusdb_id: 12935
+    name: { fr: "Coupe-gorge", en: "Cut-Throat" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et augmente les dommages subis par la cible.
+    assumptions:
+      - "Effet 1163, « Dommages subis x110 % » sur la cible : elle tient de la pose jusqu'au début du prochain tour du lanceur, et un solveur solo n'en profite que sur les lancers qui suivent celui-ci dans le même tour."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: vulnerabilite_coupe_gorge
+        at_cap: refresh
+
+  - id: comploteur
+    dofusdb_id: 12936
+    name: { fr: "Comploteur", en: "Plotter" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un double contrôlable qui possède les mêmes caractéristiques que l'invocateur.
+      
+      Il n'attaque pas et meurt à la fin de son troisième tour pour occasionner des dommages dans son meilleur élément aux entités à son contact.
+      Les dommages à la mort du double sont augmentés pour chaque piège déclenché du lanceur depuis son invocation.
+    assumptions:
+      - "Effet 293, 8 par piège : « les dommages à la mort du double sont augmentés pour chaque piège déclenché du lanceur depuis son invocation », cinq charges, de 34-38 à 66-70. Non comptés."
+      - "Effets 950 et 951, etat « Epidemie Double et Comploteur » (1486) : il marque le double pour que l'Epidemie sache le reconnaitre. Sans invocations simulees, rien ne le lit ici."
+      - "Effet 180, « invoque un double du lanceur » : le Comploteur lui-même, dont seule l'explosion à sa mort est comptée."
+      - "Effets 2822 et 792, meilleur élément 26-30 : l'explosion du double à sa mort, portée par le sous-sort « Complot ». Comptée si le joueur déclare que son double meurt au contact de la cible, au début du troisième tour qui suit le lancer (« Dans 3 tours »). Le double n'attaque pas avant, et l'explosion ne critique pas, comme le sort."
+    lines: []
+    effects:
+      # Le double joue apres son invocateur : son troisieme tour s'acheve juste
+      # avant le troisieme tour du Sram qui suit le lancer.
+      - effect: schedule
+        id: explosion_du_double
+        delay: 3
+        requires: { kind: caster_has, resource: double_au_contact }
+        payload:
+          - best_element: true
+            critical: [26, 30]
+            normal: [26, 30]
+
+  - id: larcin
+    dofusdb_id: 12937
+    name: { fr: "Larcin", en: "Larceny" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Eau en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: extorsion
+    dofusdb_id: 12938
+    name: { fr: "Extorsion", en: "Shakedown" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la Force et de la vie dans l'élément Terre.
+    assumptions:
+      - "Effet 271, « Vole 100 Force » pendant trois tours, sur l'état `extorsion_force` : le lanceur gagne ce qu'il vole, pour la durée inscrite, cumul 2. Le bonus ne lève que les lignes Terre. La Terre emporte le Neutre, les deux tirant de la Force."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: extorsion_force
+
+  - id: guet_apens
+    dofusdb_id: 12939
+    name: { fr: "Guet-apens", en: "Waylaying" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et attire la cible.
+      Les entités qui attaquent l'ennemi ciblé sont soignées d'une partie des dommages occasionnés.
+      
+      Attire la cible vers le double du lanceur s'il est présent sur le terrain.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Guet-apens (cible) » (2339). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Guet-apens », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: injection_toxique
+    dofusdb_id: 12940
+    name: { fr: "Injection Toxique", en: "Toxic Injection" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: unknown }
+    note: |
+      Retire des PM et applique un poison Air de début de tour sur la cible.
+      Le temps de relance du sort est réduit pour chaque piège déclenché du lanceur.
+    lines: []
+    assumptions:
+      - "Effet 1036, « -N tours de relance » : « le temps de relance du sort est réduit pour chaque piège déclenché du lanceur ». Les pièges ne sont pas modélisés, leur déclenchement dépendant de l'endroit où l'adversaire marche, donc la réduction ne joue jamais et le sort est compté à son temps de relance plein. C'est le sens prudent."
+      - "Effet 3793 : c'est le poison, écrit en état posé sur la cible qui frappe au début de chacun de nos trois tours suivants. Ses bornes, 28-32 et 34-38 en critique, sont les seules que portent les deux sources."
+      - "Le sort ne frappe pas au lancer : son poison tombe trois fois."
+      - "Le retrait de PM n'est pas modélisé : il ne change rien à un calcul de dégâts."
+    effects:
+      - effect: gain
+        resource: injection_toxique
+
+  - id: piege_a_fragmentation
+    dofusdb_id: 12941
+    name: { fr: "Piège à Fragmentation", en: "Fragmentation Trap" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui occasionne des dommages Feu en zone.
+      Les dommages sont plus importants sur la case centrale et selon la distance avec le piège.
+      
+      N'affecte pas l'entité qui déclenche le piège si c'est un allié.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: piege_de_derive
+    dofusdb_id: 12942
+    name: { fr: "Piège de Dérive", en: "Drift Trap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui occasionne des dommages Feu aux ennemis et repousse les entités depuis le centre en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: epidemie
+    dofusdb_id: 12943
+    name: { fr: "Épidémie", en: "Epidemic" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un poison Air de fin de tour sur l'ennemi ciblé et lui applique l'état Épidémie :
+      • À la fin du tour de la cible, propage le poison et l'état sur les ennemis en zone autour d'elle.
+      
+      Le lanceur et son double peuvent servir de cible pour propager le poison.
+      N'affecte pas les invocations statiques.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Epidémie » (667). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160, sous-sort « Épidémie » Air 36-40 : la même fourchette que le sort compte déjà, deux fois (deux groupes « Ennemi - Fin de tour » à 36-40). Le sous-sort est la propagation du poison aux ennemis en zone, pas un troisième coup : ce qui dépend de la zone dépend du réglage « Ennemis touchés »."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: meprise
+    dofusdb_id: 12945
+    name: { fr: "Méprise", en: "Misconstrual" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de position avec la cible.
+      Échange les positions de la cible et du double du lanceur s'il est présent sur le terrain.
+      
+      Dissipe l'invisibilité du lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Méprise » (2228) ; retire « Méprise » (2228). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Méprise », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: neutral
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: perquisition
+    dofusdb_id: 12947
+    name: { fr: "Perquisition", en: "Perquisition" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse la cible.
+      
+      Repousse la cible depuis le double du lanceur s'il est présent sur le terrain.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Perquisition (cible) » (6059). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Perquisition », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: piege_funeste
+    dofusdb_id: 12948
+    name: { fr: "Piège Funeste", en: "Malevolent Trap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui occasionne des dommages Terre.
+      Les dommages du sort sont augmentés pour chaque ennemi en zone autour du piège avant d'appliquer ses effets.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: perfidie
+    dofusdb_id: 12949
+    name: { fr: "Perfidie", en: "Perfidy" }
+    ap_cost: { base: 6 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Le coût en PA du sort est réduit pour chaque piège déclenché du lanceur.
+      
+      Les effets sont retirés après utilisation du sort.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effet 406 : le sort retire ses propres effets (sort 12972) sur le lanceur, ce qui remet à zéro le compteur de pièges déclenchés. Les pièges ne sont pas modélisés, donc la réduction de coût qu'ils donnent ne joue jamais et le sort est compté à son prix plein de 6 PA. C'est le sens prudent."
+    effects:
+      - effect: damage
+
+  - id: calamite
+    dofusdb_id: 12950
+    name: { fr: "Calamité", en: "Calamity" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège qui vole de la Fuite et occasionne des dommages Eau aux ennemis en zone.
+    assumptions:
+      - "Dans la Rotation quand le joueur déclare combien de pièges la cible déclenche par tour : ses dégâts tombent quand il est posé, dans cette limite par tour, sur la cible debout sur son centre (ses lignes posées, une variante par zone, sans les anneaux qui l'entourent), sans critique. Les chaînes de plusieurs pièges se calculent dans KrozTrap."
+      - "Les déplacements de ce sort ne sont pas modélisés : ce calculateur ne simule pas la grille."
+    lines: []
+    effects: []
+
+  - id: derobade
+    dofusdb_id: 14312
+    name: { fr: "Dérobade", en: "Evasion" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit les dommages subis par l'allié ciblé, le rend Intaclable et lui applique l'état Dérobade :
+      • Éloigne la cible de son attaquant et augmente ses PM si elle est attaquée par un ennemi (cumulable 3 fois).
+      
+      Le recul ne fait pas de dommages.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96) ; applique « Dérobade » (5595). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Dérobade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1103 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: marque_mortuaire
+    dofusdb_id: 14313
+    name: { fr: "Marque Mortuaire", en: "Mortuary Mark" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les dommages subis par la cible et l'érode.
+      Les effets sont plus importants selon le nombre de pièges déclenchés du lanceur.
+      
+      Dissipe l'invisibilité du lanceur.
+    lines:
+      - element: neutral
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effet 1163 : le sort pose une vulnérabilité sur sa cible, comptée à 102 %. Le jeu en donne cinq paliers, de 102 à 110 %, selon le nombre de pièges déclenchés du lanceur ; les pièges ne sont pas modélisés ici, donc c'est le palier sans piège qui s'applique. Un Sram qui joue ses pièges vaut davantage que ce qui s'affiche."
+      - "Effet 776, l'érosion de la cible : elle abaisse ses points de vie maximum, pas les dégâts qu'elle prend. Aucun chiffre n'en dépend."
+      - "Effet 406 : le sort retire ses propres effets (sort 14319) sur le lanceur, ce qui remet à zéro le compteur de pièges déclenchés. C'est de la comptabilité interne, et elle porte sur des pièges non modélisés."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: vulnerabilite_marque_mortuaire
+        at_cap: refresh
+
+  - id: fosse_commune
+    dofusdb_id: 14314
+    name: { fr: "Fosse Commune", en: "Mass Grave" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui applique l'état Pesanteur en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: manigance
+    dofusdb_id: 14741
+    name: { fr: "Manigance", en: "Plot" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Vole de la Fuite et des Dommages aux ennemis ou augmente ceux du lanceur et de l'allié ciblé.
+    lines: []
+    open_questions:
+      - "Effet 112 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 754 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: effraction
+    dofusdb_id: 14742
+    name: { fr: "Effraction", en: "Break-In" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole des Résistances Poussée et occasionne des dommages Feu.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

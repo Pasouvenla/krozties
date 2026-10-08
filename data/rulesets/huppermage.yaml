@@ -1,0 +1,3169 @@
+# Huppermage.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: huppermage
+name: { fr: "Huppermage", en: "Huppermage" }
+
+resources:
+  - id: drain_force
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13672
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: earth
+    note: |
+      Les deux cents points de Force que le Drain Élémentaire vole quand la
+      cible porte l'état Terre, pendant trois tours (cible « A,E292 » : l'état
+      décide de la caractéristique volée). Le lanceur gagne ce qu'il vole, le
+      double du Sram. Les quatre vols du sort s'excluent, comme ses quatre lignes
+      de dégâts : une cible ne porte jamais deux états élémentaires à la fois.
+      La Terre emporte le Neutre avec elle, les deux tirant de la Force.
+
+  - id: drain_intelligence
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13672
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: fire
+    note: |
+      Les deux cents points de Intelligence que le Drain Élémentaire vole quand la
+      cible porte l'état Feu, pendant trois tours (cible « A,E290 » : l'état
+      décide de la caractéristique volée). Le lanceur gagne ce qu'il vole, le
+      double du Sram. Les quatre vols du sort s'excluent, comme ses quatre lignes
+      de dégâts : une cible ne porte jamais deux états élémentaires à la fois.
+  - id: drain_chance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13672
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: water
+    note: |
+      Les deux cents points de Chance que le Drain Élémentaire vole quand la
+      cible porte l'état Eau, pendant trois tours (cible « A,E291 » : l'état
+      décide de la caractéristique volée). Le lanceur gagne ce qu'il vole, le
+      double du Sram. Les quatre vols du sort s'excluent, comme ses quatre lignes
+      de dégâts : une cible ne porte jamais deux états élémentaires à la fois.
+  - id: drain_agilite
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13672
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: air
+    note: |
+      Les deux cents points de Agilité que le Drain Élémentaire vole quand la
+      cible porte l'état Air, pendant trois tours (cible « A,E293 » : l'état
+      décide de la caractéristique volée). Le lanceur gagne ce qu'il vole, le
+      double du Sram. Les quatre vols du sort s'excluent, comme ses quatre lignes
+      de dégâts : une cible ne porte jamais deux états élémentaires à la fois.
+  # Les combinaisons élémentaires : « Quand un Huppermage génère une
+  # combinaison élémentaire, il gagne de la Puissance pour 2 tours, à hauteur
+  # d'une fois maximum par combinaison élémentaire différente. » D'où un
+  # drapeau par combinaison : six combinaisons différentes font six fois 50
+  # Puissance, deux fois la même une seule.
+  #
+  # Durée : 3 dans la donnée (sous-sort 23876, effet 138), le tour de la
+  # combinaison et les deux suivants, vérifiée en jeu malgré le « pour 2
+  # tours » de l'aide.
+  - id: comb_eruption
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de l'Eruption (Terre et Feu), une fois au plus tant qu'elle dure.
+
+  - id: comb_enlisement
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de l'Enlisement (Terre et Eau), une fois au plus tant qu'elle dure.
+
+  - id: comb_carbonisation
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de la Carbonisation (Feu et Air), une fois au plus tant qu'elle dure.
+
+  - id: comb_ebullition
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de l'Ebullition (Eau et Feu), une fois au plus tant qu'elle dure.
+
+  - id: comb_cristallisation
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de la Cristallisation (Eau et Air), une fois au plus tant qu'elle dure.
+
+  - id: comb_assechement
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+    note: |
+      La Puissance de l'Assechement (Air et Terre), une fois au plus tant qu'elle dure.
+
+  - id: eruption
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Le tour de la combinaison seulement : effet 1163 a duree 0 (sous-sort
+    # 23876), « la cible subit les effets suivants pendant 1 tour » dans l'aide.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163 a 115 : les dommages subis par la cible sont multiplies par
+      # 1,15.
+      - kind: final_multiplier
+        percent: 115
+    note: |
+      L'Eruption, combinaison Terre et Feu : « augmentation des dommages
+      subis ». La seule des six qui touche aux degats ; les cinq autres
+      retirent des PM (Enlisement), des PA (Carbonisation), de la Fuite
+      (Ebullition), des dommages finaux a la cible (Cristallisation) ou
+      volent de la Portee (Assechement), et ne changent aucun chiffre ici.
+
+  - id: combinaison_ce_lancer
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      Vrai pendant les effets d'un sort qui vient de generer une combinaison,
+      et remis a zero avant la fin de ses effets : il sert a ne PAS poser
+      l'etat du sort quand la combinaison vient de consommer les deux.
+
+  - id: combinaisons_generees
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    dofusdb_source: 14342
+    note: |
+      Combien de Combinaisons Élémentaires le lanceur a générées, pour le seul
+      Torrent Arcanique : « les dommages du sort sont augmentés pour chaque
+      combinaison élémentaire générée par le lanceur ». Sans durée, et distinct
+      des drapeaux `comb_*`, qui portent chacun 50 Puissance et valent un ;
+      celui-ci compte. Les fondre multiplierait la Puissance par le nombre de
+      combinaisons, un modificateur d'état valant son montant par charge.
+
+      Plafonné à six : six paliers de 4 à 14 en normal et de 6 à 16 en critique,
+      deux points par cran, la fourchette nue valant 2 et 4. Le compte reprend à
+      zéro après chaque Torrent (« les effets sont réinitialisés après
+      utilisation du sort »). Le jeu compte depuis le début du combat, ce solveur
+      depuis le premier tour résolu : un Huppermage qui arrive avec des crans
+      acquis frappe plus fort que ce total.
+
+  - id: etat_feu
+    scope: target
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      L'état Feu posé sur la cible par six sorts offensifs : deux états
+      différents présents ensemble déclenchent une Combinaison, qui les consomme
+      tous les deux. `monotone: none` : un même élément relancé ne cumule rien.
+
+  - id: etat_eau
+    scope: target
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      L'état Eau posé sur la cible par six sorts offensifs : deux états
+      différents présents ensemble déclenchent une Combinaison, qui les consomme
+      tous les deux. `monotone: none` : un même élément relancé ne cumule rien.
+
+  - id: etat_terre
+    scope: target
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      L'état Terre posé sur la cible par six sorts offensifs : deux états
+      différents présents ensemble déclenchent une Combinaison, qui les consomme
+      tous les deux. `monotone: none` : un même élément relancé ne cumule rien.
+
+  - id: etat_air
+    scope: target
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      L'état Air posé sur la cible par six sorts offensifs : deux états
+      différents présents ensemble déclenchent une Combinaison, qui les consomme
+      tous les deux. `monotone: none` : un même élément relancé ne cumule rien.
+
+  - id: rune
+    scope: target
+    max: 4
+    default: 0
+    monotone: none
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'élément de la rune sous la cible : 0 aucune, 1 Terre, 2 Feu, 3 Eau, 4 Air.
+      Les vingt-quatre sorts élémentaires la posent (effet 2022, deux tours) dans
+      leur élément, et une nouvelle rune remplace l'ancienne ; la Runification et
+      la Manifestation la déclenchent, dans son élément, et elle disparaît.
+
+      Une seule valeur pour toutes les cibles : lancée sur soi, la Runification
+      déclenche une rune par cible, toutes supposées de l'élément du dernier sort
+      lancé, exact tant que les sorts qui les posent partagent un élément. Suivre
+      l'élément de chaque cible multiplierait les états par cinq à chaque ennemi.
+
+      `monotone: none` : les éléments ne se comparent pas.
+
+  - id: derniere_rune
+    scope: caster
+    max: 4
+    default: 0
+    monotone: none
+    note: |
+      L'element de la derniere rune posee, memes codes que `rune`, pour la
+      Surcharge Runique qui frappe « dans l'element des runes ». La
+      Runification ne l'efface pas : elle ne declenche que la rune sous sa
+      cible, les autres restent.
+
+  - id: bonus_force
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: decrement_one }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+        element: earth
+    note: |
+      Les cinquante points de Force que la Runification et la Manifestation
+      donnent au lanceur quand la rune déclenchée est Terre (rune = 1), effet
+      118, pendant trois tours.
+
+      Plafonné à un seul cran, quand le jeu en donne six : chaque cran multiplie
+      par cinq le nombre d'états que la recherche distingue, et le total reste un
+      plancher quand le joueur enchaîne les Runifications. Le jeu donne trois
+      tours à chaque application, et ce moteur ne tient qu'un compte à rebours
+      par compteur : `refresh: on_apply` le remet à trois à chaque nouvelle rune
+      déclenchée, et `on_expire: decrement_one` fait tomber les crans un par un.
+
+  - id: bonus_intelligence
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: decrement_one }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+        element: fire
+    note: |
+      Les cinquante points de Intelligence que la Runification et la Manifestation
+      donnent au lanceur quand la rune déclenchée est Feu (rune = 2), effet
+      126, pendant trois tours.
+
+      Plafonné à un seul cran, quand le jeu en donne six : chaque cran multiplie
+      par cinq le nombre d'états que la recherche distingue, et le total reste un
+      plancher quand le joueur enchaîne les Runifications. Le jeu donne trois
+      tours à chaque application, et ce moteur ne tient qu'un compte à rebours
+      par compteur : `refresh: on_apply` le remet à trois à chaque nouvelle rune
+      déclenchée, et `on_expire: decrement_one` fait tomber les crans un par un.
+
+  - id: bonus_chance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: decrement_one }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+        element: water
+    note: |
+      Les cinquante points de Chance que la Runification et la Manifestation
+      donnent au lanceur quand la rune déclenchée est Eau (rune = 3), effet
+      123, pendant trois tours.
+
+      Plafonné à un seul cran, quand le jeu en donne six : chaque cran multiplie
+      par cinq le nombre d'états que la recherche distingue, et le total reste un
+      plancher quand le joueur enchaîne les Runifications. Le jeu donne trois
+      tours à chaque application, et ce moteur ne tient qu'un compte à rebours
+      par compteur : `refresh: on_apply` le remet à trois à chaque nouvelle rune
+      déclenchée, et `on_expire: decrement_one` fait tomber les crans un par un.
+
+  - id: bonus_agilite
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: decrement_one }
+    modifies_damage:
+      - kind: characteristic
+        amount: 50
+        element: air
+    note: |
+      Les cinquante points de Agilité que la Runification et la Manifestation
+      donnent au lanceur quand la rune déclenchée est Air (rune = 4), effet
+      119, pendant trois tours.
+
+      Plafonné à un seul cran, quand le jeu en donne six : chaque cran multiplie
+      par cinq le nombre d'états que la recherche distingue, et le total reste un
+      plancher quand le joueur enchaîne les Runifications. Le jeu donne trois
+      tours à chaque application, et ce moteur ne tient qu'un compte à rebours
+      par compteur : `refresh: on_apply` le remet à trois à chaque nouvelle rune
+      déclenchée, et `on_expire: decrement_one` fait tomber les crans un par un.
+
+  - id: runes_ce_tour
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    shifts_into: runes_tour_1
+    note: |
+      Les runes posées pendant ce tour, une par sort élémentaire lancé. Une rune
+      dure deux tours (effet 2022) : posée au tour N, elle disparaît à la fin du
+      tour N+1, d'où deux compteurs qui glissent d'un cran à chaque fin de tour.
+      Six au plus par tour : à douze PA, les sorts élémentaires en coûtent trois
+      ou plus.
+
+  - id: runes_tour_1
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    note: |
+      Les runes posees au tour precedent : elles vivent leur dernier tour et
+      disparaissent a la fin de celui-ci.
+
+  - id: tribut_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 150
+    note: |
+      « Applique des effets sur le lanceur SELON L'ETAT ELEMENTAIRE sur l'ennemi
+      cible : Eau, augmente la Puissance. » Cent cinquante pendant deux tours,
+      ce que porte l'effet 138 du Tribut au dernier grade.
+
+      La condition se lit sur la ressource `etat_eau`, que les six sorts Eau de
+      la classe posent : c'est le meme mecanisme que la Combinaison, et il ne
+      demande pas plus de placement.
+
+  - id: vulnerabilite_volcan
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Zéro tour veut dire « le tour de la pose, et lui seul » : la vulnérabilité
+    # tient jusqu'au début du prochain tour du lanceur, qui n'en profite que dans
+    # le même tour d'actions.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, « Dommages subis x104 % » : un multiplicateur, donc tout a
+      # la fin du pipeline.
+      - kind: final_multiplier
+        percent: 104
+    note: |
+      La vulnerabilite que Volcan pose sur sa cible. Tout ce qui tombe ensuite
+      sur elle dans le meme tour est multiplie par 1.04.
+
+costly:
+  - id: bonus_de_rune
+    name: { fr: "Bonus de caractéristique des runes", en: "Rune characteristic bonus" }
+    resources: [bonus_force, bonus_intelligence, bonus_chance, bonus_agilite]
+    note: |
+      Le +50 que la Runification et la Manifestation donnent dans la
+      caractéristique de l'élément de la rune déclenchée. Il ne sert qu'avec les
+      runes élémentaires : il se gagne quand une rune se déclenche.
+
+
+  - id: les_runes
+    name: { fr: "Runes élémentaires", en: "Elemental runes" }
+    resources: [rune, derniere_rune, runes_ce_tour, runes_tour_1]
+    note: |
+      Les runes élémentaires : celle posée sous la cible par les vingt-quatre
+      sorts élémentaires, son élément, et le compte des runes vivantes tour par
+      tour que lisent la Surcharge Runique et la Runification lancée sur soi. Les
+      runes frappent quinze de base : elles comptent pour qui joue autour d'elles.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "La Sublimation la pose sur l'ennemi cible, pas sur le lanceur."
+
+spells:
+  - id: lance_flamme
+    dofusdb_id: 13666
+    name: { fr: "Lance-flamme", en: "Flamethrower" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PA.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: stalagmite
+    dofusdb_id: 13667
+    name: { fr: "Stalagmite", en: "Stalagmite" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et réduit les dommages finaux.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effet 1172, -4 % de Dommages finaux sur la CIBLE : c'est l'adversaire qui frappera moins fort."
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: onde_sismique
+    dofusdb_id: 13668
+    name: { fr: "Onde Sismique", en: "Seismic Shockwave" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PM.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: ether
+    dofusdb_id: 13669
+    name: { fr: "Éther", en: "Ether" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire de la Portée.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: runification
+    dofusdb_id: 13670
+    name: { fr: "Runification", en: "Runification" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Déclenche une rune du lanceur pour voler de la vie à l'ennemi ou soigner l'allié qui l'occupe, et augmenter les caractéristiques du lanceur et de l'allié sur la rune selon l'élément de la rune.
+      
+      Sur le lanceur : déclenche toutes ses runes occupées par une entité.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effet 2023, « declenche les runes » : c'est le geste central du sort, et il porte sur des cases."
+      - "Effets 950/951 : ce sort applique « Rune (rang 3) » (6971) ; retire « Runification » (6968) ; retire « Rune (rang 3) » (6971). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Runes Élémentaires », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Deux modes de lancer, qui se partagent les deux lancers du tour. Sur un ennemi, le sort déclenche la rune sous lui : une frappe de 15, dans l'élément de la rune. Sur soi, il déclenche une rune par cible déclarée. La rune prend l'élément du dernier sort élémentaire lancé, et le déclenchement la retire."
+      - "⚠️ Lancé sur soi, toutes les runes sont supposées de l'élément du dernier sort lancé : exact quand les sorts qui les posent partagent un élément, approché sinon."
+      - "Lancé sur soi, le sort « déclenche toutes ses runes occupées par une entité » : il frappe une fois par rune vivante, jamais plus de fois qu'il n'y a d'ennemis déclarés."
+      - "Effets 118, 119, 123 et 126, +50 dans une caractéristique pendant trois tours « selon l'élément de la rune » déclenchée, en quatre compteurs, un par élément, plafonnés à un cran chacun : le jeu en donne un par rune déclenchée, six au plus, et six crans rendent le calcul trop long. Le total reste un plancher quand plusieurs runes partent d'un même lancer. Lancée sur soi, la Runification déclenche toutes les runes occupées de la carte, sans limite de zone."
+    requires: { kind: target_has, resource: rune }
+    lines:
+      - element: earth
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 1 }
+      - element: fire
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 2 }
+      - element: water
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 3 }
+      - element: air
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 4 }
+    effects:
+      - effect: damage
+      # Le lanceur gagne cinquante points dans la caracteristique de
+      # l'element de la rune declenchee, pour trois tours.
+      - effect: gain
+        resource: bonus_force
+        requires: { kind: exactly, resource: rune, amount: 1 }
+      - effect: gain
+        resource: bonus_intelligence
+        requires: { kind: exactly, resource: rune, amount: 2 }
+      - effect: gain
+        resource: bonus_chance
+        requires: { kind: exactly, resource: rune, amount: 3 }
+      - effect: gain
+        resource: bonus_agilite
+        requires: { kind: exactly, resource: rune, amount: 4 }
+      - effect: reset
+        resource: rune
+      # La rune declenchee disparait : la plus recente d'abord, c'est elle qui
+      # est sous la cible.
+      - effect: consume_across
+        resources: [runes_ce_tour, runes_tour_1]
+    mode_name: { fr: "sur un ennemi", en: "on an enemy" }
+    modes:
+      - name: { fr: "sur soi", en: "on self" }
+        on_self: true
+        requires: { kind: target_has, resource: rune }
+        lines:
+          - element: earth
+            critical: unknown
+            normal: [15, 15]
+            active_at: { resource: rune, exactly: 1 }
+            every_target: true
+            targets_capped_by: [runes_ce_tour, runes_tour_1]
+          - element: fire
+            critical: unknown
+            normal: [15, 15]
+            active_at: { resource: rune, exactly: 2 }
+            every_target: true
+            targets_capped_by: [runes_ce_tour, runes_tour_1]
+          - element: water
+            critical: unknown
+            normal: [15, 15]
+            active_at: { resource: rune, exactly: 3 }
+            every_target: true
+            targets_capped_by: [runes_ce_tour, runes_tour_1]
+          - element: air
+            critical: unknown
+            normal: [15, 15]
+            active_at: { resource: rune, exactly: 4 }
+            every_target: true
+            targets_capped_by: [runes_ce_tour, runes_tour_1]
+        effects:
+          - effect: damage
+          # Le lanceur gagne cinquante points dans la caracteristique de
+          # l'element de la rune declenchee, pour trois tours.
+          - effect: gain
+            resource: bonus_force
+            requires: { kind: exactly, resource: rune, amount: 1 }
+          - effect: gain
+            resource: bonus_intelligence
+            requires: { kind: exactly, resource: rune, amount: 2 }
+          - effect: gain
+            resource: bonus_chance
+            requires: { kind: exactly, resource: rune, amount: 3 }
+          - effect: gain
+            resource: bonus_agilite
+            requires: { kind: exactly, resource: rune, amount: 4 }
+          - effect: reset
+            resource: rune
+          # Une rune declenchee par cible.
+          - effect: consume_across
+            resources: [runes_ce_tour, runes_tour_1]
+            by_zone: true
+
+  - id: drain_elementaire
+    dofusdb_id: 13672
+    name: { fr: "Drain Élémentaire", en: "Elemental Drain" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole des caractéristiques et de la vie selon l'état élémentaire sur l'ennemi ciblé.
+    assumptions:
+      - "Effets 266, 268, 269 et 271, « vole 200 Chance / Agilité / Intelligence / Force », sur les quatre états `drain_*` : le lanceur gagne ce qu'il vole, pour la durée inscrite. Chaque vol est conditionné au même état élémentaire que sa ligne de dégâts (cible « A,E29x ») et ne lève que les lignes de son élément. Deux cents points, le double du Sram, pendant trois tours."
+      - "« Selon l'état élémentaire » : les quatre lignes s'excluent, chacune ne frappant que si la cible porte son élément, étiquetées « Cible sous Terre », « Cible sous Feu », « Cible sous Eau » et « Cible sous Air », toutes à 23-26. Sans condition, elles frapperaient les quatre à la fois, 100 de dégâts de base pour 2 PA sur une cible nue, là où le jeu n'en fait aucun."
+      - "Deux états ne peuvent pas coexister sur une cible : chaque sort élémentaire de la classe remet les quatre à zéro avant de poser le sien, et deux états différents déclencheraient de toute façon une Combinaison qui les consomme. Au plus une des quatre lignes peut donc frapper, ce qui est bien ce que ces conditions disent."
+    # Les quatre éléments à la même fourchette, publiée élément par élément.
+    # Une ligne `active_at` ne se remplit pas depuis l'instantané, son cran ne
+    # se déduisant pas d'une position.
+    lines:
+      - element: earth
+        active_at: { resource: etat_terre, exactly: 1 }
+        critical: [28, 31]
+        normal: [23, 26]
+      - element: fire
+        active_at: { resource: etat_feu, exactly: 1 }
+        critical: [28, 31]
+        normal: [23, 26]
+      - element: water
+        active_at: { resource: etat_eau, exactly: 1 }
+        critical: [28, 31]
+        normal: [23, 26]
+      - element: air
+        active_at: { resource: etat_air, exactly: 1 }
+        critical: [28, 31]
+        normal: [23, 26]
+    effects:
+      - effect: damage
+      # Les quatre vols s'excluent par la meme condition que les quatre lignes.
+      - effect: gain
+        resource: drain_force
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: drain_intelligence
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: drain_chance
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: drain_agilite
+        requires: { kind: target_has, resource: etat_air }
+
+  - id: orage
+    dofusdb_id: 13674
+    name: { fr: "Orage", en: "Storm" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Repousse les cibles depuis le centre et occasionne des dommages Terre aux ennemis en zone.
+      N'affecte pas le lanceur.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: meteore
+    dofusdb_id: 13675
+    name: { fr: "Météore", en: "Meteor" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Repousse la cible et occasionne des dommages Terre aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: glacier
+    dofusdb_id: 13676
+    name: { fr: "Glacier", en: "Glacier" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Attire les cibles vers le centre et vole de la vie dans l'élément Eau aux ennemis en zone.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: avalanche
+    dofusdb_id: 13677
+    name: { fr: "Avalanche", en: "Avalanche" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Attire la cible et occasionne des dommages Eau aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: rafale
+    dofusdb_id: 13678
+    name: { fr: "Rafale", en: "Flurry" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte les cibles symétriquement par rapport au centre et vole de la vie dans l'élément Air aux ennemis en zone.
+      N'affecte pas directement le lanceur.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: lame_astrale
+    dofusdb_id: 13679
+    name: { fr: "Lame Astrale", en: "Astral Blade" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible et occasionne des dommages Air aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: trait_ardent
+    dofusdb_id: 13680
+    name: { fr: "Trait Ardent", en: "Burning Stroke" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Repousse les cibles et occasionne des dommages Feu aux ennemis en zone.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « Trait Ardent », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: deflagration
+    dofusdb_id: 13681
+    name: { fr: "Déflagration", en: "Deflagration" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte la cible et le lanceur à leur position précédente et occasionne des dommages Feu aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: bouclier_elementaire
+    dofusdb_id: 13682
+    name: { fr: "Bouclier Élémentaire", en: "Elemental Shield" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les résistances de l'allié ciblé et lui applique l'état Bouclier Élémentaire :
+      • Applique un état élémentaire sur l'attaquant selon l'élément de l'attaque subie par la cible.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : l'élément de cette rune ne se lit pas dans la donnée du sort, elle n'est donc pas suivie. La Runification et la Manifestation ne la déclenchent pas ici."
+      - "Effets 1160/2794 : lance aussi « Bouclier Élémentaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 215 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 216 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 217 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 218 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 219 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1076 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, plus ceux d'un sort (25488) qui n'est pas dans l'instantane de la classe. Aucun des deux n'est compte ici, les resistances et l'etat pose sur l'attaquant allant a l'ALLIE CIBLE : l'annulation n'a rien a annuler."
+    effects: []
+
+  - id: traversee
+    dofusdb_id: 13683
+    name: { fr: "Traversée", en: "Journey" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur sur la case ciblée et occasionne des dommages selon l'état élémentaire sur les ennemis en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille."
+      - "« Selon l'état élémentaire » : les quatre lignes s'excluent, chacune ne frappant que si la cible porte son élément (« Cible sous Terre », « Cible sous Feu », « Cible sous Eau » et « Cible sous Air », toutes à 30-33). Deux états ne tiennent pas ensemble sur une cible, chaque sort élémentaire de la classe remettant les quatre à zéro avant de poser le sien."
+      - "Sans condition, les quatre lignes frapperaient à la fois une cible nue, là où le jeu n'en fait aucune."
+    # Une ligne `active_at` ne se remplit pas depuis l'instantané : ses bornes
+    # viennent des toolkits DofusBook, la même fourchette pour les quatre.
+    lines:
+      - element: earth
+        active_at: { resource: etat_terre, exactly: 1 }
+        critical: [36, 40]
+        normal: [30, 33]
+      - element: fire
+        active_at: { resource: etat_feu, exactly: 1 }
+        critical: [36, 40]
+        normal: [30, 33]
+      - element: water
+        active_at: { resource: etat_eau, exactly: 1 }
+        critical: [36, 40]
+        normal: [30, 33]
+      - element: air
+        active_at: { resource: etat_air, exactly: 1 }
+        critical: [36, 40]
+        normal: [30, 33]
+    effects:
+      - effect: damage
+
+  - id: sublimation
+    dofusdb_id: 13684
+    name: { fr: "Sublimation", en: "Sublimation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique les états Pesanteur et Sublimation sur l'ennemi ciblé :
+      • Augmente les caractéristiques de l'attaquant et applique un état sur la cible selon l'élément de l'attaque qu'elle subit (cumulable 4 fois).
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 1160 : lance aussi « Sublimation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 118 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 119 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 123 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 126 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 152 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 154 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 155 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 157 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: propagation
+    dofusdb_id: 13695
+    name: { fr: "Propagation", en: "Propagation" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique des effets et propage les états sur les ennemis en zone selon l'état élémentaire de l'ennemi ciblé :
+      • <sprite name="terre"> Terre : réduit les Résistances Poussée.
+      • <sprite name="feu"> Feu : retire des Critiques.
+      • <sprite name="eau"> Eau : retire de la Fuite.
+      • <sprite name="air"> Air : retire du Tacle.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 1160 : lance aussi « Propagation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 754 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 755 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: polarite
+    dofusdb_id: 13696
+    name: { fr: "Polarité", en: "Polarity" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Consomme l'état élémentaire sur l'ennemi ciblé pour appliquer des effets selon son état élémentaire :
+      • <sprite name="terre"> Terre : repousse la cible.
+      • <sprite name="feu"> Feu : échange de position avec la cible.
+      • <sprite name="eau"> Eau : attire la cible.
+      • <sprite name="air"> Air : téléporte le lanceur symétriquement par rapport à la cible.
+    assumptions:
+      - "Effet 1160 : lance aussi « Polarité », « État Élémentaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: empreinte
+    dofusdb_id: 13697
+    name: { fr: "Empreinte", en: "Imprint" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Consomme l'état élémentaire sur l'ennemi ciblé pour poser une rune dans l'élément de l'état.
+      
+      Sur le lanceur : applique les effets sur tous les ennemis.
+      
+      Sinon : pose une rune dans l'élément de la dernière rune posée par le lanceur.
+      
+      L'utilisation du sort sur une case libre n'est possible qu'une seule fois par tour.
+    assumptions:
+      - "Effet 2022, « pose une rune » : l'élément de cette rune ne se lit pas dans la donnée du sort, elle n'est donc pas suivie. La Runification et la Manifestation ne la déclenchent pas ici."
+      - "Effets 1160/2794 : lance aussi « Empreinte », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: contribution
+    dofusdb_id: 13701
+    name: { fr: "Contribution", en: "Contribution" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une rune et applique des effets sur l'allié ciblé selon les états élémentaires sur tous les ennemis :
+      • <sprite name="terre"> Terre : augmente les PM.
+      • <sprite name="feu"> Feu : applique un bouclier.
+      • <sprite name="eau"> Eau : augmente la Puissance.
+      • <sprite name="air"> Air : augmente les PA.
+      
+      Consomme tous les états élémentaires.
+    assumptions:
+      - "Effet 2022, « pose une rune » : l'élément de cette rune ne se lit pas dans la donnée du sort, elle n'est donc pas suivie. La Runification et la Manifestation ne la déclenchent pas ici."
+      - "Effet 1160 : lance aussi « Contribution », « Runes Élémentaires », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 111, +1 PA : va a l'ALLIE CIBLE, et seulement sous l'etat elementaire voulu. Rien pour le lanceur seul."
+      - "Effet 138, +150 Puissance : le sort applique ses effets sur l'ALLIE CIBLE selon les etats elementaires des ennemis. Rien pour le lanceur seul."
+    effects: []
+
+  - id: onde_celeste
+    dofusdb_id: 13708
+    name: { fr: "Onde Céleste", en: "Celestial Wave" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: lances_telluriques
+    dofusdb_id: 13709
+    name: { fr: "Lances Telluriques", en: "Telluric Lances" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: manifestation
+    dofusdb_id: 13710
+    name: { fr: "Manifestation", en: "Manifestation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Déclenche une rune du lanceur pour voler de la vie à l'ennemi ou soigner l'allié qui l'occupe, et augmenter les caractéristiques du lanceur et de l'allié sur la rune selon l'élément de la rune.
+      
+      Si la case est ou devient libre :
+      • <sprite name="terre"> Terre : repousse les entités depuis la rune en zone.
+      • <sprite name="feu"> Feu : téléporte le lanceur sur la rune.
+      • <sprite name="eau"> Eau : attire les entités vers la rune en zone.
+      • <sprite name="air"> Air : téléporte les entités symétriquement par rapport à la rune en zone.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effet 2023, « declenche les runes » : c'est le geste central du sort, et il porte sur des cases."
+      - "Effets 950/951 : ce sort applique « Manifestation » (600) ; applique « Rune (rang 3) » (6971) ; retire « Manifestation » (600) ; retire « Rune (rang 3) » (6971). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Variante de la Runification, même donnée, même règle : le sort déclenche la rune sous l'ennemi, une frappe de 15 dans l'élément de la rune, celui du dernier sort élémentaire lancé, et la retire. Il n'a pas de mode sur soi."
+      - "Effets 118, 119, 123 et 126, +50 dans une caractéristique pendant trois tours « selon l'élément de la rune » déclenchée, en quatre compteurs, un par élément, plafonnés à un cran chacun : le jeu en donne un par rune déclenchée, six au plus, et six crans rendent le calcul trop long. Le total reste un plancher quand plusieurs runes partent d'un même lancer."
+    requires: { kind: target_has, resource: rune }
+    lines:
+      - element: earth
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 1 }
+      - element: fire
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 2 }
+      - element: water
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 3 }
+      - element: air
+        critical: unknown
+        normal: [15, 15]
+        active_at: { resource: rune, exactly: 4 }
+    effects:
+      - effect: damage
+      # Le lanceur gagne cinquante points dans la caracteristique de
+      # l'element de la rune declenchee, pour trois tours.
+      - effect: gain
+        resource: bonus_force
+        requires: { kind: exactly, resource: rune, amount: 1 }
+      - effect: gain
+        resource: bonus_intelligence
+        requires: { kind: exactly, resource: rune, amount: 2 }
+      - effect: gain
+        resource: bonus_chance
+        requires: { kind: exactly, resource: rune, amount: 3 }
+      - effect: gain
+        resource: bonus_agilite
+        requires: { kind: exactly, resource: rune, amount: 4 }
+      - effect: reset
+        resource: rune
+      - effect: consume_across
+        resources: [runes_ce_tour, runes_tour_1]
+
+  - id: cataracte
+    dofusdb_id: 13711
+    name: { fr: "Cataracte", en: "Cataract" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: tison
+    dofusdb_id: 13712
+    name: { fr: "Tison", en: "Ember" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: tribut
+    dofusdb_id: 13713
+    name: { fr: "Tribut", en: "Tribute" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 10 }
+    note: |
+      Applique des effets sur le lanceur selon l'état élémentaire sur l'ennemi ciblé et occasionne des dommages dans le meilleur élément du lanceur :
+      • <sprite name="terre"> Terre : augmente les PM.
+      • <sprite name="feu"> Feu : applique un bouclier.
+      • <sprite name="eau"> Eau : augmente la Puissance.
+      • <sprite name="air"> Air : augmente les PA.
+    assumptions:
+      - "Effets 111 et 128, +1 PA et +1 PM pendant deux tours, conditionnes eux aussi a l'etat elementaire de la cible, Air pour les PA et Terre pour les PM. Le PM ne change aucun degat ici. Le PA, si : un point de plus permet un lancer de plus. Non compte, faute de pouvoir accorder un PA sous condition sans inventer une ressource pour le porter."
+      - "Effet 1160 : lance aussi « Tribut », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [23, 25]
+        normal: [19, 21]
+    effects:
+      - effect: damage
+      # « Eau : augmente la Puissance. » La condition se lit sur l'etat que
+      # les sorts Eau de la classe posent.
+      - effect: gain
+        resource: tribut_puissance
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+
+  - id: ouragan
+    dofusdb_id: 13714
+    name: { fr: "Ouragan", en: "Hurricane" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PA.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: asteroide
+    dofusdb_id: 13715
+    name: { fr: "Astéroïde", en: "Asteroid" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Terre aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: convection
+    dofusdb_id: 13716
+    name: { fr: "Convection", en: "Convection" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Consomme l'état élémentaire sur l'ennemi ciblé pour appliquer des effets selon son état élémentaire :
+      • <sprite name="terre"> Terre : éloigne le lanceur de la cible.
+      • <sprite name="feu"> Feu : téléporte la cible et le lanceur à leur position précédente.
+      • <sprite name="eau"> Eau : rapproche le lanceur vers la cible.
+      • <sprite name="air"> Air : téléporte la cible symétriquement par rapport au lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Convection », « État Élémentaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: stalactite
+    dofusdb_id: 13717
+    name: { fr: "Stalactite", en: "Stalactite" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des PM.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: volcan
+    dofusdb_id: 13718
+    name: { fr: "Volcan", en: "Volcano" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu et augmente les dommages subis par la cible.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effet 1163, « Dommages subis x104 % » sur la cible : elle tient de la pose jusqu'au début du prochain tour du lanceur, et un solveur solo n'en profite que sur les lancers qui suivent celui-ci dans le même tour."
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: vulnerabilite_volcan
+        at_cap: refresh
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: prisme_runique
+    dofusdb_id: 13719
+    name: { fr: "Prisme Runique", en: "Runic Prism" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Déclenche une rune du lanceur pour appliquer des effets et un état élémentaire sur les ennemis en zone selon son élément :
+      • <sprite name="terre"> Terre : réduit la durée des effets sur les cibles.
+      • <sprite name="feu"> Feu : réduit les soins reçus par les cibles.
+      • <sprite name="eau"> Eau : érode les cibles.
+      • <sprite name="air"> Air : soigne les attaquants des cibles.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    open_questions:
+      - "Effet 2023 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: gardien_elementaire
+    dofusdb_id: 13720
+    name: { fr: "Gardien Élémentaire", en: "Elemental Guardian" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Gardien Élémentaire maîtrisable qui peut occasionner des dommages, poser des runes et changer des états élémentaires.
+      
+      Lorsqu'une combinaison élémentaire est générée par le lanceur, le Gardien gagne des effets selon la combinaison.
+    assumptions:
+      - "Effet 1160 : lance aussi « Élaboration Quadramentale », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: deluge
+    dofusdb_id: 13721
+    name: { fr: "Déluge", en: "Flood" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible et occasionne des dommages Eau aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Eau de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune d'Eau », « État Eau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_eau
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 3
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 3
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: cycle_elementaire
+    dofusdb_id: 13722
+    name: { fr: "Cycle Élémentaire", en: "Elemental Cycle" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 4
+    casts_per_target: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Change l'état élémentaire sur l'ennemi ciblé selon son état actuel dans le sens horaire :
+      • <sprite name="terre"> Terre → <sprite name="eau"> Eau → <sprite name="feu"> Feu → <sprite name="air"> Air → <sprite name="terre"> Terre
+      
+      Sur un ennemi sans état élémentaire : applique l'état élémentaire de la dernière rune posée par le lanceur.
+      
+      Le coût en PA du sort est remboursé au premier changement d'état sur une cible.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 1160 : lance aussi « Cycle Élémentaire », « État Élémentaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: lance_solaire
+    dofusdb_id: 13723
+    name: { fr: "Lance Solaire", en: "Sun Lance" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Feu aux ennemis.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Feu de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Feu », « État Feu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_ebullition
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_feu
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 2
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 2
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: surcharge_runique
+    dofusdb_id: 13724
+    name: { fr: "Surcharge Runique", en: "Runic Overcharge" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Déclenche toutes les runes du lanceur pour occasionner des dommages à l'ennemi ou soigner l'allié ciblé pour chaque rune déclenchée dans l'élément des runes.
+    assumptions:
+      - "Effet 2023, « déclenche les runes » : une frappe de 10 sur la cible par rune vivante, chaque sort élémentaire en posant une. Une rune dure deux tours : celles du tour précédent comptent encore. Toutes les runes sont déclenchées, donc retirées."
+      - "⚠️ Toutes les runes sont supposées de l'élément du dernier sort élémentaire lancé, comme pour la Runification : exact quand les sorts qui les posent partagent un élément, approché sinon."
+      - "Effets 950/951 : ce sort applique « Surcharge Runique (rang 2) » (6980) ; applique « Surcharge Runique » (601) ; retire « Surcharge Runique » (601) ; retire « Surcharge Runique (rang 2) » (6980). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines:
+      - element: water
+        critical: unknown
+        normal: [10, 10]
+        active_at: { resource: derniere_rune, exactly: 3 }
+        repeats_per: [runes_ce_tour, runes_tour_1]
+      - element: fire
+        critical: unknown
+        normal: [10, 10]
+        active_at: { resource: derniere_rune, exactly: 2 }
+        repeats_per: [runes_ce_tour, runes_tour_1]
+      - element: air
+        critical: unknown
+        normal: [10, 10]
+        active_at: { resource: derniere_rune, exactly: 4 }
+        repeats_per: [runes_ce_tour, runes_tour_1]
+      - element: earth
+        critical: unknown
+        normal: [10, 10]
+        active_at: { resource: derniere_rune, exactly: 1 }
+        repeats_per: [runes_ce_tour, runes_tour_1]
+    effects:
+      - effect: damage
+      # Toutes les runes sont declenchees, donc retirees, celle sous la cible
+      # comprise.
+      - effect: reset
+        resource: runes_ce_tour
+      - effect: reset
+        resource: runes_tour_1
+      - effect: reset
+        resource: rune
+
+  - id: breche
+    dofusdb_id: 13725
+    name: { fr: "Brèche", en: "Breach" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre et retire de la Portée.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Terre de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Rune de Terre », « État Terre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: eruption
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_enlisement
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_air }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_air }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_air }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_terre
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_air
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 1
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 1
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: comete
+    dofusdb_id: 13726
+    name: { fr: "Comète", en: "Comet" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique des effets selon la position du lanceur par rapport à la cible et occasionne des dommages Air aux ennemis :
+      • Éloigne le lanceur de la cible s'il est en mêlée.
+      • Téléporte le lanceur jusqu'à la cible s'il est à distance.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : la rune posée sous la cible prend l'élément Air de ce sort et remplace la précédente, pour deux tours. La Runification et la Manifestation la déclenchent."
+      - "Effet 1160 : lance aussi « Comète », « Rune d'Air », « État Air », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Une combinaison part si la cible porte un AUTRE element : sa
+      # Puissance (une fois par combinaison differente), l'Eruption pour Terre
+      # et Feu, et le compte du Torrent Arcanique.
+      - effect: gain
+        resource: comb_carbonisation
+        requires: { kind: target_has, resource: etat_feu }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_feu }
+      - effect: gain
+        resource: comb_cristallisation
+        requires: { kind: target_has, resource: etat_eau }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_eau }
+      - effect: gain
+        resource: comb_assechement
+        requires: { kind: target_has, resource: etat_terre }
+        at_cap: refresh
+      - effect: gain
+        resource: combinaisons_generees
+        requires: { kind: target_has, resource: etat_terre }
+      - effect: gain
+        resource: combinaison_ce_lancer
+        requires: { kind: target_has, resource: etat_terre }
+      # Sans combinaison, le sort pose son état ; avec, il ne pose rien : la
+      # combinaison consomme les deux états, le sien compris.
+      - effect: gain
+        resource: etat_air
+        requires: { kind: exactly, resource: combinaison_ce_lancer, amount: 0 }
+        at_cap: refresh
+      - effect: reset
+        resource: etat_feu
+      - effect: reset
+        resource: etat_eau
+      - effect: reset
+        resource: etat_terre
+      - effect: reset
+        resource: combinaison_ce_lancer
+      # La rune posee sous la cible prend l'element du sort (effet 2022).
+      - effect: reset
+        resource: rune
+      - effect: gain
+        resource: rune
+        amount: 4
+      # Et compte parmi les runes vivantes, pour la Surcharge Runique.
+      - effect: reset
+        resource: derniere_rune
+      - effect: gain
+        resource: derniere_rune
+        amount: 4
+      - effect: gain
+        resource: runes_ce_tour
+
+  - id: repulsion_runique
+    dofusdb_id: 13728
+    name: { fr: "Répulsion Runique", en: "Runic Repulsion" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse les cibles en zone.
+      Déclenche également toutes les runes du lanceur pour repousser de nouveau les cibles pour chaque rune déclenchée.
+      
+      La poussée pour chaque rune est plus faible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Répulsion Runique » (602). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Répulsion Runique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 2023 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: courant_quadramental
+    dofusdb_id: 14341
+    name: { fr: "Courant Quadramental", en: "Quadramental Current" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 4
+    casts_per_target: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Change l'état élémentaire sur l'ennemi ciblé selon son état actuel dans le sens anti-horaire :
+      • <sprite name="eau"> Eau → <sprite name="terre"> Terre → <sprite name="air"> Air → <sprite name="feu"> Feu → <sprite name="eau"> Eau
+      
+      Sur un ennemi sans état élémentaire : applique l'état élémentaire de la dernière rune posée par le lanceur.
+      
+      Le coût en PA du sort est remboursé au premier changement d'état sur une cible.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 1160 : lance aussi « Courant Quadramental », « État Élémentaire », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: torrent_arcanique
+    dofusdb_id: 14342
+    name: { fr: "Torrent Arcanique", en: "Arcane Torrent" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air, Terre, Feu et Eau aux ennemis en zone.
+      Les dommages du sort sont augmentés pour chaque combinaison élémentaire générée par le lanceur.
+      
+      Les effets sont réinitialisés après utilisation du sort.
+    assumptions:
+      - "Effet 293, +2 dégâts de base par cran et par ligne, six crans au plus, sur le compteur `combinaisons_generees`, distinct du drapeau `combinaison` qui porte les 50 Puissance : gagné aux mêmes 72 endroits et sous les mêmes conditions, il dit combien. Six paliers, 4 à 14 en normal et 6 à 16 en critique, deux points par cran à largeur constante, la fourchette nue valant 2 et 4."
+      - "Le jeu compte les combinaisons depuis le début du combat, ce solveur depuis le premier tour résolu : un Huppermage qui entre dans l'horizon avec des crans acquis frappe plus fort que ce total, un plancher à ce titre."
+      - "Effet 406 : la remise à zéro que le texte annonce, « les effets sont réinitialisés après utilisation du sort », après la ligne de dégâts pour que le lancer profite des crans qu'il efface."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: combinaisons_generees
+            amount: 2
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: combinaisons_generees
+            amount: 2
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: combinaisons_generees
+            amount: 2
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: combinaisons_generees
+            amount: 2
+    effects:
+      - effect: damage
+      # « Les effets sont reinitialises apres utilisation du sort » : ecrit
+      # APRES la ligne de degats, pour que le lancer profite de ce qu'il remet
+      # a zero.
+      - effect: reset
+        resource: combinaisons_generees
+
+  - id: supernova
+    dofusdb_id: 32033
+    name: { fr: "Supernova", en: "Supernova" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 10 }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages dans les meilleurs et pires éléments du lanceur aux ennemis.
+      Pose une rune du pire élément.
+      
+      Peut générer des {{spell,23876,1::Combinaisons Élémentaires}}.
+    assumptions:
+      - "Effets 950 et 951, états élémentaires Feu (290), Eau (291), Terre (292) et Air (293) : deux états différents présents ensemble sur la cible déclenchent une Combinaison Élémentaire, qui les consomme et donne 50 Puissance au lanceur pendant trois tours. Le moteur de dégâts de la classe, sans placement : il suffit d'enchaîner deux éléments sur la même cible."
+      - "Effet 2022, « pose une rune » : l'élément de cette rune ne se lit pas dans la donnée du sort, elle n'est donc pas suivie. La Runification et la Manifestation ne la déclenchent pas ici."
+      - "Effets 792/1160 : lance aussi « Supernova », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - best_element: true
+        critical: [23, 25]
+        normal: [19, 21]
+      # Effet 2832 : le PIRE element. Le sort frappe dans les deux.
+      - worst_element: true
+        critical: [12, 14]
+        normal: [9, 11]
+    effects:
+      - effect: damage

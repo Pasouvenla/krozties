@@ -1,0 +1,1319 @@
+# Ouginak.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+#
+# La Rage : la donnée porte son plafond, deux crans, mais pas son incrément ;
+# un cran par lancer est une hypothèse déclarée. Modélisés : la Proie, le +7 %
+# de Gibier, le +15 % de l'Acharnement, les cumuls d'Os à Moelle et de
+# Carcasse, la Puissance d'Arcanin, la Rage et la Forme Bestiale.
+
+schema_version: 1
+game_version: "3.6.12"
+class: ouginak
+name: { fr: "Ouginak", en: "Ouginak" }
+
+resources:
+  - id: rogne_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13803
+    modifies_damage:
+      - kind: characteristic
+        amount: 80
+      # Effet 414 : 40 Dommages Poussée.
+      - kind: push_damage
+        amount: 40
+    note: |
+      La Puissance que la Rogne accorde, pour deux tours, avec ses Dommages
+      Poussée : « Augmente la Puissance, les Dommages Poussée et le Tacle de
+      l'allié ciblé », effet 138 à 80 sur la cible « a » ; le lanceur peut se
+      cibler lui-même, la portée minimale du sort étant de zéro. Le Tacle (753)
+      n'est pas compté.
+
+      La seconde moitié du sort n'est pas écrite : « augmente ces mêmes
+      caractéristiques sur le lanceur si la cible subit des dommages (cumulable 5
+      fois) », un second jeu à 30/20/10 qui demande que la cible encaisse, ce que
+      ce calculateur ne simule pas.
+  - id: battue
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138, valeur 150, duree 2 : de la Puissance, donc DANS l'arrondi
+      # caracteristique, au meme etage que celle du stuff. Elle profite a TOUS
+      # les sorts du tour, pas seulement a la Battue.
+      - kind: characteristic
+        amount: 150
+    note: |
+      « Augmente la Puissance du lanceur et des allies en zone. » La moitie du
+      lanceur est inconditionnelle : le sort la donne en frappant, sans rien
+      demander au placement. Celle des allies ne compte pas ici, ce calculateur
+      resolvant une rotation a un seul lanceur.
+
+  - id: proie
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    note: |
+      L'etat Proie, que posent Proie et Gibier, deux variantes du meme sort a
+      1 PA. Effet 950 sur l'etat 516, duree -1 : il ne s'efface pas tout seul.
+
+      C'est le pivot de la classe. Onze sorts a degats en dependent, la plupart
+      pour un effet secondaire de placement dont ce solveur ne fait rien, mais
+      Os a Moelle et Carcasse en tirent un vrai cumul de degats. Le marquer coute
+      1 PA une fois, et rien ensuite.
+
+  - id: gibier
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Le tour du lancer seulement : effet 1163 à durée 0, comme le Bond du Iop.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, parametre 107 : les dommages subis par la cible sont
+      # multiplies par 1,07. Meme etage qu'un bonus de Dofus.
+      - kind: final_multiplier
+        percent: 107
+    note: |
+      Ce que Gibier ajoute par rapport a Proie, sa variante : +7 % de dommages
+      subis par la cible, en plus de l'etat. Une ressource a part et non une
+      propriete de `proie`, justement parce que Proie ne le donne pas.
+
+  - id: acharnement
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Le tour du lancer seulement : effet 1163 à durée 0, comme le Bond du Iop.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, parametre 115, sur la cible en etat 516.
+      - kind: final_multiplier
+        percent: 115
+    note: |
+      « Si l'ennemi est la Proie : augmente egalement les dommages subis par la
+      cible. » Effet 1163 a 115, cible `A,E516`, donc +15 % conditionne a la
+      Proie. Le reste du sort est du placement.
+
+  - id: rage
+    # Rage Ouginak (515), qu'exigent Flair, Arcanin, Caninos, et Apaisement ou
+    # Affection a defaut de la Forme Bestiale.
+    game_states: [515]
+    scope: caster
+    max: 2
+    default: 0
+    monotone: none
+    note: |
+      La Rage : onze sorts à dégâts disent « Augmente la Rage » et cinq sorts
+      utilitaires « nécessite et diminue la Rage » ; un seul de ces cinq pèse sur
+      les dégâts, l'Arcanin, 100 Puissance pour 1 PA.
+
+      Plafond de deux, lu dans la donnée : l'effet 792 porte « état, plafond »,
+      ce qui se vérifie sur Os à Moelle (état 13761, 4) et Carcasse (13767, 4),
+      dont le « Cumul » vaut 4 ; les onze sorts à Rage le portent sur l'état 24128
+      avec 2. Deux crans, ce que confirme la fiche du Cerbère, qui distingue
+      « Lanceur sous Rage » et « Lanceur sous Raage ».
+
+      Le gain par lancer est une hypothèse : la donnée porte le plafond, pas
+      l'incrément, et un par lancer est la seule lecture qui rende les deux crans
+      atteignables.
+
+      Il n'y a pas de troisième cran : le sous-sort « La Rage d'Ouginak » (13745),
+      grade 1, fait passer de rien à Rage 1 (états 513 et 515), de Rage 1 à Rage 2
+      (514), et de Rage 2 à la Forme Bestiale (sous-sort 13746), en retirant 513,
+      514 et 515. Sous Forme Bestiale, aucun cran ne se gagne (masque « e517 »).
+      Le grade 2, celui de l'Arcanin, du Caninos et de l'Apaisement, retire un
+      cran. D'où `monotone: none` : un cran de plus peut coûter la Rage entière.
+
+  - id: arcanin
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138, parametre 100, duree 3 : de la Puissance, qui entre dans
+      # l'arrondi caracteristique comme celle du stuff.
+      - kind: characteristic
+        amount: 100
+    note: |
+      +100 Puissance pendant trois tours pour 1 PA, cumulable deux fois, donc 200
+      à deux crans (effet 138, « Cumul : 2 »). Le sort consomme un cran de Rage,
+      qu'il faut avoir accumulé.
+
+  - id: os_a_moelle_cumul
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      « Les dommages du sort sont augmentés après chaque lancer si la cible est la
+      Proie » : effet 293, valeur 6, durée 3, sur le lanceur. Plafond de quatre :
+      21-24, 27-30, 33-36, 39-42, 45-48, six de plus à chaque cran.
+
+  - id: vertebre
+    scope: target
+    max: 2
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Deux Vertebres, deux poisons qui tombent chacun : la ligne se
+          # repete une fois par cran.
+          - element: water
+            critical: [38, 43]
+            normal: [32, 36]
+            repeats_per: [vertebre]
+        note: |
+          Le poison, qui tombe au debut du tour de la cible. Deux tours de
+          duree, donc deux tics.
+    note: |
+      Cumul 2 : deux Vertèbres font deux poisons qui tombent chacun, la ligne du
+      poison se répétant une fois par cran ; un seul lancer par cible, à relancer
+      chaque tour pour cumuler. Approximation déclarée : un seul compte à rebours
+      pour les deux poisons, que la relance remet à deux tours.
+
+      « Applique un poison Eau de début de tour sur l'ennemi ciblé. » Le sort ne
+      frappe pas immédiatement : ses 32-36 sont ceux du poison, « Début de tour »,
+      durée 2.
+
+  - id: carcasse_cumul
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Plafond de quatre : 9-11, 15-17, 21-23, 27-29, 33-35, six de plus à chaque
+      cran.
+
+  - id: ennemis_au_contact
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Ennemis au contact du lanceur"
+    note: |
+      Combien d'ennemis sont collés à vous, à ne pas confondre avec « Ennemis
+      touchés », qui compte ceux de la zone du sort. La Muselière monte de 22
+      dégâts de base par ennemi au contact, quatre au plus (37-41 nu, puis 59-63 à
+      un ennemi, jusqu'à 125-129 à quatre).
+
+  - id: forme_bestiale
+    # Forme Bestiale (517) : Pelage Protecteur, Ferocite et Nouvelle Lune
+    # l'exigent absente, Apaisement et Affection s'en contentent sans Rage.
+    game_states: [517]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1171 a 20, « #1 % Dommages finaux », duree 2.
+      - kind: final_multiplier
+        percent: 120
+        # Effet 1171, « % Dommages finaux » : ils s'additionnent à ceux des
+        # Dofus et de l'équipement.
+        finaux: true
+    note: |
+      Le sous-sort « Bestialité Ouginak » (13746), lancé au troisième cran de
+      Rage : état 517 et +20 % de dommages finaux, pour le tour de son
+      déclenchement et le suivant (voir `DurationDef::turns`). Non comptés : +2
+      PM, les états Intaclable et Affaibli, et la portée maximale de dix-huit
+      sorts fixée à 2 (effet 2905). Le sous-sort 13747, lancé au tour suivant,
+      n'est pas lu non plus.
+
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "L'Acharnement la pose sur l'ennemi cible, pas sur le lanceur."
+
+spells:
+
+  - id: proie
+    dofusdb_id: 13748
+    name: { fr: "Proie", en: "Prey" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Proie sur l'ennemi ciblé.
+      Les entités qui attaquent la cible sont soignées d'une partie des dommages occasionnés.
+      
+      Fixe le temps de relance du sort à 0 si la Proie est achevée.
+    lines: []
+    assumptions:
+      - "Effet 1160 : lance aussi « Proie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Pose l'état Proie sur la cible, sans limite de durée (effet 950 sur l'état 516, durée -1). Le marquer coûte 1 PA une fois et conditionne onze sorts de la classe."
+      - "Le soin rendu aux entités qui attaquent la Proie n'est pas modélisé : ce calculateur ne simule ni les alliés ni les soins."
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Proie » (516), lu par Aboi, Acharnement, Appel de la Meute, Calcanéus, Carcasse, Chasse et 12 autre(s). Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      - effect: gain
+        resource: proie
+
+
+  - id: flair
+    dofusdb_id: 13749
+    name: { fr: "Flair", en: "Sniff" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    requires: { kind: caster_has, resource: rage }
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur sur la première case disponible au contact de la Proie.
+      
+      Si la Proie est dans la zone d'effet : téléporte le lanceur sur la case ciblée.
+      
+      Nécessite et diminue la Rage.
+    assumptions:
+      - "Effets 950/951 : ce sort retire « Flair » (496). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « - 1 Rage », « Flair », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort exige et dépense un cran de Rage, accumulé par les onze sorts qui l'augmentent."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      - effect: consume
+        resource: rage
+
+
+  - id: tetanisation
+    dofusdb_id: 13753
+    name: { fr: "Tétanisation", en: "Tetanisation" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: rabattage
+    dofusdb_id: 13754
+    name: { fr: "Rabattage", en: "Tally Ho" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu.
+      Vole des PM avant d'appliquer les effets si la cible est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Le vol de vie est compté comme des dégâts : le soin rendu au lanceur ne pèse pas sur une recherche de dégâts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: traque
+    dofusdb_id: 13755
+    name: { fr: "Traque", en: "Tracking" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Rapproche le lanceur vers la cible avant d'appliquer les effets si c'est la Proie.
+      
+      Le sort n'est pas soumis aux contraintes de lancer sous Forme Bestiale.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: molosse
+    dofusdb_id: 13756
+    name: { fr: "Molosse", en: "Watchdog" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et réduit les dommages subis par le lanceur.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+      - "Effet 1163 à 90, « réduit les dommages subis par le LANCEUR » : c'est un multiplicateur sur ce que le Ouginak ENCAISSE, pas sur ce qu'il inflige. Rien n'en dépend ici, ce calculateur ne comptant que les dégâts portés. Noté parce qu'un multiplicateur inférieur à 100 ressemble, de loin, à une vulnérabilité oubliée."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: dogue
+    dofusdb_id: 13757
+    name: { fr: "Dogue", en: "Mastiff" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre.
+      Retire de la Fuite si la cible est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Le vol de vie est compté comme des dégâts : le soin rendu au lanceur ne pèse pas sur une recherche de dégâts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: cerbere
+    dofusdb_id: 13758
+    name: { fr: "Cerbère", en: "Cerberus" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur et occasionne des dommages Terre aux ennemis en zone.
+      Les dommages du sort sont plus importants selon la Rage du lanceur et le bouclier n'est pas appliqué sous Forme Bestiale.
+    assumptions:
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Accrocs » et ce qu'il lance a son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effets 1160/2160 : lance aussi « <color=#e6893d>Aucune Rage :</color> », « <color=#e6893d>Forme Bestiale :</color> », « <color=#e6893d>Raage :</color> », « <color=#e6893d>Rage :</color> », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les dégâts montent avec la Rage, et les trois crans changent de largeur : 15-18 sans Rage, 21-25 sous Rage, puis deux lignes de 15-18 sous Raage, soit trois, quatre et six points d'amplitude. Un bonus de dégâts de base décale une fourchette sans l'élargir : une ligne par cran."
+      - "Deux Rage valent deux lignes de 15-18, soit 30-36 de dégâts de base."
+      - "La Forme Bestiale, qui remplace ces paliers par trois lignes de 13-14, n'est pas modélisée : rien ici ne déclenche la transformation."
+      - "Le bouclier posé sur le lanceur n'est pas modélisé : ce calculateur maximise les dégâts infligés."
+    # Une ligne par cran de Rage. Le troisième en compte DEUX, parce que le jeu
+    # frappe deux fois sous Raage : l'écrire 30-36 d'un bloc dirait le bon total
+    # en inventant une fourchette qu'aucune des deux sources ne porte.
+    lines:
+      - element: earth
+        active_at: { resource: rage, exactly: 0 }
+        critical: [19, 23]
+        normal: [15, 18]
+      - element: earth
+        active_at: { resource: rage, exactly: 1 }
+        critical: [26, 30]
+        normal: [21, 25]
+      - element: earth
+        active_at: { resource: rage, exactly: 2 }
+        critical: [19, 22]
+        normal: [15, 18]
+      - element: earth
+        active_at: { resource: rage, exactly: 2 }
+        critical: [19, 22]
+        normal: [15, 18]
+    effects:
+      - effect: damage
+
+  - id: cubitus
+    dofusdb_id: 13760
+    name: { fr: "Cubitus", en: "Ulna" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau.
+      Donne 1 PM au lanceur si la cible est la Proie.
+      
+      Le sort n'est pas soumis aux contraintes de lancer sous Forme Bestiale.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effet 1160 : lance aussi « Cubitus », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le vol de vie est compté comme des dégâts : le soin rendu au lanceur ne pèse pas sur une recherche de dégâts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: os_a_moelle
+    dofusdb_id: 13762
+    name: { fr: "Os à Moelle", en: "Marrow Bone" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau.
+      Les dommages du sort sont augmentés après chaque lancer si la cible est la Proie.
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « Os à Moelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Chaque lancer sur la Proie ajoute 6 aux dégâts de base du sort, pendant trois tours (effet 293, valeur 6, durée 3). Sans la Proie, rien ne se cumule."
+      - "Le plafond de trois cumuls est repris par analogie du Flétrissement du Xélor, qui porte la même signature d'effet, vérifiée en jeu. Non mesuré ici."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: os_a_moelle_cumul, amount: 6 }]
+    effects:
+      - effect: damage
+      # Lu APRES les degats : « augmentes APRES chaque lancer », donc le lancer
+      # qui accorde le cumul n'en profite pas lui-meme.
+      - effect: gain
+        resource: os_a_moelle_cumul
+        requires: { kind: target_has, resource: proie }
+
+
+  - id: tibia
+    dofusdb_id: 13763
+    name: { fr: "Tibia", en: "Tibia" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse les cibles en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Augmente la Rage.
+    assumptions:
+      - "\"Effets 792/1160/2160 : ce sort fait attaquer les invocations du lanceur, « Tibia » et ce qu'il lance à son tour sur « C » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160/2160 : lance aussi « +1 Rage », « La Rage d'Ouginak », « Tibia », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: limier
+    dofusdb_id: 13765
+    name: { fr: "Limier", en: "Bloodhound" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      Attire les entités vers la cible en zone avant d'appliquer les effets si c'est la Proie.
+      
+      Le sort n'est pas soumis aux contraintes de lancer sous Forme Bestiale.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effet 1160 : lance aussi « Limier », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: charogne
+    dofusdb_id: 13766
+    name: { fr: "Charogne", en: "Carrion" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode la cible et occasionne des dommages Air.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: carcasse
+    dofusdb_id: 13768
+    name: { fr: "Carcasse", en: "Carcass" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      Les dommages du sort sont augmentés après chaque lancer si la cible est la Proie.
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « Carcasse », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Chaque lancer sur la Proie ajoute 6 aux dégâts de base du sort, pendant trois tours (effet 293, valeur 6, durée 3). Sans la Proie, rien ne se cumule."
+      - "Le plafond de trois cumuls est repris par analogie du Flétrissement du Xélor, qui porte la même signature d'effet, vérifiée en jeu. Non mesuré ici."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: carcasse_cumul, amount: 6 }]
+    effects:
+      - effect: damage
+      # Lu APRES les degats : « augmentes APRES chaque lancer », donc le lancer
+      # qui accorde le cumul n'en profite pas lui-meme.
+      - effect: gain
+        resource: carcasse_cumul
+        requires: { kind: target_has, resource: proie }
+
+
+  - id: apaisement
+    dofusdb_id: 13769
+    name: { fr: "Apaisement", en: "Appeasement" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    requires: { kind: caster_has, resource: rage }
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne l'allié ciblé.
+      Nécessite et diminue la Rage.
+      
+      Retire également les effets de la Forme Bestiale.
+    assumptions:
+      - "Effet 1160 : lance aussi « - 1 Rage », « Bestialité Ouginak », « La Rage d'Ouginak », « Retire la Forme Bestiale », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort exige et dépense un cran de Rage, accumulé par les onze sorts qui l'augmentent."
+    lines: []
+    effects:
+      - effect: consume
+        resource: rage
+
+
+  - id: convergence
+    dofusdb_id: 13770
+    name: { fr: "Convergence", en: "Convergence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rapproche le lanceur vers l'allié ciblé ou attire l'ennemi ciblé.
+    lines: []
+    effects: []
+
+  - id: arcanin
+    dofusdb_id: 13771
+    name: { fr: "Arcanin", en: "R-Canine" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    requires: { kind: caster_has, resource: rage }
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Puissance du lanceur.
+      
+      Nécessite et diminue la Rage.
+    lines: []
+    assumptions:
+      - "Effet 1160 : lance aussi « - 1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort exige et dépense un cran de Rage, accumulé par les onze sorts qui l'augmentent."
+      - "Donne 100 Puissance au lanceur pendant trois tours pour 1 PA (effet 138, paramètre 100, durée 3). La Puissance entre dans l'arrondi caractéristique, comme celle de l'équipement, et profite donc à tous les sorts."
+      - "⚠️ Le coût en Rage n'est PAS modélisé, faute de magnitude dans la donnée : le sort est donc compté GRATUIT en Rage, ce qui le surévalue."
+    effects:
+      - effect: gain
+        resource: arcanin
+      - effect: consume
+        resource: rage
+
+
+  - id: pelage_protecteur
+    dofusdb_id: 13772
+    name: { fr: "Pelage Protecteur", en: "Protective Pelt" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique 2 boucliers et l'état Pelage Protecteur sur l'allié ciblé :
+      • Retire le second bouclier et l'état et augmente la Rage si la cible subit des dommages de poussée.
+      
+      Ne peut pas être utilisé sous Forme Bestiale.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pelage Protecteur » (4144). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », « Pelage Protecteur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Ce sort augmente la Rage, d'un montant que la donnee ne porte pas : il vit dans le script de classe 1160. Le gain n'est donc pas compte, ce qui sous-estime les sorts qui la depensent."
+    effects: []
+
+  - id: aboiement
+    dofusdb_id: 13773
+    name: { fr: "Aboiement", en: "Bark" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM de la cible, la rend Inébranlable et lui applique l'état Aboiement :
+      • Retire les états et augmente la Rage si la cible subit des dommages en mêlée.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Inébranlable » (157) ; applique « Aboiement » (4145). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « +1 Rage », « Aboiement », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Ce sort augmente la Rage, d'un montant que la donnee ne porte pas : il vit dans le script de classe 1160. Le gain n'est donc pas compte, ce qui sous-estime les sorts qui la depensent."
+    effects: []
+
+  - id: lance_roquet
+    dofusdb_id: 13774
+    name: { fr: "Lance-roquet", en: "Yapper Launcher" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Roquet maîtrisable qui peut voler de la vie dans l'élément Neutre.
+      
+      Lorsque le lanceur occasionne des dommages avec ses sorts Ouginak, le Roquet se rapproche vers la Proie et l'attaque s'il est à portée.
+      Les dommages sont réduits de moitié en-dehors de son tour de jeu.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Roquet Rang 3 » (3512). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: panique
+    dofusdb_id: 13781
+    name: { fr: "Panique", en: "Panic" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse les cibles depuis le centre en zone autour de la cible.
+      Retire également des PM et de la Fuite à la Proie si elle est touchée.
+    assumptions:
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: gibier
+    dofusdb_id: 13786
+    name: { fr: "Gibier", en: "Venison" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Proie sur l'ennemi ciblé et augmente les dommages qu'il subit.
+      
+      Fixe le temps de relance du sort à 0 si la Proie est achevée.
+    lines: []
+    assumptions:
+      - "Effet 1160 : lance aussi « Gibier », « Proie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Pose l'état Proie ET augmente de 7 % les dommages que la cible subit (effet 1163, paramètre 107). C'est ce qui la distingue de Proie, sa variante, à coût et relance identiques."
+      - "Le passage de la relance à 0 quand la Proie est achevée n'est pas modélisé : rien ici ne tue la cible."
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Proie » (516), lu par Aboi, Acharnement, Appel de la Meute, Calcanéus, Carcasse, Chasse et 12 autre(s). Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      - effect: gain
+        resource: proie
+      - effect: gain
+        resource: gibier
+
+
+  - id: machoire
+    dofusdb_id: 13787
+    name: { fr: "Mâchoire", en: "Jaw" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente l'Esquive PM du lanceur et des alliés, retire de l'Esquive PM et occasionne des dommages Feu aux ennemis en zone.
+      
+      Augmente la Rage.
+    assumptions:
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Accrocs » et ce qu'il lance a son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effets 792/1160/2160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: calcaneus
+    dofusdb_id: 13788
+    name: { fr: "Calcanéus", en: "Calcaneus" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et attire la cible.
+      L'attirance est plus importante sur la Proie.
+      
+      Le sort n'est pas soumis aux contraintes de lancer sous Forme Bestiale.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Le vol de vie est compté comme des dégâts : le soin rendu au lanceur ne pèse pas sur une recherche de dégâts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: depouille
+    dofusdb_id: 13789
+    name: { fr: "Dépouille", en: "Stripping" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      Augmente les dommages du sort pour chaque allié au contact de la cible avant d'appliquer les effets si c'est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effet 1160 : lance aussi « Dépouille », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: aboi
+    dofusdb_id: 13790
+    name: { fr: "Aboi", en: "Woof" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu.
+      Réduit les Résistances Poussée si la cible est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Le vol de vie est compté comme des dégâts : le soin rendu au lanceur ne pèse pas sur une recherche de dégâts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: affection
+    dofusdb_id: 13791
+    name: { fr: "Affection", en: "Affection" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    requires: { kind: caster_has, resource: rage }
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne le lanceur et l'allié ciblé et échange de position avec ce dernier.
+      Nécessite et diminue la Rage.
+      
+      Retire également les effets de la Forme Bestiale.
+    assumptions:
+      - "Effet 1160 : lance aussi « - 1 Rage », « Affection », « Bestialité Ouginak », « Retire la Forme Bestiale », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort exige et dépense un cran de Rage, accumulé par les onze sorts qui l'augmentent."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      - effect: consume
+        resource: rage
+
+
+  - id: gangrene
+    dofusdb_id: 13792
+    name: { fr: "Gangrène", en: "Gangrene" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Érode l'ennemi ciblé.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines: []
+    effects:
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: museliere
+    dofusdb_id: 13793
+    name: { fr: "Muselière", en: "Muzzle" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Augmente les dommages du sort pour chaque ennemi au contact du lanceur avant d'appliquer les effets si la cible est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Effets 293 et 1019, +22 dégâts de base par ennemi au contact, gardés par l'état Proie : l'effet 293 vaut 22 sur le lanceur, et l'effet 1019 qui compte les crans vise « A,E516 », un ennemi portant l'état 516, la Proie. Le texte dit la même chose : « augmente les dommages du sort pour chaque ennemi au contact du lanceur avant d'appliquer les effets si la cible est la Proie »."
+      - "⚠️ Le nombre d'ennemis au contact reste DECLARE par le joueur, lui : le solveur ne place personne. La Proie, elle, est bien simulee, le sort du meme nom la posant pour 1 PA sans limite de duree."
+      - "⚠️ « Avant d'appliquer les effets » veut dire que le jeu compte les ennemis au contact AVANT les deplacements du sort. Sans grille simulee, cette precision ne change rien ici : le compteur est celui que le joueur annonce, et il l'annonce pour le moment du lancer."
+    lines:
+      - element: earth
+        # 22 points de dégâts de base par ennemi au contact, quatre au plus, et
+        # seulement si la cible porte la Proie : 37-41 nu, puis 59-63, 81-85,
+        # 103-107, 125-129.
+        base_bonus:
+          - kind: per_resource_gated
+            resource: ennemis_au_contact
+            amount: 22
+            gated_by: proie
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: humerus
+    dofusdb_id: 13794
+    name: { fr: "Humérus", en: "Humerus" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible et occasionne des dommages Terre aux ennemis.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: chasse
+    dofusdb_id: 13795
+    name: { fr: "Chasse", en: "Hunt" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse la cible.
+      Rapproche le lanceur vers la cible avant d'appliquer les effets si c'est la Proie.
+    assumptions:
+      - "\"Effet 1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: battue
+    dofusdb_id: 13796
+    name: { fr: "Battue", en: "Beaten" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et augmente la Puissance du lanceur et des alliés en zone.
+    assumptions:
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Accrocs » et ce qu'il lance a son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effet 138, +150 Puissance au lanceur pendant deux tours : « augmente la Puissance du lanceur et des alliés en zone », sans condition, et la Puissance profite à tous les sorts du tour. Son poids dépend du build, la Puissance entrant dans l'arrondi caractéristique : sur un build à 650 de caractéristique et 170 de Puissance, les 150 valent environ +16 %, le multiplicateur passant de 9,2 à 10,7."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: battue
+
+  - id: caninos
+    dofusdb_id: 13797
+    name: { fr: "Caninos", en: "Snuggletooth" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    requires: { kind: caster_has, resource: rage }
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne le lanceur.
+      
+      Nécessite et diminue la Rage.
+    assumptions:
+      - "Effet 1160 : lance aussi « - 1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort exige et dépense un cran de Rage, accumulé par les onze sorts qui l'augmentent."
+    lines: []
+    effects:
+      - effect: consume
+        resource: rage
+
+
+  - id: ferocite
+    dofusdb_id: 13798
+    name: { fr: "Férocité", en: "Ferocity" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Férocité sur l'allié ciblé :
+      • Applique un bouclier sur le lanceur et la cible si cette dernière est attirée, poussée, transposée, téléportée ou subit une tentative de retrait de PM.
+      • Applique un bouclier supplémentaire si la cible est le lanceur.
+      
+      Ne peut pas être utilisé sous Forme Bestiale.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Férocité » (4153). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Férocité », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: radius
+    dofusdb_id: 13799
+    name: { fr: "Radius", en: "Radius" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Eau aux ennemis.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: vertebre
+    dofusdb_id: 13800
+    name: { fr: "Vertèbre", en: "Vertebra" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Applique un poison Eau de début de tour sur l'ennemi ciblé.
+      Le poison ne peut pas être désenvoûté s'il est appliqué sur la Proie.
+    assumptions:
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Vertèbre » sur « A,e516 » : Eau 32-36; « Vertèbre » sur « A,E516 » : Eau 32-36, Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Ce sort n'inflige aucun dégât immédiat : il pose un poison Eau de 32-36 qui tombe au début du tour de la cible, deux fois (« Début de tour », durée 2)."
+      - "L'impossibilité de désenvoûter le poison sur la Proie ne change rien ici : aucun désenvoûtement n'est simulé."
+    lines: []
+    effects:
+      - effect: gain
+        resource: vertebre
+
+  - id: poursuite
+    dofusdb_id: 13801
+    name: { fr: "Poursuite", en: "Pursuit" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un glyphe qui augmente les PM des alliés.
+      
+      Applique également l'état Poursuite sur la Proie si elle est sur la case ciblée :
+      • Pose de nouveau le glyphe sous la cible au début de son tour.
+      Cet effet est appliqué uniquement si la cible est toujours la Proie.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Poursuite » (4155). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Poursuite », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: amarok
+    dofusdb_id: 13802
+    name: { fr: "Amarok", en: "Amarok" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente les résistances en mêlée du lanceur et des alliés et occasionne des dommages Terre aux ennemis en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Accrocs » et ce qu'il lance a son tour sur « A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: rogne
+    dofusdb_id: 13803
+    name: { fr: "Rogne", en: "Gnaw" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Puissance, les Dommages Poussée et le Tacle de l'allié ciblé et lui applique l'état Rogne :
+      • Augmente ces mêmes caractéristiques sur le lanceur si la cible subit des dommages (cumulable 5 fois).
+      
+      Augmente la Rage.
+    assumptions:
+      - "Effets 138/414/753, second jeu à 30/20/10 : « augmente ces mêmes caractéristiques sur le lanceur si la cible subit des dommages (cumulable 5 fois) ». Non compté, le déclencheur étant que la cible encaisse, ce que ce calculateur ne simule pas : le total est un plancher pour ce sort."
+      - "Effets 950/951 : ce sort applique « Rogne » (4146). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », « Rogne », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines: []
+    effects:
+      - effect: gain
+        resource: rogne_puissance
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: depecage
+    dofusdb_id: 13804
+    name: { fr: "Dépeçage", en: "Carving Up" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par la cible et occasionne des dommages Air.
+      
+      Augmente la Rage (nécessite une cible).
+    assumptions:
+      - "\"Effets 792/1160 : ce sort fait attaquer les invocations du lanceur, « Accrocs » et ce qu'il lance à son tour sur « a,A » : Neutre 6-7 en vol de vie, Neutre 15-16 en vol de vie, Neutre 9-10 en vol de vie, Neutre 25-26 en vol de vie, Neutre 12-13 en vol de vie, Neutre 30-31 en vol de vie. Ces dégâts ne sont pas comptés : ils dépendent de qui est invoqué, de sa portée et de sa ligne de vue au moment du lancer. Le chiffre affiché est celui de la ligne propre du sort.\""
+      - "Effets 792/1160 : lance aussi « +1 Rage », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: acharnement
+    dofusdb_id: 13805
+    name: { fr: "Acharnement", en: "Doggedness" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Pesanteur sur l'ennemi ciblé.
+      Si l'ennemi est la Proie :
+      • Augmente également les dommages subis par la cible.
+      • Téléporte les Roquets du lanceur à son contact.
+      
+      Augmente la Rage (nécessite une cible).
+    lines: []
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « +1 Rage », « Acharnement », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort accumule un cran de Rage. La Rage plafonne à deux et se dépense dans l'Arcanin, qui donne 100 Puissance par cran. ⚠️ Le gain d'un cran par lancer est une hypothèse : la donnée porte le plafond, pas l'incrément."
+      - "Sur une cible déjà Proie, augmente de 15 % les dommages qu'elle subit (effet 1163, paramètre 115, cible en état 516). Sans la Proie, le sort ne fait rien d'utile ici."
+      - "L'état Pesanteur, la téléportation des Roquets et le gain de Rage ne sont pas modélisés."
+    effects:
+      - effect: gain
+        resource: acharnement
+        requires: { kind: target_has, resource: proie }
+      # « La Rage d'Ouginak » (13745, grade 1) : un cran de plus, et a
+      # Rage 2 la Forme Bestiale, qui remet la Rage a zero.
+      - effect: gain
+        resource: forme_bestiale
+        requires: { kind: exactly, resource: rage, amount: 2 }
+      - effect: reset
+        resource: rage
+        requires: { kind: caster_has, resource: forme_bestiale }
+      - effect: gain
+        resource: rage
+        requires: { kind: exactly, resource: forme_bestiale, amount: 0 }
+
+
+  - id: pistage
+    dofusdb_id: 13806
+    name: { fr: "Pistage", en: "Tailing" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse la cible et rapproche le lanceur vers elle.
+    lines: []
+    effects: []
+
+  - id: nouvelle_lune
+    dofusdb_id: 14321
+    name: { fr: "Nouvelle Lune", en: "New Moon" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur le lanceur et le transforme en Bête.
+      
+      Ne peut pas être utilisé sous Forme Bestiale.
+    assumptions:
+      - "Effet 1160 : lance aussi « Applique la Forme Bestiale », « La Rage d'Ouginak », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: appel_de_la_meute
+    dofusdb_id: 14357
+    name: { fr: "Appel de la Meute", en: "Call of the Pack" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit le temps de relance du sort Lance-roquet du lanceur.
+      • Si la cible est le lanceur : attire tous les alliés vers la cible.
+      • Si la cible est la Proie : érode la cible et attire tous les alliés vers elle.
+      L'attirance est plus importante si la cible est la Proie.
+    assumptions:
+      - "Effet 1160 : lance aussi « Appel de la Meute », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements de ce sort, téléportation, attirance ou poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []

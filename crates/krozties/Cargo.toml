@@ -1,0 +1,21 @@
+[package]
+name = "krozties"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Krozties : l'atelier de bureau, qui partage son moteur avec le CLI."
+
+[[bin]]
+name = "krozties"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dofus-app = { path = "../app" }
+dofus-build = { path = "../build" }
+tauri = { version = "2", features = [] }
+serde = { workspace = true }
+serde_json = { workspace = true }

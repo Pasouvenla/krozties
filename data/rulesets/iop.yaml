@@ -1,0 +1,1057 @@
+# Iop.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: iop
+name: { fr: "Iop", en: "Iop" }
+
+resources:
+  - id: agitation_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13113
+    modifies_damage:
+      - kind: characteristic
+        amount: 20
+        per_mp_used: true
+    note: |
+      La Puissance que l'Agitation accorde, par PM dépensé, pour un tour :
+      « Augmente les PM de l'allié ciblé et le rend Intaclable. Augmente
+      également sa Puissance pour chaque PM utilisé. » Effet 138 à 20 sur la
+      cible « a », durée 1 ; le lanceur peut se cibler lui-même, la portée
+      minimale du sort étant de zéro. Le nombre de PM se déclare : c'est le
+      réglage « PM dépensés », comme pour la Tourbière et le Tunnel de Fortune de
+      l'Enutrof. Les PM que le sort donne ne sont pas comptés : un PM gagné n'est
+      pas un PM dépensé.
+  - id: puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+    modifies_damage:
+      # Puissance s'ajoute a la caracteristique dans le premier arrondi, la ou
+      # se trouve la Puissance du stuff : meme etage du pipeline.
+      - kind: characteristic
+        amount: 300
+        critical_amount: 350
+      # Effet 414, Dommages Poussee : 120, 140 sur un critique.
+      - kind: push_damage
+        amount: 120
+        critical_amount: 140
+    note: |
+      Effet 138, durée 3 : 300 de Puissance, 350 sur un coup critique, au niveau
+      3 du sort, et 120 Dommages Poussée (140 en critique).
+
+  - id: destin
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    note: |
+      « Les dommages du sort sont augmentés à la récupération du sort. » Effet
+      293, délai égal à l'intervalle de relance, durée 1 : un bonus unique qui
+      arrive quand le sort redevient disponible, pas un cumul. Le sort s'applique
+      la ressource en se lançant et la lit au lancer suivant : le premier lancer
+      n'a rien, tous les suivants ont le bonus, et l'intervalle de relance place
+      celui-ci au bon moment.
+
+      Vérifié en jeu : le bonus exige seulement que le sort soit de nouveau
+      disponible, et ne grossit pas à attendre davantage.
+
+  - id: sentence
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 0
+      refresh: on_apply
+      on_expire: reset_to_default
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: fire
+            critical: [32, 36]
+            normal: [26, 30]
+        note: |
+          L'infobulle dit « à la fin du tour de la cible », ce qui, pour une
+          recherche par tours, tombe au même endroit que le début du nôtre. « En zone
+          autour d'elle » n'exclut pas la cible : ce que pose ce genre de sort est une
+          glyphe, qui frappe toute entité présente, la cible d'origine comprise.
+
+          Les deux fourchettes sont celles de l'instantané pour le sort 13147 : 13-16
+          (34-38 en critique) est le coup immédiat, porté par le sort, et 26-30
+          (32-36) ce que l'état inflige, porté ici.
+
+  - id: elan_divin
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 3
+      refresh: on_apply
+      on_expire: reset_to_default
+    modifies_damage:
+      # Effet 112 : « Dommages », tous éléments confondus, diceNum 30, durée 4. Du
+      # fixe, qui s'ajoute après l'arrondi caractéristique et non dedans,
+      # contrairement à la Puissance : en `base_damage`, 30 en vaudraient 276 sur un
+      # build à 650 de caractéristique.
+      - kind: flat_damage
+        amount: 30
+    note: |
+      Ce que l'Epee Divine laisse derriere elle : "augmente les Dommages du
+      lanceur et des allies en zone". La magnitude vient de la donnee.
+
+  - id: pugilat_enchaine
+    scope: caster
+    max: 3
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 0
+      refresh: on_apply
+      on_expire: reset_to_default
+    note: |
+      "Les dommages du sort sont augmentes apres chaque lancer POUR LE TOUR EN
+      COURS." Effet 293, valeur 18, duree 1 : le cumul retombe a zero au tour
+      suivant, ce que dit `duration: 1`. Plafonne a trois, le sort etant limite
+      a quatre lancers par tour et le premier ne beneficiant d'aucun cumul.
+
+  - id: fureur_enchainee
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: decrement_one
+    note: |
+      « Les dommages du sort sont augmentés après chaque lancer. Les bonus se
+      décrémentent si le sort n'est pas relancé. » D'où `decrement_one` plutôt
+      que `reset_to_default` : l'oubli d'un tour coûte un cran, pas tout le
+      cumul. Effet 293, valeur 20, durée 2. Cumul 2 : trois paliers, 28-32 puis
+      48-52 puis 68-72, vingt de plus à chaque cran.
+
+  - id: accumulation_gagnee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+    note: |
+      « Sur le lanceur : augmente les dommages du sort. » Effet 293, valeur 24,
+      durée 3. Cumul 1 : deux paliers, 22-26 puis 46-50.
+
+  - id: colere_recuperee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    note: |
+      « Les dommages du sort sont augmentés à la récupération du sort. » Effet
+      293, délai égal à l'intervalle de relance, durée 1 : un bonus unique qui
+      arrive quand le sort redevient disponible, pas un cumul. Le sort s'applique
+      la ressource en se lançant et la lit au lancer suivant : le premier lancer
+      n'a rien, tous les suivants ont le bonus, et l'intervalle de relance place
+      celui-ci au bon moment.
+
+      Une mécanique distincte de celle de l'Épée du Destin : les deux sorts
+      rechargent chacun de leur côté, sans partager leur compteur.
+
+  - id: condamne
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+    note: |
+      L'etat que pose l'Epee du Jugement (effet 950, duree 2). Sa frappe
+      differee (effet 3793, delai 2) ne tombe que sur une cible qui le porte, et
+      un nouveau lancer reinitialise le retardement.
+
+  - id: bond
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, parametre 115 : les dommages subis par la cible sont
+      # multiplies par 1,15. Meme etage qu'un bonus de Dofus.
+      - kind: final_multiplier
+        percent: 115
+    note: |
+      « Augmente les dommages subis par les ennemis en zone » : +15 %. Le Bond ne
+      frappe pas lui-même : il téléporte le lanceur et pose ce malus, pour le tour
+      du lancer seulement. La donnée porte une durée de 0 sur l'effet 1163,
+      « jusqu'au début du prochain tour du lanceur », comme les vulnérabilités du
+      Fer Rouge ou du Volcan.
+
+  - id: massacre
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: final_multiplier
+        percent: 115
+    note: |
+      « Augmente et renvoie une partie des dommages subis par l'ennemi ciblé » :
+      effet 1163 à 115, donc +15 %, pour le tour du lancer seulement (durée 0,
+      comme le Bond). Le renvoi aux ennemis en zone (effet 1223, 30 %) n'est pas
+      modélisé.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Seul le Duel la pose sur le lanceur, pour deux tours, et le Duel n'a aucun effet dans ce calculateur : la rotation ne le lance pas. ⚠️ S'il en recoit un, le Bond devra l'exiger absente."
+
+spells:
+  - id: pression
+    dofusdb_id: 13106
+    name: { fr: "Pression", en: "Pressure" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode la cible et occasionne des dommages Terre.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bond
+    dofusdb_id: 13107
+    name: { fr: "Bond", en: "Jump" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur sur la case ciblée et augmente les dommages subis par les ennemis en zone.
+    assumptions:
+      - "Ce sort ne frappe pas : il téléporte le lanceur et augmente de 15 % les dommages que les ennemis en zone subissent (effet 1163, paramètre 115). C'est ce +15 % qui est compté ici."
+      - "La téléportation n'est pas modélisée : ce calculateur ne simule pas la grille."
+    lines: []
+    effects:
+      - effect: gain
+        resource: bond
+
+
+  - id: intimidation
+    dofusdb_id: 13108
+    name: { fr: "Intimidation", en: "Intimidation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 5 }
+    note: |
+      Occasionne des dommages dans le meilleur élément du lanceur aux ennemis et repousse la cible.
+    assumptions:
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [11, 13]
+        normal: [8, 10]
+    effects:
+      - effect: damage
+
+  - id: duel
+    dofusdb_id: 13109
+    name: { fr: "Duel", en: "Duel" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur et l'ennemi ciblé Invulnérables à distance, leur applique l'état Pesanteur et les immobilise.
+      La durée de l'état Pesanteur est plus importante sur le lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Invulnérable à Distance » (375) ; applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Duel », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: epee_divine
+    dofusdb_id: 13110
+    name: { fr: "Épée Divine", en: "Divine Sword" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et augmente les Dommages du lanceur et des alliés en zone.
+    assumptions:
+      - "Le même bonus accordé aux alliés en zone n'est pas compté : ce calculateur résout un seul lanceur."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: elan_divin
+
+
+  - id: epee_du_destin
+    dofusdb_id: 13111
+    name: { fr: "Épée du Destin", en: "Sword of Fate" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Les dommages du sort sont augmentés à la récupération du sort.
+    assumptions:
+      - "Le bonus « à la récupération du sort » : 38-42 au lancer, 78-82 deux tours plus tard, soit les 40 de dégâts de base que porte la donnée (« 1 charge - Dans 2 tours 78-82 »)."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: destin, amount: 40 }]
+    effects:
+      # Les degats LISENT la ressource, puis le lancer la pose pour la fois
+      # suivante. Inverser ces deux lignes donnerait le bonus des le premier
+      # lancer, alors qu'il recompense justement d'avoir attendu la recharge.
+      - effect: damage
+      - effect: gain
+        resource: destin
+
+  - id: massacre
+    dofusdb_id: 13112
+    name: { fr: "Massacre", en: "Massacre" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente et renvoie une partie des dommages subis par l'ennemi ciblé aux ennemis en zone autour de lui.
+    assumptions:
+      - "Effet 792 : lance aussi « Massacre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Augmente de 15 % les dommages que la cible subit (effet 1163, paramètre 115)."
+      - "Le renvoi d'une partie de ces dommages aux ennemis en zone (effet 1223, 30 %) n'est pas compté : ce solveur ne résout qu'une cible."
+    lines: []
+    effects:
+      - effect: gain
+        resource: massacre
+
+
+  - id: friction
+    dofusdb_id: 13113
+    name: { fr: "Friction", en: "Friction" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire la cible et lui applique l'état Friction :
+      • Sur un ennemi : attire la cible vers son attaquant ennemi.
+      • Sur un allié : attire ses attaquants ennemis vers elle.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Friction » (3643). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Friction », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: precipitation
+    dofusdb_id: 13114
+    name: { fr: "Précipitation", en: "Precipitation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PA de l'allié ciblé et lui applique l'état Affaibli.
+      Retire des PA non esquivables à cet allié au tour suivant.
+      
+      L'état n'est pas appliqué sur le lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Affaibli » (42). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 111, +5 PA : va a l'ALLIE CIBLE, et le texte precise que « l'etat n'est pas applique sur le lanceur ». Le plus gros gain de PA du parc, et il ne vaut rien en solo."
+    effects: []
+
+  - id: couperet
+    dofusdb_id: 13115
+    name: { fr: "Couperet", en: "Chopper" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: souffle
+    dofusdb_id: 13116
+    name: { fr: "Souffle", en: "Breath" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Repousse les cibles depuis le centre et occasionne des dommages Air aux ennemis en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: epee_du_jugement
+    dofusdb_id: 13117
+    name: { fr: "Épée du Jugement", en: "Sword of Judgement" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur, occasionne des dommages Eau et applique l'état Condamné sur la cible :
+      • Occasionne des dommages Eau plus importants à retardement sur la cible.
+      
+      Le bouclier est plus important et le retardement est réinitialisé sur une cible Condamnée.
+      
+      Sur le lanceur : applique un bouclier.
+    assumptions:
+      - "Effets 950 et 951 : l'etat « Condamne » (5184) est le marqueur de la frappe DIFFEREE, celle que ce sort programme deja a deux tours pour 48-52. Il n'est lu que par l'Epee du Jugement elle-meme, et sa consequence est donc entierement comptee."
+      - "Effet 1160 : lance aussi « Épée du Jugement », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les deux fourchettes Eau sont deux effets : 31-35 au lancer et 48-52 deux tours plus tard (« Tous sauf lanceur - Dans 2 tours »)."
+      - "Les boucliers posés sur le lanceur ne sont pas modélisés : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: schedule
+        id: jugement_differe
+        delay: 2
+        payload:
+          - element: water
+            critical: [58, 62]
+            normal: [48, 52]
+
+
+  - id: puissance
+    dofusdb_id: 13118
+    name: { fr: "Puissance", en: "Power" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: unknown }
+    note: |
+      Augmente la Puissance et les Dommages Poussée de la cible.
+    lines: []
+    effects:
+      - effect: gain
+        resource: puissance
+
+  - id: epee_destructrice
+    dofusdb_id: 13119
+    name: { fr: "Épée Destructrice", en: "Destructive Sword" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Feu en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: vitalite
+    dofusdb_id: 13120
+    name: { fr: "Vitalité", en: "Vitality" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente la Vitalité de la cible.
+      La Vitalité est plus importante sur le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Vitalité », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: tempete_de_puissance
+    dofusdb_id: 13121
+    name: { fr: "Tempête de Puissance", en: "Strengthstorm" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      N'affecte pas le lanceur.
+      
+      Occasionne également des dommages Feu sur l'ennemi initial si le sort est lancé sur une autre cible.
+      Ces dommages sont plus importants après 2 lancers consécutifs sur un même ennemi.
+    assumptions:
+      - "Le coup direct ne monte jamais : ses lignes portent un masque de cible, les 27-30 et 38-42 des deux paliers en portent un autre, partagé entre eux. Les paliers appartiennent donc aux dégâts annoncés « sur l'ennemi initial si le sort est lancé sur une autre cible », et non au coup qu'on porte."
+      - "Ces dégâts sur l'ennemi initial ne sont pas comptés : ils exigent de changer de cible, et ce solveur n'en résout qu'une. Le total est un plancher à ce titre, de 27-30 au premier changement de cible et de 38-42 après deux lancers consécutifs."
+      - "La fourchette passe de 27-30 à 38-42, onze points en bas et douze en haut, ce qu'un bonus de dégâts de base ne peut pas faire : deux lignes, et non un palier."
+      - "Effets 950/951, états « Tempête de Puissance I » et « II » sur la cible : ils ne comptent plus rien ici, le seul mécanisme qui les lit étant la frappe sur l'ennemi initial. Le compteur qui les portait est retiré."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+
+  - id: epee_celeste
+    dofusdb_id: 13122
+    name: { fr: "Épée Céleste", en: "Celestial Sword" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: concentration
+    dofusdb_id: 13123
+    name: { fr: "Concentration", en: "Concentration" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages sont plus importants sur les invocations.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Ce sort porte deux fourchettes Terre : 30-34 sur une invocation, 20-24 sur une cible ordinaire. C'est la seconde qui est comptée ici, la cible décrite plus haut n'étant pas une invocation."
+    effects:
+      - effect: damage
+
+  - id: colere_de_iop
+    dofusdb_id: 13124
+    name: { fr: "Colère de Iop", en: "Iop's Wrath" }
+    ap_cost: { base: 7 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages du sort sont augmentés à la récupération du sort.
+    assumptions:
+      - "Le bonus « à la récupération du sort » : 81-100 au lancer, 191-210 trois tours plus tard, soit les 110 de dégâts de base de la donnée (« 1 charge - Dans 3 tours 191-210 »)."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: colere_recuperee
+            amount: 110
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: colere_recuperee
+
+  - id: epee_de_iop
+    dofusdb_id: 13125
+    name: { fr: "Épée de Iop", en: "Sword of Iop" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: deferlement
+    dofusdb_id: 13126
+    name: { fr: "Déferlement", en: "Outpouring" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible et occasionne des dommages Eau aux ennemis.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: menace
+    dofusdb_id: 13130
+    name: { fr: "Menace", en: "Threat" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Attire la cible et occasionne des dommages Eau aux ennemis.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: tannee
+    dofusdb_id: 13131
+    name: { fr: "Tannée", en: "Pounding" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PM en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: determination
+    dofusdb_id: 13132
+    name: { fr: "Détermination", en: "Determination" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'allié ciblé Indéplaçable et lui applique un bouclier.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Indéplaçable » (97). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    effects: []
+
+  - id: endurance
+    dofusdb_id: 13133
+    name: { fr: "Endurance", en: "Endurance" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur et occasionne des dommages Eau.
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fendoir
+    dofusdb_id: 13134
+    name: { fr: "Fendoir", en: "Cleaver" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur pour chaque ennemi dans la zone d'effet et occasionne des dommages Eau en zone.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Fendoir », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le bouclier posé sur le lanceur, un par ennemi dans la zone, n'est pas modélisé : ce calculateur maximise les dégâts infligés. Ses 47-53 sont exacts, sans autre palier."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: anneau_destructeur
+    dofusdb_id: 13135
+    name: { fr: "Anneau Destructeur", en: "Destructive Ring" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et attire les cibles vers le centre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: rassemblement
+    dofusdb_id: 13136
+    name: { fr: "Rassemblement", en: "Gathering" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire les cibles jusqu'au centre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: violence
+    dofusdb_id: 13137
+    name: { fr: "Violence", en: "Violence" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse les cibles en zone.
+    lines: []
+    effects: []
+
+  - id: accumulation
+    dofusdb_id: 13138
+    name: { fr: "Accumulation", en: "Accumulation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      
+      Sur le lanceur : augmente les dommages du sort.
+    assumptions:
+      - "Deux modes de lancer, qui se partagent les trois lancers du tour. Sur un ennemi, le sort frappe et ne charge rien ; sur soi, il charge sans frapper : +24 dommages de base pendant trois tours. La donnée le dit : la ligne de dégâts ne vise pas le lanceur, et le bonus ne vise que lui."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: accumulation_gagnee
+            amount: 24
+    effects:
+      - effect: damage
+    mode_name: { fr: "sur un ennemi", en: "on an enemy" }
+    modes:
+      - name: { fr: "sur soi", en: "on self" }
+        on_self: true
+        effects:
+          - effect: gain
+            resource: accumulation_gagnee
+
+  - id: fracture
+    dofusdb_id: 13139
+    name: { fr: "Fracture", en: "Fracture" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Air en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: coup_pour_coup
+    dofusdb_id: 13140
+    name: { fr: "Coup pour Coup", en: "Fight Back" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse la cible et lui applique l'état Coup pour Coup :
+      • Sur un ennemi : repousse la cible si elle attaque le lanceur.
+      • Sur un allié : repousse les attaquants ennemis.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Coup pour Coup » (589) ; applique « Coup pour Coup » (3642). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Coup pour Coup », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: emprise
+    dofusdb_id: 13141
+    name: { fr: "Emprise", en: "Grip" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'ennemi ciblé Invulnérable et l'immobilise.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Invulnérable » (269), qui porte invulnerable, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: vertu
+    dofusdb_id: 13142
+    name: { fr: "Vertu", en: "Virtue" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur les alliés en zone.
+      Retire également de la Puissance au lanceur pour chaque allié à son contact (cumulable 4 fois).
+    assumptions:
+      - "Effets 1160/2794 : lance aussi « Vertu », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: agitation
+    dofusdb_id: 13143
+    name: { fr: "Agitation", en: "Agitation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM de l'allié ciblé et le rend Intaclable.
+      Augmente également sa Puissance pour chaque PM utilisé.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 138, +20 Puissance : va a l'ALLIE CIBLE, et par PM utilise. L'allie et les PM, deux raisons de ne rien valoir ici."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects:
+      - effect: gain
+        resource: agitation_puissance
+
+  - id: tumulte
+    dofusdb_id: 13144
+    name: { fr: "Tumulte", en: "Tumult" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Augmente les dommages du sort pour chaque ennemi dans la zone d'effet et occasionne des dommages Feu en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Tumulte », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 293, +20 dégâts de base par ennemi touché au-delà du premier, plafonné à quatre crans : 19-21, puis « 2 ennemis dans la zone d'effet » 39-41, « 3 ennemis » 59-61, « 4 ennemis » 79-81 et « 5 ennemis » 99-101 ; le coup critique monte du même montant, 23-25 puis 43-45. Le cran se lit sur le réglage « Ennemis touchés », comme pour la Flèche Massacrante du Crâ et le Muspel du Forgelance."
+      - "Sur cinq ennemis, le sort vaut cinq fois sa ligne de base."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_extra_target
+            amount: 20
+            cap: 4
+    effects:
+      - effect: damage
+
+  - id: zenith
+    dofusdb_id: 13145
+    name: { fr: "Zénith", en: "Zenith" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air en zone. 
+      Occasionne des dommages Air supplémentaires en zone selon les PM restants du lanceur.
+    assumptions:
+      - "Seconde ligne Air 52-58 (64-70 en critique), au prorata des PM restants : « occasionne des dommages Air supplémentaires en zone selon les PM restants du lanceur ». « Aucun PM restant » ne porte que la ligne de base, « 100 % des PM restants » ajoute 52-58."
+      - "Entre les deux bornes, la proportion est linéaire, soit la moitié de la ligne à la moitié des PM : vérifiée en jeu à la moitié des PM."
+      - "Le nombre de PM restants ne se DEDUIT pas, il se DECLARE : c'est le reglage « PM depenses » du scenario, que le joueur regle comme il regle « Ennemis touches »."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+      # La seconde ligne, « selon les PM restants » : rien à zéro PM restant,
+      # 52-58 (64-70 en critique) à 100 %, et une proportion linéaire entre les
+      # deux.
+      - element: air
+        scales_with_mp_left: true
+        # L'appariement par position ne s'applique pas : l'instantané ne porte
+        # qu'une ligne Air pour ce sort. Les 52-58 viennent de DofusBook, groupe
+        # « 100 % des PM restants », et `authored_magnitudes` exige qu'ils existent
+        # sur ce sort.
+        differs_from_snapshot: "Seconde ligne du sort, absente de l'instantane DofusDB qui n'en porte qu'une pour cet element. Les 52-58 viennent de DofusBook, groupe « 100 % des PM restants », et l'appariement par POSITION n'a donc rien a apparier. Le controle des magnitudes continue d'exiger que la fourchette existe sur ce sort."
+        critical: [64, 70]
+        normal: [52, 58]
+    effects:
+      - effect: damage
+
+  - id: pugilat
+    dofusdb_id: 13146
+    name: { fr: "Pugilat", en: "Pygmachia" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre en zone.
+      Les dommages du sort sont augmentés après chaque lancer pour le tour en cours.
+      
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: pugilat_enchaine
+            amount: 18
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: pugilat_enchaine
+
+
+  - id: sentence
+    dofusdb_id: 13147
+    name: { fr: "Sentence", en: "Sentence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et applique l'état Sentence sur la cible :
+      • À la fin du tour de la cible, occasionne des dommages Feu aux ennemis en zone autour d'elle.
+      
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Sentence » (657). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Sentence » sur « a,A » : Feu 26-30. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Le mécanisme est écrit : 13-16 au lancer et 26-30 à la fin du tour de la cible (« Ennemi - Fin de tour », durée 1). Il ne reste que le script de classe, sans effet chiffrable."
+      - "Les deux fourchettes Feu sont deux effets distincts, tous deux modélisés : 13-16 est le coup immédiat, 26-30 est ce que l'état Sentence inflige à la fin du tour de la cible. « En zone autour d'elle » n'exclut pas la cible : c'est une glyphe, elle frappe tout ce qui s'y trouve."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: sentence
+
+  - id: conquete
+    dofusdb_id: 13148
+    name: { fr: "Conquête", en: "Conquest" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Stratège Iop qui peut renvoyer 50% des dommages qu'il subit en zone autour de lui.
+      Le renvoi de dommages n'affecte pas le lanceur.
+      
+      Le Stratège Iop réduit de 50% les dommages immédiats alliés.
+      
+      Il ne peut y avoir qu'un seul Stratège Iop par équipe. Si le Stratège Iop est encore présent et que celui-ci est ré-invoqué, l'ancien est détruit pour laisser place au nouveau.
+    lines: []
+    effects: []
+
+  - id: fureur
+    dofusdb_id: 13156
+    name: { fr: "Fureur", en: "Fit of Rage" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages du sort sont augmentés après chaque lancer. 
+      
+      Les bonus se décrémentent si le sort n'est pas relancé.
+    assumptions:
+      - "Effet 1160 : lance aussi « Fureur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: fureur_enchainee
+            amount: 20
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: fureur_enchainee
+
+
+  - id: ferveur
+    dofusdb_id: 14676
+    name: { fr: "Ferveur", en: "Fervour" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur le lanceur et ses alliés et occasionne des dommages Eau aux ennemis en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: vindicte
+    dofusdb_id: 14677
+    name: { fr: "Vindicte", en: "Prosecution" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Érode la cible.
+    lines: []
+    effects: []
+
+  - id: fustigation
+    dofusdb_id: 14818
+    name: { fr: "Fustigation", en: "Castigation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Eau en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

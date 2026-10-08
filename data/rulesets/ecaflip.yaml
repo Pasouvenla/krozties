@@ -1,0 +1,2441 @@
+# Ecaflip.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: ecaflip
+name: { fr: "Ecaflip", en: "Ecaflip" }
+
+resources:
+  - id: kraps_critique
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 418, « 28 à 30 Dommages Critiques » pendant trois tours, moyenné
+      # comme une fourchette de dégâts. Le critique du sort donne 34 fixes, compté
+      # au seuil des valeurs critiques.
+      - kind: critical_damage
+        amount: 29
+        critical_amount: 34
+
+  - id: griffe_joueuse_resistance
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 421, « -31 à -35 Résistances Critiques » sur la cible pendant trois
+      # tours : la résistance critique se soustrait du bonus critique du lanceur, en
+      # retirer en rend. 42 sur un critique du sort.
+      - kind: critical_resistance
+        amount: 33
+        critical_amount: 42
+
+  - id: yams_critique
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 115, « 3 à 18 % Critique » pendant trois tours : une fourchette, tirée
+      # comme un jet de dégâts, moyennée ici à 10. Le critique du sort donne 21
+      # fixes, compté au seuil des valeurs critiques.
+      - kind: critical_rate
+        percent: 10
+        critical_percent: 21
+
+  - id: pile_ou_face_critique
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Pas de duree : la donnee porte -1 la ou les autres portent un nombre de
+    # tours, ce qui veut dire PERMANENT.
+    modifies_damage:
+      - kind: critical_rate
+        percent: 2
+
+  # Les seize Cartes du Poker d'Ecaflip, une ressource chacune.
+  #
+  # Un compteur par VALEUR aurait suffi a lire un Carre, et il aurait menti :
+  # « Pioche une Dame de Trefle » ne s'applique qu'a qui ne l'a pas deja, la
+  # donnee du sort exigeant `e5446`, c'est-a-dire l'ABSENCE de l'etat. Lancer
+  # Baraka quatre fois ne fait donc pas quatre Dames. Une carte par ressource,
+  # plafonnee a un, dit cela sans effort : le second lancer sature.
+  #
+  # Les couleurs valent les elements, ce que les seize sorts confirment un a
+  # un : Pique = Air, Trefle = Eau, Coeur = Feu, Carreau = Terre.
+
+  - id: carte_valet_pique
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Valet de Pique dans la Main."
+
+  - id: carte_valet_trefle
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Valet de Trèfle dans la Main."
+
+  - id: carte_valet_coeur
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Valet de Cœur dans la Main."
+
+  - id: carte_valet_carreau
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Valet de Carreau dans la Main."
+
+  - id: carte_dame_pique
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Dame de Pique dans la Main."
+
+  - id: carte_dame_trefle
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Dame de Trèfle dans la Main."
+
+  - id: carte_dame_coeur
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Dame de Cœur dans la Main."
+
+  - id: carte_dame_carreau
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Dame de Carreau dans la Main."
+
+  - id: carte_roi_pique
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Roi de Pique dans la Main."
+
+  - id: carte_roi_trefle
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Roi de Trèfle dans la Main."
+
+  - id: carte_roi_coeur
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Roi de Cœur dans la Main."
+
+  - id: carte_roi_carreau
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "Roi de Carreau dans la Main."
+
+  - id: carte_as_pique
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "As de Pique dans la Main."
+
+  - id: carte_as_trefle
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "As de Trèfle dans la Main."
+
+  - id: carte_as_coeur
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "As de Cœur dans la Main."
+
+  - id: carte_as_carreau
+    # Une carte en main suffit a porter l'etat Main (5601) qu'exige le Chateau
+    # de Cartes.
+    game_states: [5601]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: "As de Carreau dans la Main."
+
+  - id: cartes_aleatoires
+    # Les cartes tirées au hasard du Poker : le sous-sort 29746, « Pioche
+    # Aléatoire », lance l'une des seize cartes, et chacune exige l'absence de
+    # son état, si bien qu'une carte déjà en main ne s'ajoute pas. La rotation ne
+    # voit pas laquelle : la Rekop compte la moyenne sur tous les tirages. Une
+    # carte en main suffit à porter l'état Main (5601).
+    game_states: [5601]
+    scope: caster
+    max: 4
+    default: 0
+    monotone: none
+    random_among: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau, carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau, carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau, carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+    note: "Cartes tirées au hasard dans la Main, que la rotation ne voit pas."
+
+  - id: deplacements_forces
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Attirances, poussées et téléportations faites"
+    note: |
+      Combien d'attirances, poussées, échanges de position ou téléportations vous
+      effectuez dans le tour : la Fanfaronnade monte de 6 dégâts de base par cran,
+      quatre au plus (28-32 nu, puis 34-38 à un cran, jusqu'à 52-56 à quatre). Le
+      sort remet ce compteur à zéro en partant, et il revient à votre valeur au
+      tour suivant.
+
+  - id: infortune
+    # Sans `dofusdb_source` : ses chiffres sont la SECONDE ligne de son sort,
+    # que l'appariement par position confondrait avec la premiere. Le
+    # controle des magnitudes le rattache au sort de meme identifiant.
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 29964, grade 2 : 31-33, critique 38, au taux de 20 % du
+          # sort lui-meme.
+          - element: water
+            critical: [38, 38]
+            normal: [31, 33]
+    note: |
+      L'état Infortune (5613), durée 1 : la cible prend 31-33 Eau à la fin de son
+      tour si elle n'a pas fait de coup critique pendant ce tour. La rotation
+      suppose une cible passive : elle ne critique jamais, et le coup part à
+      chaque lancer. « Fin de tour de la cible » tombe au même endroit que le
+      début du nôtre pour une recherche par tours.
+
+costly:
+  - id: main_de_poker
+    name: { fr: "Main de poker", en: "Poker hand" }
+    resources: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau,
+                carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau,
+                carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau,
+                carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau,
+                cartes_aleatoires]
+    note: |
+      Les seize cartes que la Rekop consomme par combinaisons, et les cartes
+      tirées au hasard. Sur un deck ordinaire, le solveur ne réunit jamais quatre
+      cartes de même valeur : elles comptent pour un deck bâti autour des
+      pioches.
+
+
+tier_states:
+  - group: main_gagnante
+    game_states: [5554]
+    note: |
+      « Main Gagnante » (5554), que la Rekop exige pour etre lancee. Le jeu la
+      pose par le sous-sort « Main d'Ecaflip » (29703) quand la Main reunit
+      l'une de vingt et une combinaisons, et ce sont exactement les vingt et un
+      paliers de ce groupe : l'etat se lit donc sur eux.
+
+      Sans la Main de poker cochee, les cartes valent toujours zero, aucun
+      palier ne tient et la Rekop ne se lance pas, ce qu'elle ne faisait de
+      toute facon que pour zero degat.
+
+spells:
+  - id: roulette
+    dofusdb_id: 12840
+    name: { fr: "Roulette", en: "Roulette" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un effet aléatoire sur tout le monde.
+      
+      Le coût en PA du sort est remboursé.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    open_questions:
+      - "Effet 112 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 118 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 119 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 123 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 126 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 414 non modélisé : les 100 Dommages Poussée que la roulette peut tirer, au hasard comme ses autres effets."
+      - "Effet 160 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 161 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 178 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 410 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 412 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 418, valeur 75 : des Dommages Critiques, que le moteur ne sait pas encore porter sur une ressource. Peu importe ici, ce sort tirant son effet au hasard parmi treize, comme dit juste au-dessus."
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 753 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 111, +2 PA : c'est le REMBOURSEMENT du cout du sort, « le cout en PA du sort est rembourse », et non des PA qui durent. Le sort ne fait rien d'autre qu'un effet ALEATOIRE sur tout le monde, que rien ne modelise : ecrire le remboursement seul donnerait un lancer gratuit qui n'apporte rien et grossirait la recherche."
+      - "Effet 115, valeur 50, et douze autres effets a cote : ce sort « applique un effet ALEATOIRE sur tout le monde », et aucun de ses effets n'est donc acquis. Les compter serait supposer le tirage favorable ; les compter tous serait pire. C'est le meme obstacle que la Tromperie, un tirage que ce calculateur ne modelise pas."
+    effects: []
+
+  - id: pile_ou_face
+    dofusdb_id: 12841
+    name: { fr: "Pile ou Face", en: "Heads or Tails" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      
+      Sur le lanceur : applique aléatoirement l'état Pile ou l'état Face et lui rend 1 PA.
+      • Pile : donne 1 PA.
+      • Face : donne 1 PM.
+      • Relancer le sort dans un état permet de s'appliquer l'autre.
+      
+      Pioche un Valet de Carreau.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Pile ou Face », « Valet de Carreau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Les états « Pile » (5597) et « Face » (5598) ne changent AUCUN dégât. Les quatre sorts qui les lisent, Destin d'Ecaflip, Esprit Félin, Lapement et Mésaventure, s'en servent pour retirer l'aléatoire d'un déplacement ou d'un retrait de PA, jamais d'une fourchette : « Pile : l'aléatoire est supprimé pour téléporter la cible »."
+      - "Effet 111, le PA rendu : le sort applique Pile OU Face au hasard, et seul Pile rend le PA. Non compté, par cohérence avec le vol de PA du Xélor, supposé ne pas aboutir plutôt que supposé réussir. Le relancer sous un état donne l'autre, si bien que deux lancers donnent le PA à coup sûr : un Ecaflip qui enchaîne vaut donc un peu plus que ce qui s'affiche."
+      - "Effet 115, +2 % de Critique permanent sur le lanceur : la donnée porte -1 en durée, là où les autres portent un nombre de tours."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_valet_carreau
+        at_cap: refresh
+      - effect: damage
+      - effect: gain
+        resource: pile_ou_face_critique
+
+  - id: seconde_chance
+    dofusdb_id: 12842
+    name: { fr: "Seconde Chance", en: "Second Chance" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit immédiatement les dommages subis par l'allié ciblé mais les augmente au tour suivant.
+      
+      Joue immédiatement la Main et la défausse pour récupérer la Table au tour suivant.
+      La Main n'est pas défaussée s'il n'y a aucune Carte sur la Table.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Défausse la Main », « Joue la Main », « Poker d'Ecaflip », « Récupère les Cartes sur la Table », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: bonne_pioche
+    dofusdb_id: 12843
+    name: { fr: "Bonne Pioche", en: "Lucky Draw" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    crit: { base_rate: unknown }
+    note: |
+      Pioche une Carte aléatoire du Poker d'Ecaflip.
+      Joue la Main avant de Piocher si elle est pleine.
+      
+      Le coût en PA du sort est remboursé.
+    assumptions:
+      - "Effets 792/1160 : « Pioche Aléatoire » tire une carte du Poker, que la Main compte en moyenne (voir la Rekop). « Joue la Main » avant de piocher dans une Main pleine n'est pas modélisé ; les autres sous-sorts ne portent ni dégâts, ni état, ni déplacement."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Une carte tiree au hasard (sous-sort 29746) et le PA rendu (effet
+      # 120). Sans la Main de poker cochee, rien a tirer : ni carte ni PA.
+      - effect: gain
+        resource: cartes_aleatoires
+        at_cap: skip
+        ap_bonus: { amount: 1 }
+
+  - id: bond_du_felin
+    dofusdb_id: 12844
+    name: { fr: "Bond du Félin", en: "Catnip" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM de l'allié ciblé ou téléporte le lanceur sur la case ciblée.
+    lines: []
+    effects: []
+
+  - id: chateau_de_cartes
+    dofusdb_id: 12845
+    name: { fr: "Château de Cartes", en: "House of Cards" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur la cible pour chaque Carte dans la Main selon leur valeur.
+      
+      Joue la Main.
+    assumptions:
+      - "Effets 792/1160 : « Pioche Aléatoire » ne tire que si le lanceur n'a pas de Main (cible « *e5601 »), alors que le sort en exige une pour se lancer. Que la Main jouée d'abord laisse la place à une carte tirée reste à vérifier en jeu : la Rotation ne la compte pas. Les autres sous-sorts ne portent ni dégâts, ni état, ni déplacement."
+    lines: []
+    effects:
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: topkaj
+    dofusdb_id: 12846
+    name: { fr: "Topkaj", en: "Topkaj" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis ou soigne les alliés.
+      
+      Pioche un Valet de Cœur.
+    assumptions:
+      - "Compté à son espérance, 19 en normal et 22 en critique : le hasard ne porte que sur la magnitude et ne fait pas brancher l'état, une espérance suffit."
+      - "⚠️ CE QUI L'EMPECHAIT etait un garde, et le desaccord est maintenant DECLARE sur la ligne, champ `differs_from_snapshot`. Le motif exact : l'instantane range les trois valeurs du tirage en trois lignes de Feu, l'appariement par element prend la premiere, 16, et toute autre valeur passait pour une contradiction. Le desaccord etait de POSITION, pas de valeur, 19 et 22 etant tous deux dans la donnee. Le garde reste entier pour les 485 autres sorts, et `authored_magnitudes` verifie toujours que ces deux chiffres existent sur ce sort-la."
+      - "Compté au plancher, le sort serait lancé deux fois moins souvent qu'il ne devrait : l'erreur porterait sur la rotation, pas sur un chiffre."
+      - "Effet 792 : lance aussi « Valet de Cœur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Tirage uniforme : l'infobulle écrit « 16 dommages Feu (dans 16.7 % des cas) », « 19 » et « 22 » de même, et les critiques « 19 », « 22 », « 25 ». Ni un palier conditionné, ni une zone qui répète : le sort tire sa valeur à chaque lancer, et le coup critique fait monter d'un cran."
+      - "Tirage sur trois, et non sur six : un sort ne rate jamais. L'infobulle donne 16,7 % à chacune des six lignes, trois de dégâts et trois de soins : les six lignes sont trois magnitudes vues des deux côtés, les soins sous masque « Allié » et les dégâts sous masque « Ennemi »."
+    lines:
+      - element: fire
+        # L'espérance du tirage, et non son plancher : trois valeurs équiprobables,
+        # 16, 19 et 22, de moyenne 19 ; en critique 19, 22 et 25, de moyenne 22.
+        differs_from_snapshot: |
+          L'instantane range les trois valeurs du tirage en TROIS lignes de Feu,
+          16, 19 puis 22. Ce fichier n'en ecrit qu'une, parce que les trois sont
+          un seul tirage et non trois frappes, et l'appariement par element prend
+          la PREMIERE du vivier. Ecrire l'esperance passait donc pour une
+          contradiction, alors que 19 et 22 figurent bel et bien dans la donnee.
+          Le desaccord est de POSITION, il est assume, et il ne porte que sur
+          cette ligne.
+        critical: [22, 22]
+        normal: [19, 19]
+    effects:
+      - effect: gain
+        resource: carte_valet_coeur
+        at_cap: refresh
+      - effect: damage
+
+  - id: esprit_felin
+    dofusdb_id: 12847
+    name: { fr: "Esprit Félin", en: "Feline Spirit" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte aléatoirement et symétriquement la cible par rapport au lanceur ou le lanceur par rapport à la cible, occasionne des dommages Terre aux ennemis et augmente les Résistances Critiques du lanceur.
+      
+      • Pile : l'aléatoire est supprimé pour téléporter la cible.
+      • Face : l'aléatoire est supprimé pour téléporter le lanceur.
+      
+      Pioche une Dame de Carreau.
+    assumptions:
+      - "Effet 792 : lance aussi « Dame de Carreau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_dame_carreau
+        at_cap: refresh
+      - effect: damage
+
+  - id: baraka
+    dofusdb_id: 12848
+    name: { fr: "Baraka", en: "Luck" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et Pioche une Dame de Trèfle.
+      N'affecte pas le lanceur.
+      
+      Réduit également des Critiques selon les Cartes de Trèfle dans la Main (cumulable une fois par Carte).
+      Les dommages du sort sont augmentés selon les Cartes de Trèfle dans la Main.
+      
+      Joue les Cartes de Trèfle si le lanceur en possède initialement au moins une dans la Main.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Baraka », « Dame de Trèfle », « Joue les Cartes de Trèfle », « Poker d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue les Cartes de Trèfle » : la couleur repart a zero.
+      # Le texte met la pioche AVANT le jeu, donc la carte piochee part
+      # avec les autres. Sous-estimer la Main plutot que la gonfler.
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: cartes_aleatoires
+      - effect: gain
+        resource: carte_dame_trefle
+        at_cap: refresh
+
+  - id: griffe_joueuse
+    dofusdb_id: 12849
+    name: { fr: "Griffe Joueuse", en: "Playful Claw" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et réduit les Résistances Critiques en zone.
+      
+      Pioche un Roi de Trèfle.
+    assumptions:
+      - "Effet 421, « -31 à -35 Résistances Critiques » sur les ennemis en zone pendant trois tours, compté à 33 : la résistance critique se soustrait du bonus critique du lanceur, donc en retirer en rend."
+      - "Effet 792 : lance aussi « Roi de Trèfle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_trefle
+        at_cap: refresh
+      - effect: damage
+      - effect: gain
+        resource: griffe_joueuse_resistance
+
+  - id: tarot_d_ecaflip
+    dofusdb_id: 12850
+    name: { fr: "Tarot d'Ecaflip", en: "Ecaflip's Tarot" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pioche une Carte aléatoire du Tarot d'Ecaflip pour appliquer ses effets sur le lanceur et sur tout le monde.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,30024,1::0. Le Fou}} » (5641) ; applique « {{spell,30003,1::I. Le Magicien}} » (5620) ; applique « {{spell,30004,1::II. La Cartomancienne}} » (5621) ; applique « {{spell,30005,1::III. L'Impératrice}} » (5622) ; applique « {{spell,30006,1::IV. L'Empereur}} » (5623) ; applique « {{spell,30007,1::V. Le Hiérophante}} » (5624) ; applique « {{spell,30008,1::VI. Les Amoureux}} » (5625) ; applique « {{spell,30009,1::VII. Le Chariot}} » (5626) ; applique « {{spell,30010,1::VIII. La Justice}} » (5627) ; applique « {{spell,30011,1::IX. L'Ermite}} » (5628) ; applique « {{spell,30012,1::X. La Roue de Fortune}} » (5629) ; applique « {{spell,30013,1::XI. Le Croupier}} » (5630) ; applique « {{spell,30014,1::XII. Le Pendu}} » (5631) ; applique « {{spell,30015,1::XIII. La Mort}} » (5632) ; applique « {{spell,30016,1::XIV. Le Temple}} » (5633) ; applique « {{spell,30017,1::XV. Le Diable}} » (5634) ; applique « {{spell,30018,1::XVI. La Tour}} » (5635) ; applique « {{spell,30019,1::XVII. L'Étoile}} » (5636) ; applique « {{spell,30020,1::XVIII. La Lune}} » (5637) ; applique « {{spell,30021,1::XIX. Le Soleil}} » (5638) ; applique « {{spell,30022,1::XX. Le Jugement}} » (5639) ; applique « {{spell,30023,1::XXI. Le Monde}} » (5640). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Tarot d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: griffe_de_ceangal
+    dofusdb_id: 12851
+    name: { fr: "Griffe de Ceangal", en: "Claw of Ceangal" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Repousse la cible, rapproche le lanceur vers elle et occasionne des dommages Air aux ennemis.
+      
+      Pioche une Dame de Pique.
+    assumptions:
+      - "Effet 792 : lance aussi « Dame de Pique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_dame_pique
+        at_cap: refresh
+      - effect: damage
+
+  - id: perception
+    dofusdb_id: 12852
+    name: { fr: "Perception", en: "Perception" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne l'allié ciblé pour chaque ennemi dans la zone d'effet et dévoile les invisibles en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Perception » (2415) ; retire « Perception » (2415). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Perception », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: rekop
+    dofusdb_id: 12853
+    name: { fr: "Rekop", en: "Rekop" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Utilise la Main Gagnante pour occasionner des dommages :
+      • Carrés ou Suite Royale Couleurs : dommages dans tous les éléments.
+      • Suite Royale d'une Couleur : dommages dans l'élément de la Couleur par Carte.
+      • Suite Royale : dommages dans le meilleur élément.
+      • Paires : dommages dans le meilleur élément par Paires.
+      • Brelans : dommages dans le meilleur élément par Carte du Brelan.
+      
+      Défausse la Main.
+    assumptions:
+      - "L'ordre de priorité est celui de l'infobulle : le Carré Couleurs passe devant le Brelan de Valets. Sur les 1820 Mains de quatre cartes, c'est le seul endroit où les deux ordres divergent : douze Mains, trois Valets plus une carte d'une autre valeur avec les quatre couleurs différentes, valent 32 au lieu de 24."
+      - "La Main ne part pas toute seule : la Rekop se lance à l'initiative du joueur et consomme la Main entière d'un coup, un sort qu'on choisit de lancer et qui remet les seize compteurs à zéro."
+      - "Ce calculateur ne sait pas plafonner une somme de compteurs, donc rien ne l'empêche de piocher plus de quatre cartes. Chaque combinaison exigeant un total exact, ces états-là ne rapportent rien et le solveur les évite : sur un deck de quatre pioches de Dames, il en pioche exactement quatre."
+      - "« Etre dans l'etat Main Gagnante » : le jeu INTERDIT de lancer la Rekop sans combinaison, la ou ce calculateur l'autorise pour zero degat. La difference ne change aucun chiffre, un solveur ne gaspillant pas 4 PA pour rien, mais elle explique pourquoi le sort ne porte aucune ligne inconditionnelle."
+      - "Les vingt et une combinaisons sont vérifiées une à une contre l'infobulle en jeu : valeur et nombre de lignes, en coup normal comme en critique. La liste des effets, lue dans l'ordre avec les tailles que le texte du sort impose, quatre par Carré, trois par Brelan, deux par Paires, les met toutes en place."
+      - "Paires de Valets et de Dames frappe 15 en coup normal et 11 en coup critique, seul cas du sort où le critique tape moins fort : vérifié sur l'infobulle en jeu, une bizarrerie du jeu et non une faute de la donnée."
+      - "Effets 792/1160 : lance aussi « Défausse la Main », « Main d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les pioches aléatoires se comptent en moyenne : Bonne Pioche, Redistribution, Neuf Vies et Bonne Étoile tirent des cartes du Poker, uniformément parmi les seize, une carte déjà en main ne s'ajoutant pas (chaque carte exige l'absence de son état). La Rekop compte la moyenne de ce que la Main fait sur tous les tirages, et la rotation choisit ses lancers sans voir la carte tirée : un plancher de ce que fait un joueur qui la voit. Une défausse de couleur (Belote, Blakjak, Baraka, Jass) défausse aussi les cartes tirées, autre plancher : une carte tirée n'est de sa couleur qu'une fois sur quatre. Quatre cartes tirées au plus. Hors du compte : la carte de la Tromperie, qui dépend de l'élément tiré, et la pioche du Château de Cartes, qui ne tire que sans Main."
+    lines:
+      # Carré d'As
+      - element: air
+        normal: [20, 20]
+        critical: [23, 23]
+        active_at:
+          group: main_gagnante
+          tier: carre_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 4
+      - element: water
+        normal: [20, 20]
+        critical: [23, 23]
+        active_at:
+          group: main_gagnante
+          tier: carre_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 4
+      - element: fire
+        normal: [20, 20]
+        critical: [23, 23]
+        active_at:
+          group: main_gagnante
+          tier: carre_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 4
+      - element: earth
+        normal: [20, 20]
+        critical: [23, 23]
+        active_at:
+          group: main_gagnante
+          tier: carre_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 4
+      # Carré de Rois
+      - element: air
+        normal: [16, 16]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: carre_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 4
+      - element: water
+        normal: [16, 16]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: carre_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 4
+      - element: fire
+        normal: [16, 16]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: carre_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 4
+      - element: earth
+        normal: [16, 16]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: carre_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 4
+      # Carré de Dames
+      - element: air
+        normal: [12, 12]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: carre_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 4
+      - element: water
+        normal: [12, 12]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: carre_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 4
+      - element: fire
+        normal: [12, 12]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: carre_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 4
+      - element: earth
+        normal: [12, 12]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: carre_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 4
+      # Carré de Valets
+      - element: air
+        normal: [8, 8]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: carre_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 4
+      - element: water
+        normal: [8, 8]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: carre_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 4
+      - element: fire
+        normal: [8, 8]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: carre_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 4
+      - element: earth
+        normal: [8, 8]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: carre_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 4
+      # Suite Royale Couleurs
+      - element: air
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 1
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 1
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 1
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 1
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: water
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 1
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 1
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 1
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 1
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: fire
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 1
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 1
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 1
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 1
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: earth
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 1
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 1
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 1
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 1
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      # Suite Royale de Pique
+      - element: air
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_pique
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 4
+      - element: air
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_pique
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 4
+      - element: air
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_pique
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 4
+      - element: air
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_pique
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 4
+      # Suite Royale de Trèfle
+      - element: water
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_trefle
+          all_of:
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 4
+      - element: water
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_trefle
+          all_of:
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 4
+      - element: water
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_trefle
+          all_of:
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 4
+      - element: water
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_trefle
+          all_of:
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 4
+      # Suite Royale de Cœur
+      - element: fire
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_coeur
+          all_of:
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 4
+      - element: fire
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_coeur
+          all_of:
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 4
+      - element: fire
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_coeur
+          all_of:
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 4
+      - element: fire
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_coeur
+          all_of:
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 4
+      # Suite Royale de Carreau
+      - element: earth
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_carreau
+          all_of:
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 4
+      - element: earth
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_carreau
+          all_of:
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 4
+      - element: earth
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_carreau
+          all_of:
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 4
+      - element: earth
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale_carreau
+          all_of:
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 4
+      # Suite Royale
+      - best_element: true
+        normal: [54, 54]
+        critical: [56, 56]
+        active_at:
+          group: main_gagnante
+          tier: suite_royale
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 1
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 1
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 1
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 1
+      # Paires de Rois et d'As
+      - best_element: true
+        normal: [36, 36]
+        critical: [37, 37]
+        active_at:
+          group: main_gagnante
+          tier: paires_roi_as
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [36, 36]
+        critical: [37, 37]
+        active_at:
+          group: main_gagnante
+          tier: paires_roi_as
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      # Paires de Dames et d'As
+      - best_element: true
+        normal: [24, 24]
+        critical: [25, 25]
+        active_at:
+          group: main_gagnante
+          tier: paires_dame_as
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [24, 24]
+        critical: [25, 25]
+        active_at:
+          group: main_gagnante
+          tier: paires_dame_as
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      # Paires de Dames et de Rois
+      - best_element: true
+        normal: [21, 21]
+        critical: [22, 22]
+        active_at:
+          group: main_gagnante
+          tier: paires_dame_roi
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [21, 21]
+        critical: [22, 22]
+        active_at:
+          group: main_gagnante
+          tier: paires_dame_roi
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+      # Paires de Valets et d'As
+      - best_element: true
+        normal: [21, 21]
+        critical: [22, 22]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_as
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [21, 21]
+        critical: [22, 22]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_as
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 2
+      # Paires de Valets et de Rois
+      - best_element: true
+        normal: [18, 18]
+        critical: [19, 19]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_roi
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [18, 18]
+        critical: [19, 19]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_roi
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 2
+      # Paires de Valets et de Dames
+      - best_element: true
+        normal: [15, 15]
+        critical: [11, 11]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_dame
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+      - best_element: true
+        normal: [15, 15]
+        critical: [11, 11]
+        active_at:
+          group: main_gagnante
+          tier: paires_valet_dame
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 2
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 2
+      # Brelan d'As
+      - best_element: true
+        normal: [18, 18]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: brelan_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [18, 18]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: brelan_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [18, 18]
+        critical: [20, 20]
+        active_at:
+          group: main_gagnante
+          tier: brelan_as
+          all_of:
+            - sum_of: [carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau]
+              exactly: 3
+      # Brelan de Rois
+      - best_element: true
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: brelan_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: brelan_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [14, 14]
+        critical: [16, 16]
+        active_at:
+          group: main_gagnante
+          tier: brelan_roi
+          all_of:
+            - sum_of: [carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau]
+              exactly: 3
+      # Brelan de Dames
+      - best_element: true
+        normal: [10, 10]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: brelan_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [10, 10]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: brelan_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [10, 10]
+        critical: [12, 12]
+        active_at:
+          group: main_gagnante
+          tier: brelan_dame
+          all_of:
+            - sum_of: [carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau]
+              exactly: 3
+      # Le Carré Couleurs passe avant le Brelan de Valets, l'ordre de
+      # l'infobulle faisant foi. Douze Mains sont concernées, trois Valets plus
+      # une carte d'une autre valeur, les quatre couleurs étant différentes : la
+      # Main y vaut 32 et non 24.
+      # Carré Couleurs
+      - element: air
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: carre_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: water
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: carre_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: fire
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: carre_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      - element: earth
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: carre_couleurs
+          all_of:
+            - sum_of: [carte_valet_pique, carte_dame_pique, carte_roi_pique, carte_as_pique]
+              exactly: 1
+            - sum_of: [carte_valet_trefle, carte_dame_trefle, carte_roi_trefle, carte_as_trefle]
+              exactly: 1
+            - sum_of: [carte_valet_coeur, carte_dame_coeur, carte_roi_coeur, carte_as_coeur]
+              exactly: 1
+            - sum_of: [carte_valet_carreau, carte_dame_carreau, carte_roi_carreau, carte_as_carreau]
+              exactly: 1
+      # Brelan de Valets
+      - best_element: true
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: brelan_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: brelan_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 3
+      - best_element: true
+        normal: [8, 8]
+        critical: [10, 10]
+        active_at:
+          group: main_gagnante
+          tier: brelan_valet
+          all_of:
+            - sum_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau]
+              exactly: 3
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: odorat
+    dofusdb_id: 12854
+    name: { fr: "Odorat", en: "Smell" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire immédiatement des PA non esquivables pour augmenter les PM en zone.
+      Retire des PM non esquivables pour augmenter les PA au tour suivant.
+      Le retrait de PA n'affecte pas le lanceur.
+      
+      Joue la Main.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Joue la Main », « Poker d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 111, +3 PA au tour suivant : le sort les ACHETE avec des PM, « retire des PM non esquivables pour augmenter les PA ». Ce calculateur ne suit pas les PM, donc ne sait pas ce que ca coute."
+    effects:
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: langue_rapeuse
+    dofusdb_id: 12855
+    name: { fr: "Langue Râpeuse", en: "Rough Tongue" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et occasionne des dommages Feu aux ennemis en zone.
+      N'affecte pas le lanceur.
+      
+      Pioche un Roi de Cœur.
+    assumptions:
+      - "Effet 792 : lance aussi « Roi de Cœur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_coeur
+        at_cap: refresh
+      - effect: damage
+
+  - id: griffe_invocatrice
+    dofusdb_id: 12856
+    name: { fr: "Griffe Invocatrice", en: "Summoning Claw" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Chaton maîtrisable qui peut voler de la vie dans l'élément Eau, donner des PM et se téléporter.
+      Tant qu'il est en vie, augmente la Puissance du lanceur.
+    lines: []
+    open_questions:
+      - "Effet 138, +90 Puissance au lanceur : le texte dit « TANT QU'IL EST EN VIE », en parlant du Chaton que le sort invoque. La duree depend donc d'une invocation, que rien ne modelise ici."
+    effects: []
+
+  - id: reflexes
+    dofusdb_id: 12857
+    name: { fr: "Réflexes", en: "Reflex" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et augmente les PM du lanceur.
+      Les dommages n'affectent pas le lanceur.
+      
+      Pioche un Valet de Pique.
+    assumptions:
+      - "Effet 792 : lance aussi « Valet de Pique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_valet_pique
+        at_cap: refresh
+      - effect: damage
+
+  - id: tout_ou_rien
+    dofusdb_id: 12858
+    name: { fr: "Tout ou Rien", en: "All or Nothing" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 10 }
+    note: |
+      Soigne les alliés et occasionne des dommages dans le meilleur élément du lanceur aux ennemis en zone.
+      Les soins sont augmentés selon les Cartes sur la Table et les dommages selon les Cartes dans la Main.
+      
+      Défausse la Main et récupère la Table.
+    assumptions:
+      - "Effet 3002, soins dans le meilleur element : ce calculateur ne mesure que les degats, les soins ne sont pas comptes."
+      - "Effets 792/1160 : lance aussi « Défausse la Main », « Récupère les Cartes sur la Table », « Tout ou Rien », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [21, 21]
+        normal: [16, 18]
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: destin_d_ecaflip
+    dofusdb_id: 12859
+    name: { fr: "Destin d'Ecaflip", en: "Fate of Ecaflip" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre aux ennemis, attire ou repousse aléatoirement la cible et applique l'état Destin d'Ecaflip sur l'ennemi ciblé :
+      • Occasionne des dommages Terre et retire l'état si la cible effectue un coup critique.
+      
+      • Pile : l'aléatoire est supprimé pour attirer la cible.
+      • Face : l'aléatoire est supprimé pour repousser la cible.
+      
+      Pioche un As de Carreau.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,29965,1::Destin d'Ecaflip}} » (5611). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « As de Carreau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'état Destin d'Ecaflip porte 25-27 Terre si la cible fait un coup critique (sous-sort 29965) : jamais compté, la rotation supposant une cible passive."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_as_carreau
+        at_cap: refresh
+      - effect: damage
+
+  - id: felintion
+    dofusdb_id: 12861
+    name: { fr: "Félintion", en: "Felintion" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible, attire la cible et occasionne des dommages Eau aux ennemis.
+      
+      Pioche un Roi de Trèfle.
+    assumptions:
+      - "Effet 792 : lance aussi « Roi de Trèfle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_trefle
+        at_cap: refresh
+      - effect: damage
+
+  - id: roue_de_la_fortune
+    dofusdb_id: 12863
+    name: { fr: "Roue de la Fortune", en: "Wheel of Fortune" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Minimise immédiatement les effets aléatoires et augmente les chances de Critique au tour suivant des ennemis en zone.
+      Les effets sont permutés sur les alliés en zone.
+      
+      Joue immédiatement la Main et la défausse pour récupérer la Table au tour suivant.
+      La Main n'est pas défaussée s'il n'y a aucune Carte sur la Table.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Défausse la Main », « Joue la Main », « Poker d'Ecaflip », « Récupère les Cartes sur la Table », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 781 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 115, valeur 999 : « augmente les chances de Critique au tour suivant des ennemis en zone », un malus et non un buff. Le moteur ne simule pas le tour de l'adversaire."
+    effects:
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+
+  - id: jass
+    dofusdb_id: 12864
+    name: { fr: "Jass", en: "Jass" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et Pioche une Dame de Pique.
+      N'affecte pas le lanceur.
+      
+      Réduit également les Résistances Poussée selon les Cartes de Pique dans la Main (cumulable une fois par Carte).
+      Les dommages du sort sont augmentés selon les Cartes de Pique dans la Main.
+      
+      Joue les Cartes de Pique si le lanceur en possède initialement au moins une dans la Main.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Dame de Pique », « Jass », « Joue les Cartes de Pique », « Poker d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue les Cartes de Pique » : la couleur repart a zero.
+      # Le texte met la pioche AVANT le jeu, donc la carte piochee part
+      # avec les autres. Sous-estimer la Main plutot que la gonfler.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: cartes_aleatoires
+      - effect: gain
+        resource: carte_dame_pique
+        at_cap: refresh
+
+  - id: entrechat
+    dofusdb_id: 12865
+    name: { fr: "Entrechat", en: "Leap" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur sur la case ciblée ou échange de position avec la cible.
+      Augmente la Fuite du lanceur et de ses alliés en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: belote
+    dofusdb_id: 12866
+    name: { fr: "Belote", en: "Belote" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et Pioche une Dame de Carreau.
+      N'affecte pas le lanceur.
+      
+      Réduit également les Dommages Critiques selon les Cartes de Carreau dans la Main (cumulable une fois par Carte).
+      Les dommages du sort sont augmentés selon les Cartes de Carreau dans la Main.
+      
+      Joue les Cartes de Carreau si le lanceur en possède initialement au moins une dans la Main.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Belote », « Dame de Carreau », « Joue les Cartes de Carreau », « Poker d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue les Cartes de Carreau » : la couleur repart a zero.
+      # Le texte met la pioche AVANT le jeu, donc la carte piochee part
+      # avec les autres. Sous-estimer la Main plutot que la gonfler.
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+      - effect: gain
+        resource: carte_dame_carreau
+        at_cap: refresh
+
+  - id: predation
+    dofusdb_id: 12867
+    name: { fr: "Prédation", en: "Predation" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Érode l'ennemi ciblé et dévoile les invisibles en zone.
+    lines: []
+    effects: []
+
+  - id: caresse_invocatrice
+    dofusdb_id: 12869
+    name: { fr: "Caresse Invocatrice", en: "Summoning Stroke" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Chaton maîtrisable qui peut soigner, se téléporter ou échanger de position.
+    lines: []
+    effects: []
+
+  - id: blakjak
+    dofusdb_id: 12870
+    name: { fr: "Blakjak", en: "Blakjak" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et Pioche une Dame de Cœur.
+      N'affecte pas le lanceur.
+      
+      Réduit également les soins reçus par la cible selon les Cartes de Cœur dans la Main (cumulable une fois par Carte).
+      Les dommages du sort sont augmentés selon les Cartes de Cœur dans la Main.
+      
+      Joue les Cartes de Cœur si le lanceur en possède initialement au moins une dans la Main.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Blakjak », « Dame de Cœur », « Joue les Cartes de Cœur », « Poker d'Ecaflip », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue les Cartes de Cœur » : la couleur repart a zero.
+      # Le texte met la pioche AVANT le jeu, donc la carte piochee part
+      # avec les autres. Sous-estimer la Main plutot que la gonfler.
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: cartes_aleatoires
+      - effect: gain
+        resource: carte_dame_coeur
+        at_cap: refresh
+
+  - id: feulement
+    dofusdb_id: 12872
+    name: { fr: "Feulement", en: "Yowling" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles en zone.
+      
+      Pioche un Roi de Cœur.
+    assumptions:
+      - "Effet 792 : lance aussi « Roi de Cœur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_coeur
+        at_cap: refresh
+      - effect: damage
+
+  - id: lapement
+    dofusdb_id: 12873
+    name: { fr: "Lapement", en: "Lapping Up" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire aléatoirement des PM ou des PA en zone.
+      N'affecte pas le lanceur.
+      
+      • Pile : l'aléatoire est supprimé pour retirer des PM.
+      • Face : l'aléatoire est supprimé pour retirer des PA.
+      
+      Pioche un Roi de Carreau.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Lapement », « Roi de Carreau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_carreau
+        at_cap: refresh
+      - effect: damage
+
+  - id: neuf_vies
+    dofusdb_id: 12874
+    name: { fr: "Neuf Vies", en: "Nine Lives" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne la cible immédiatement et sur les tours suivants.
+      
+      Pioche une Carte aléatoire du Poker d'Ecaflip immédiatement et sur les tours suivants.
+    assumptions:
+      - "Effet 1160 : « Neuf Vies » (31294) tire une carte du Poker au lancer et au début des deux tours suivants, que la Main compte en moyenne (voir la Rekop). Ses soins ne sont pas modélisés."
+    lines: []
+    open_questions:
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # Une carte tiree au hasard au lancer, puis au debut de chacun des deux
+      # tours suivants : le sous-sort 31294 lance 29746 aux delais 0, 1 et 2
+      # de l'effet 1160.
+      - effect: gain
+        resource: cartes_aleatoires
+      - effect: schedule_gain
+        resource: cartes_aleatoires
+        delay: 1
+      - effect: schedule_gain
+        resource: cartes_aleatoires
+        delay: 2
+
+  - id: coussinets
+    dofusdb_id: 12875
+    name: { fr: "Coussinets", en: "Pawpads" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible, repousse la cible et occasionne des dommages Air aux ennemis.
+      
+      Pioche un Roi de Pique.
+    assumptions:
+      - "Effet 792 : lance aussi « Roi de Pique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_pique
+        at_cap: refresh
+      - effect: damage
+
+  - id: bonne_etoile
+    dofusdb_id: 12876
+    name: { fr: "Bonne Étoile", en: "Lucky Star" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne la cible et lui applique l'état Bonne Étoile :
+      • Applique un bouclier sur la cible si elle effectue un coup critique (cumulable 5 fois).
+      
+      Pioche une Carte aléatoire du Poker d'Ecaflip si la Main est vide.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,29976,1::Bonne Étoile}} » (5610). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : « Pioche Aléatoire » tire une carte du Poker quand la Main est vide, que la Main compte en moyenne (voir la Rekop). Les autres sous-sorts ne portent ni dégâts, ni état, ni déplacement."
+    lines: []
+    effects:
+      # Une carte tiree au hasard si la Main est vide (effet 792 vers 29746,
+      # cible « e5601 » : sans l'etat Main).
+      - effect: gain
+        resource: cartes_aleatoires
+        requires:
+          kind: none_of
+          none_of: [carte_valet_pique, carte_valet_trefle, carte_valet_coeur, carte_valet_carreau, carte_dame_pique, carte_dame_trefle, carte_dame_coeur, carte_dame_carreau, carte_roi_pique, carte_roi_trefle, carte_roi_coeur, carte_roi_carreau, carte_as_pique, carte_as_trefle, carte_as_coeur, carte_as_carreau, cartes_aleatoires]
+
+  - id: redistribution
+    dofusdb_id: 12877
+    name: { fr: "Redistribution", en: "Redistribution" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Joue la Main et Pioche 4 Cartes aléatoires du Poker d'Ecaflip.
+      
+      Le coût en PA du sort est remboursé.
+    assumptions:
+      - "Effets 792/1160 : « Joue la Main » vide la Main, puis « Pioche Aléatoire » tire quatre cartes du Poker, que la Main compte en moyenne (voir la Rekop). Les autres sous-sorts ne portent ni dégâts, ni état, ni déplacement."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires
+      # Puis quatre cartes tirees au hasard (sous-sort 29746, quatre fois), et
+      # le PA rendu (effet 120).
+      - effect: gain
+        resource: cartes_aleatoires
+        amount: 4
+        at_cap: skip
+        ap_bonus: { amount: 1 }
+
+  - id: fanfaronnade
+    dofusdb_id: 12878
+    name: { fr: "Fanfaronnade", en: "Bravado" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air en zone.
+      N'affecte pas le lanceur.
+      
+      Les dommages du sort sont augmentés pour chaque attirance, poussée, échange de position ou téléportation effectué par le lanceur.
+      Les effets sont retirés après utilisation du sort.
+    assumptions:
+      - "Effet 792 : lance aussi « Roi de Pique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 406, « les effets sont retirés après utilisation du sort » : la remise à zéro du réglage `deplacements_forces`, qui ne déplace aucun chiffre ici, le sort ne partant qu'une fois par tour."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: deplacements_forces, amount: 6 }]
+    effects:
+      - effect: gain
+        resource: carte_roi_pique
+        at_cap: refresh
+      - effect: damage
+      # « Les effets sont retirés après utilisation du sort » : après la ligne de
+      # dégâts, pour que le lancer profite de ce qu'il efface. Le réglage revient à
+      # sa valeur au début du tour suivant.
+      - effect: reset
+        resource: deplacements_forces
+
+  - id: mesaventure
+    dofusdb_id: 12879
+    name: { fr: "Mésaventure", en: "Misadventure" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte les cibles symétriquement par rapport au centre, occasionne des dommages Terre et retire aléatoirement des PM ou des PA aux ennemis en zone.
+      N'affecte pas directement le lanceur.
+      
+      • Pile : l'aléatoire est supprimé pour retirer des PM.
+      • Face : l'aléatoire est supprimé pour retirer des PA.
+      
+      Pioche un Roi de Carreau.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Mésaventure », « Roi de Carreau », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_roi_carreau
+        at_cap: refresh
+      - effect: damage
+
+  - id: infortune
+    dofusdb_id: 12880
+    name: { fr: "Infortune", en: "Misfortune" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau et applique l'état Infortune sur l'ennemi ciblé :
+      • Occasionne des dommages Eau à la fin du tour de la cible si elle n'a pas effectué de coup critique durant son tour.
+      
+      Pioche un As de Trèfle.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,29964,2::Infortune}} » (5613). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « As de Trèfle », « Infortune », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'état Infortune porte 31-33 Eau, critique 38, à la fin du tour de la cible si elle n'a pas fait de coup critique (sous-sort 29964) : compté à chaque lancer, la rotation supposant une cible passive, qui ne critique jamais."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_as_trefle
+        at_cap: refresh
+      - effect: damage
+      - effect: gain
+        resource: infortune
+
+  - id: tromperie
+    dofusdb_id: 12881
+    name: { fr: "Tromperie", en: "Trickery" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie aux ennemis ou soigne les alliés dans l'élément Air, Eau, Feu ou Terre.
+      Le coût en PA, les dommages et soins et l'élément d'attaque sont modifiés aléatoirement à chaque lancer et lorsque le lanceur effectue un coup critique.
+      
+      Pioche une Carte selon les conditions de lancer et l'élément du sort.
+      Joue la Main avant de Piocher si elle est pleine.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Joue la Main », « Pioche une Carte », « Poker d'Ecaflip », « Tromperie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+      - "Son élément, sa fourchette et son coût en PA se tirent à chaque lancer : la Rotation compte la moyenne des seize issues au coût de base de 2 PA. Le coût réel varie avec la fourchette tirée, ce que la donnée ne dit pas."
+    lines:
+      # Seize issues également probables, quatre éléments par quatre fourchettes,
+      # chacune sous son état du lanceur (5538 à 5553) : le sort en joue une par
+      # lancer, et la Rotation compte leur moyenne au coût de base de 2 PA. Dans
+      # l'ordre de la donnée, où chaque élément range ses quatre fourchettes de la
+      # plus basse à la plus haute.
+      - { element: air, tirage: tromperie, normal: [19, 20], critical: [30, 30] }
+      - { element: water, tirage: tromperie, normal: [19, 20], critical: [30, 30] }
+      - { element: fire, tirage: tromperie, normal: [19, 20], critical: [30, 30] }
+      - { element: earth, tirage: tromperie, normal: [19, 20], critical: [30, 30] }
+      - { element: air, tirage: tromperie, normal: [28, 30], critical: [40, 40] }
+      - { element: water, tirage: tromperie, normal: [28, 30], critical: [40, 40] }
+      - { element: fire, tirage: tromperie, normal: [28, 30], critical: [40, 40] }
+      - { element: earth, tirage: tromperie, normal: [28, 30], critical: [40, 40] }
+      - { element: air, tirage: tromperie, normal: [37, 40], critical: [50, 50] }
+      - { element: water, tirage: tromperie, normal: [37, 40], critical: [50, 50] }
+      - { element: fire, tirage: tromperie, normal: [37, 40], critical: [50, 50] }
+      - { element: earth, tirage: tromperie, normal: [37, 40], critical: [50, 50] }
+      - { element: air, tirage: tromperie, normal: [46, 50], critical: [60, 60] }
+      - { element: water, tirage: tromperie, normal: [46, 50], critical: [60, 60] }
+      - { element: fire, tirage: tromperie, normal: [46, 50], critical: [60, 60] }
+      - { element: earth, tirage: tromperie, normal: [46, 50], critical: [60, 60] }
+    open_questions:
+      - "La carte que la Tromperie pioche dépend de l'élément tiré : une pioche aléatoire, que ce calculateur ne modélise pas plus que celles de Bonne Pioche ou de Redistribution."
+    effects:
+      - effect: damage
+
+  - id: toupet
+    dofusdb_id: 12882
+    name: { fr: "Toupet", en: "Nerve" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible, vole de la vie dans l'élément Air aux ennemis, repousse la cible et applique l'état Toupet sur l'ennemi ciblé :
+      • Occasionne des dommages Air et retire l'état si la cible attire, repousse, échange de position ou occasionne des dommages de poussée.
+      
+      Pioche un As de Pique.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,31041,1::Toupet}} » (6260). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « As de Pique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'état Toupet porte 26-28 Air si la cible attire, repousse, échange de position ou occasionne des dommages de poussée (sous-sort 31041) : jamais compté, la rotation supposant une cible passive."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_as_pique
+        at_cap: refresh
+      - effect: damage
+
+  - id: kraps
+    dofusdb_id: 12883
+    name: { fr: "Kraps", en: "Kraps" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse les cibles depuis le centre en zone.
+      Augmente également les Dommages Critiques du lanceur.
+      
+      Pioche une Dame de Trèfle.
+    assumptions:
+      - "Effet 418, « 28 à 30 Dommages Critiques » pendant trois tours, compté à 29, la moyenne de la fourchette. Ces effets sont bâtis pour valoir exactement les dégâts du sort : la coïncidence est voulue."
+      - "Effet 792 : lance aussi « Dame de Trèfle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_dame_trefle
+        at_cap: refresh
+      - effect: damage
+      - effect: gain
+        resource: kraps_critique
+
+  - id: pelotage
+    dofusdb_id: 14310
+    name: { fr: "Pelotage", en: "Balling Up" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire les cibles vers le centre en zone.
+      
+      Pioche une Dame de Cœur.
+    assumptions:
+      - "Effet 792 : lance aussi « Dame de Cœur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_dame_coeur
+        at_cap: refresh
+      - effect: damage
+
+  - id: peril
+    dofusdb_id: 14311
+    name: { fr: "Péril", en: "Peril" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu et applique l'état Péril sur l'ennemi ciblé :
+      • Occasionne des dommages Feu et retire l'état si la cible est soignée.
+      
+      Pioche un As de Cœur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,30133,1::Péril}} » (5745). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « As de Cœur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'état Péril porte 26-28 Feu si la cible est soignée (sous-sort 30133) : jamais compté, la rotation supposant une cible passive, que personne ne soigne."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_as_coeur
+        at_cap: refresh
+      - effect: damage
+
+  - id: yams
+    dofusdb_id: 29680
+    name: { fr: "Yams", en: "Yahtzee" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et augmente les chances de Critique du lanceur.
+      Les dommages n'affectent pas le lanceur.
+      
+      Pioche un Valet de Trèfle.
+    assumptions:
+      - "Effet 115, « 3 à 18 % Critique » pendant trois tours, compté à 10, la moyenne de la fourchette : une fourchette, tirée comme un jet de dégâts."
+      - "Effet 792 : lance aussi « Valet de Trèfle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: gain
+        resource: carte_valet_trefle
+        at_cap: refresh
+      - effect: damage
+      - effect: gain
+        resource: yams_critique
+
+  - id: bluff
+    dofusdb_id: 29785
+    name: { fr: "Bluff", en: "Bluff" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages dans un ou plusieurs éléments selon les Cartes dans la Main et Joue la Main.
+      Les dommages du sort dans un élément sont augmentés selon les Cartes.
+      
+      Pioche 4 Cartes aléatoires du Poker d'Ecaflip avant d'appliquer les effets si la Main est vide.
+    assumptions:
+      - "Effets 792/1160 : « Pioche Aléatoire » ne tire quatre cartes que sur une Main vide, et le Bluff joue aussitôt la Main : aucun chiffre n'en dépend, ses lignes ne lisant pas les cartes."
+      - "Effets 792/1160, les quatre couleurs du Bluff : elles ne portent aucune magnitude (0-0 dans l'instantané et le cache des sous-sorts). Les quatre lignes du sort comptent 4-56 dans chacun des quatre éléments : rien ne manque au chiffre."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+      - element: water
+        critical: unknown
+        normal: unknown
+      - element: fire
+        critical: unknown
+        normal: unknown
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      # Les degats se calculent sur la Main AVANT qu'elle parte :
+      # la Rekop joue la Main puis la defausse, dans cet ordre.
+      - effect: damage
+      # « Joue la Main » ou « Defausse la Main » : la Main repart a zero.
+      - effect: reset
+        resource: carte_valet_pique
+      - effect: reset
+        resource: carte_valet_trefle
+      - effect: reset
+        resource: carte_valet_coeur
+      - effect: reset
+        resource: carte_valet_carreau
+      - effect: reset
+        resource: carte_dame_pique
+      - effect: reset
+        resource: carte_dame_trefle
+      - effect: reset
+        resource: carte_dame_coeur
+      - effect: reset
+        resource: carte_dame_carreau
+      - effect: reset
+        resource: carte_roi_pique
+      - effect: reset
+        resource: carte_roi_trefle
+      - effect: reset
+        resource: carte_roi_coeur
+      - effect: reset
+        resource: carte_roi_carreau
+      - effect: reset
+        resource: carte_as_pique
+      - effect: reset
+        resource: carte_as_trefle
+      - effect: reset
+        resource: carte_as_coeur
+      - effect: reset
+        resource: carte_as_carreau
+      - effect: reset
+        resource: cartes_aleatoires

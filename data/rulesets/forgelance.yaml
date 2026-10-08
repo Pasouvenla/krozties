@@ -1,0 +1,1400 @@
+# Forgelance.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: forgelance
+name: { fr: "Forgelance", en: "Forgelance" }
+
+resources:
+  - id: lance
+    # Desarme (3361) tant que la Lance est plantee, Arme (3360) sinon : quinze
+    # sorts exigent Arme, le Muspel exige Desarme (condition de la donnee).
+    game_states: [3361]
+    game_states_when_zero: [3360]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      La Lance est-elle plantée ? C'est l'état qui commande toute la classe : onze
+      sorts l'invoquent, dix-huit la rappellent, quatorze exigent qu'elle soit
+      posée. Le Jormun frappe « en zone jusqu'à la Lance » quand elle est posée, et
+      « autour du lanceur » sinon : un tout autre sort.
+
+      `monotone: none` et non `increasing` : porter la Lance n'est pas toujours
+      mieux, et dix-huit sorts la rappellent.
+
+      Cet état ne dit pas où la Lance se trouve : un sort qui exige de viser sa
+      case demande en plus que l'ennemi s'y prête. La contrainte d'ordre est
+      tenue, la contrainte de placement ne l'est pas.
+
+  - id: incendie
+    scope: caster
+    max: 4
+    default: 0
+    monotone: increasing
+    note: |
+      « Les dommages du sort sont augmentés après chaque lancer. » La Lance à
+      Incendie se charge elle-même, cumul 4 : cinq paliers, 18-21, 23-26, 28-31,
+      33-36, 38-41, cinq de plus à chaque cran, la valeur de l'effet 293 au dernier
+      grade.
+
+
+  - id: vulnerabilite_fer_rouge
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Zéro tour veut dire « le tour de la pose, et lui seul » : la vulnérabilité
+    # tient jusqu'au début du prochain tour du lanceur, qui n'en profite que dans
+    # le même tour d'actions.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163, « Dommages subis x107 % » : un multiplicateur, donc tout a
+      # la fin du pipeline.
+      - kind: final_multiplier
+        percent: 107
+    note: |
+      La vulnerabilite que Fer Rouge pose sur sa cible. Tout ce qui tombe ensuite
+      sur elle dans le meme tour est multiplie par 1.07.
+
+  - id: prelude_au_fer_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 138, duree 2 dans l'instantane, copiee telle quelle.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 23841
+    modifies_damage:
+      # Effet 138, `dice_num` a 200 au grade 3, celui que ce parc lit partout.
+      # Deux cents points de PUISSANCE, qui entrent dans le meme facteur que la
+      # caracteristique : `100 + carac + puissance`.
+      - kind: characteristic
+        amount: 200
+    note: |
+      La Puissance que le Prélude au Fer accorde au lanceur pour deux tours : la
+      cible de l'effet est « a », les alliés, et le lanceur se compte parmi eux.
+      Les alliés reçoivent les mêmes deux cents points en jeu ; ce calculateur ne
+      mesure que les dégâts du lanceur.
+
+  - id: terre_du_milieu_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 138, duree 2 dans l'instantane, copiee telle quelle : les Tirs
+    # Puissants du Cra portent le meme effet a duree 1 et le fichier ecrit 1.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 23738
+    modifies_damage:
+      # Effet 138, `dice_num` a 50 : cinquante points de PUISSANCE. La formule
+      # les additionne a la caracteristique dans le meme facteur,
+      # `100 + carac + puissance`, et le parc les ecrit donc ici, comme les 250
+      # des Tirs Puissants.
+      - kind: characteristic
+        amount: 50
+        # Cinquante par ennemi touché, quatre fois au plus : « Augmente la
+        # Puissance du lanceur pour chaque ennemi dans la zone d'effet », effet 138
+        # `dice_num` 50 sur la cible « C », le lanceur. Le plafond vient de
+        # `maxStack`.
+        per_target: true
+        per_target_cap: 4
+    note: |
+      La Puissance que la Terre du Milieu accorde au lanceur pour deux tours :
+      cinquante par ennemi touché, quatre fois au plus, soit deux cents points. Le
+      plafond vient de `maxStack` ; sans lui, huit ennemis rendraient quatre cents
+      points que le jeu ne donne pas.
+
+      Ce compteur suppose que les ennemis annoncés au scénario sont tous dans la
+      zone du sort : en annoncer quatre dont la Terre du Milieu n'attrape que deux
+      gonfle le chiffre. Une limite acceptée.
+
+  - id: poussee_subie
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible subit des dommages de poussée à chaque tour"
+    note: |
+      À cocher si vous poussez la cible contre un obstacle à chaque tour : elle
+      subit des dommages de poussée sans bouger, ce que le Noa exploite.
+
+  - id: noa
+    # Sans `dofusdb_source` : ses chiffres sont la SECONDE ligne de son sort,
+    # que l'appariement par position confondrait avec la premiere. Le
+    # controle des magnitudes le rattache au sort de meme identifiant.
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      # La poussee d'un autre, entre deux tours : seulement si le joueur la
+      # declare.
+      - trigger: turn_start
+        requires: { kind: caster_has, resource: poussee_subie }
+        lines:
+          # Sous-sort 32503, au taux de critique du sort, 25 %.
+          - element: air
+            # Toutes les cibles touchées portent l'état, et chacune le
+            # déclenche seule, une fois, quand elle subit des dommages de
+            # poussée : la zone est celle où l'état se pose, le carré de neuf
+            # cases de l'effet 950, et non celle du coup sur un porteur.
+            area: { shape: G, size: 1, max_targets: 9 }
+            critical: [31, 35]
+            normal: [26, 29]
+      # La poussée des sorts du Forgelance lui-même, quand le joueur coche
+      # « Vos poussées butent contre un obstacle ».
+      - trigger: push_damage
+        lines:
+          - element: air
+            area: { shape: G, size: 1, max_targets: 9 }
+            critical: [31, 35]
+            normal: [26, 29]
+    note: |
+      L'état Noa : 26-29 Air quand la cible subit des dommages de poussée, puis il
+      se retire ; il ne revient qu'avec le Noa suivant. Il se pose sur toutes les
+      cibles touchées, et chacune le déclenche de son côté.
+
+      Deux poussées le consomment. Celle d'un sort du Forgelance, dans le tour, si
+      ses poussées butent contre un obstacle. Et celle que le joueur déclare subie
+      par la cible à chaque tour, comptée une fois au début du tour suivant si
+      l'état est encore là.
+
+      26-29, 31-35 en critique, au rang 2, confirmé en jeu : les 28-31 du
+      sous-sort 32503 de la donnée ne sont pas ceux du jeu.
+
+  - id: eclipse_en_cours
+    # Eclipse (3735), que vingt-cinq sorts exigent absente.
+    game_states: [3735]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'état que l'Éclipse pose sur le lanceur (sous-sort 24584, effet 950, durée
+      1) : vingt-cinq sorts ne se lancent pas tant qu'il dure, dont tous ceux qui
+      partent de la Lance. Le tour du lancer seulement, comme le veut la règle des
+      durées : l'Éclipse tombe au tour suivant, où le Forgelance récupère la Lance
+      et lance Jormun dans le même tour.
+
+  - id: parade_posee
+    # Parade (3378), que l'Eclipse exige absente.
+    game_states: [3378]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'état que la Parade pose sur le lanceur (sous-sort 24462, effet 950, durée
+      1) : le tour du lancer seulement. L'Éclipse ne se lance pas tant qu'il dure.
+
+
+  - id: pieges_declenches
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible traverse l'aura de votre Holmgang"
+    note: |
+      Cochez si la cible traverse l'aura de votre Holmgang, ou en sort : elle y
+      prend ses dégâts une fois.
+
+  - id: coups_de_melee_subis
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "La cible vous frappe en mêlée"
+    note: |
+      Cochez si la cible vous frappe au contact pendant son tour : votre Parade
+      riposte une fois.
+
+  - id: holmgang_aura
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        requires: { kind: caster_has, resource: pieges_declenches }
+        lines:
+          # Sous-sort 24853 (par 30131) : 34-38 dans le meilleur élément. Le sous-sort
+          # n'est pas dans la donnée figée : sa zone s'écrit ici, la seule case de
+          # l'ennemi qui traverse.
+          - best_element: true
+            area: { shape: P, size: 1, max_targets: 1 }
+            critical: [34, 38]
+            normal: [34, 38]
+            sans_critique: true
+    note: |
+      L'aura du Holmgang : « attire les ennemis qui le traversent ou qui en
+      sortent et leur occasionne des dommages dans le meilleur element [...]
+      une fois par ennemi par tour ». La cible la traverse pendant son tour,
+      si le joueur le declare : une fois, au debut du tour suivant.
+
+  - id: parade_riposte
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        requires: { kind: caster_has, resource: coups_de_melee_subis }
+        lines:
+          # Effet 2822 du sort 23386 : 26-30 dans le meilleur element.
+          - best_element: true
+            critical: [26, 30]
+            normal: [26, 30]
+            sans_critique: true
+    note: |
+      La riposte de la Parade : « occasionne des dommages dans son meilleur
+      element et repousse son attaquant s'il subit des dommages en melee. La
+      Parade est retiree apres la premiere attaque subie en melee. » Une fois,
+      pendant le tour de la cible, si le joueur declare qu'elle frappe au
+      contact : au debut du tour suivant.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Seul le Croissant de Mani la pose sur le lanceur, au tour qui suit l'Eclipse quand il se tient sur la case ciblee : la rotation ne compte que l'autre branche, le Disque de Sigel (voir l'Eclipse)."
+  - state: 8
+    name: "Porte"
+    note: "Le Forgelance n'est porte que par un Pandawa allie, hors d'une rotation solo."
+  - state: 3589
+    name: "Reprise de Volee"
+    note: "Posee par l'Etendard (grade 2) sur ses invocations, pas sur le lanceur : les quinze sorts qui l'acceptent a la place d'Arme exigent donc Arme."
+
+spells:
+  - id: lance_a_incendie
+    dofusdb_id: 23263
+    name: { fr: "Lance à Incendie", en: "Fire Lance" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 10 }
+    note: |
+      Occasionne des dommages Feu aux ennemis en zone.
+      Invoque la Lance si la case est ou devient libre.
+      
+      Les dommages du sort sont augmentés après chaque lancer.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 293, +5 dégâts de base par charge, plafonné à quatre, le sort se chargeant lui-même à chaque lancer : cinq paliers, 18-21, 23-26, 28-31, 33-36, 38-41, et 22-26 à 42-46 en critique."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: incendie
+            amount: 5
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: incendie
+        at_cap: refresh
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: jormun
+    dofusdb_id: 23268
+    name: { fr: "Jormun", en: "Jormun" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis en zone jusqu'à la Lance.
+      
+      Sur le lanceur : occasionne des dommages Eau plus faibles aux ennemis en zone autour du lanceur et de la Lance.
+      Les dommages de zone ne sont pas dégressifs et ne sont appliqués qu'une seule fois par lancer.
+      
+      Rappelle également la Lance.
+    assumptions:
+      - "Aucun délai initial ni relance, comme le dit la donnée."
+      - "Effets 950/951 : ce sort retire « Jormun (cercle) » (3931). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "\"Effets 1017/1160 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Jormun » sur « a,P,F7139 » : Eau 30-34; « Jormun » sur « c » : Eau 26-30. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 1017/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les deux lignes Eau sont les deux modes de lancer, pas deux frappes : 30-34 en visant la Lance, zone en ligne jusqu'à elle, et 26-30 en visant le lanceur, zone autour de lui et de la Lance. « Les dommages de zone ne sont pas dégressifs et ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur : seule la plus forte est comptée, 30-34."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: galanterie
+    dofusdb_id: 23314
+    name: { fr: "Galanterie", en: "Gallantry" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible, attire la cible et soigne le lanceur et l'allié ciblé.
+      
+      Rappelle également la Lance si elle est ciblée.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+
+  - id: renommee
+    dofusdb_id: 23319
+    name: { fr: "Renommée", en: "Renown" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire la cible et soigne le lanceur et l'allié ciblé.
+      Attire la cible vers la Lance si le lanceur est Désarmé.
+      
+      Rappelle également la Lance si elle est ciblée.
+    assumptions:
+      - "Effets 792/1160/2794 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », « Renommée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+
+  - id: phalange
+    dofusdb_id: 23330
+    name: { fr: "Phalange", en: "Phalanx" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur les alliés et augmente leurs Résistances Poussée en zone.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Effets 792/1160/2960 : lance aussi « Phalange », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines: []
+    effects: []
+
+  - id: parade
+    dofusdb_id: 23386
+    name: { fr: "Parade", en: "Parry" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rappelle immédiatement la Lance et de nouveau à la fin du tour du lanceur en remplaçant la Garde par la Parade :
+      • Rend le lanceur Indéplaçable.
+      • Réduit les dommages subis en mêlée.
+      • Occasionne des dommages dans son meilleur élément et repousse son attaquant s'il subit des dommages en mêlée.
+      
+      La Parade est retirée après la première attaque subie en mêlée.
+      Les effets d'interception et de partage de dommages sont incompatibles avec le sort.
+    assumptions:
+      - "Dans la Rotation : sa riposte, 26-30 en meilleur élément, une fois, si le joueur déclare que la cible le frappe en mêlée."
+      - "Effet 1163, « Dommages subis x25 % » sur le LANCEUR : c'est la reduction de degats en melee que le texte du sort annonce. Elle change ce que le Forgelance encaisse, jamais ce qu'il inflige, et ce calculateur ne mesure que les degats portes."
+      - "Effets 950/951 : ce sort applique « {{spell,32504,2::Parade}} » (6992) ; applique « Indéplaçable » (97). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "\"Effets 792/1160 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Parade » et ce qu'il lance a son tour sur « C » : meilleur element 26-30. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160 : lance aussi « Parade », « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+      - effect: gain
+        resource: parade_posee
+      - effect: gain
+        resource: parade_riposte
+  - id: octave
+    dofusdb_id: 23391
+    name: { fr: "Octave", en: "Octave" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Eau aux ennemis.
+    assumptions:
+      - "Effet 792 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: javelot_foudre
+    dofusdb_id: 23392
+    name: { fr: "Javelot-foudre", en: "Lightning-Javelin" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Invoque la Lance et occasionne des dommages Eau aux ennemis en zone.
+      Rebondit également sur l'ennemi le plus proche n'étant pas dans la zone d'effet dans un cercle de taille 2 si la case est occupée.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Javelot-Foudre (ligne) » (3942). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160/2794 : lance aussi « Invoque la Lance Immortelle », « Javelot-foudre », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Deux modes de lancer, qui se partagent les deux lancers du tour. Sur une case vide, la Lance se plante et seuls les ennemis alignés entre le lanceur et la case sont touchés. Sur un monstre, le javelot frappe la ligne jusqu'à lui, puis rebondit sur l'ennemi le plus proche que la ligne n'a pas touché, à deux cases au plus : 28 à 32 Eau, 35 à 39 en critique (sous-sort 25449, grade 4). La Lance ne se plante pas."
+      - "Avec un placement, la case visée décide du mode : vide, la Lance se plante ; occupée, le javelot rebondit. Sans placement, le solveur choisit, et les ennemis déclarés sont supposés alignés sur la ligne tant qu'elle a de la place, comme pour toute zone : le rebond ne trouve alors quelqu'un qu'au-delà de ce que la ligne frappe."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+    mode_name: { fr: "planter la Lance", en: "plant the Spear" }
+    aim: empty_cell
+    modes:
+      - name: { fr: "sur un monstre", en: "on a monster" }
+        aim: enemy
+        lines:
+          - element: water
+            critical: unknown
+            normal: unknown
+          - element: water
+            rebound_within: 2
+            differs_from_snapshot: "Le rebond est le sous-sort 25449 (grade 4), absent des lignes du sort lui-même : ses fourchettes viennent de DofusDB."
+            critical: [35, 39]
+            normal: [28, 32]
+        effects:
+          - effect: damage
+  - id: trident_de_la_mer
+    dofusdb_id: 23393
+    name: { fr: "Trident de la Mer", en: "Biting Trident" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et attire les cibles vers la case ciblée en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Trident de la Mer (attirance diagonale) » (3743). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/2960 : lance aussi « Reprise de Volée », « Trident de la Mer », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: elding
+    dofusdb_id: 23396
+    name: { fr: "Elding", en: "Elding" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: unknown }
+    note: |
+      Invoque la Lance, attire les cibles vers le centre et occasionne des dommages Eau aux ennemis en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: poincon
+    dofusdb_id: 23401
+    name: { fr: "Poinçon", en: "Puncheon" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rappelle et invoque la Lance dans l'état Poinçon :
+      • Permet à la Lance de tacler.
+      • Augmente son Tacle et sa Vitalité.
+      • Rend la Lance et les cibles à son contact Indéplaçables.
+      Les effets sont retirés à la destruction de la Lance.
+      
+      Sur le lanceur : rend uniquement les cibles Indéplaçables en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,32505,1::Poinçon}} » (6023) ; applique « Indéplaçable » (97). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Poinçon », « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Deux modes de lancer : sur la Lance, elle est rappelée et replantée, ce qui est écrit ici ; sur le lanceur, elle n'est pas plantée, le sort ne rendant alors que les cibles Indéplaçables en zone. Le second mode ne frappe pas et ne pose rien que ce calculateur lise : seul le mode sur la Lance est compté."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 753 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2844 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+
+  - id: lance_du_lac
+    dofusdb_id: 23432
+    name: { fr: "Lance du Lac", en: "Lance of the Lake" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis en zone et invoque la Lance.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: balestra
+    dofusdb_id: 23434
+    name: { fr: "Balestra", en: "Balestra" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur jusqu'à la cible, le téléporte symétriquement et l'éloigne par rapport à cette dernière et occasionne des dommages Eau aux ennemis en zone.
+      
+      La téléportation symétrique et le recul sont appliqués uniquement si le lanceur est téléporté au contact de la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Balestra » (3681). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Balestra », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: lance_pierre
+    dofusdb_id: 23719
+    name: { fr: "Lance-pierre", en: "Slingshot" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis en zone et invoque la Lance.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: epieu_sismique
+    dofusdb_id: 23720
+    name: { fr: "Épieu Sismique", en: "Seismic Pike" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse les cibles depuis la case ciblée en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ydra
+    dofusdb_id: 23723
+    name: { fr: "Ydra", en: "Ydra" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les dommages reçus par le lanceur pour chaque ennemi dans la zone d'effet et leur occasionne des dommages Terre en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Le sort ne peut se lancer que sur la Lance et la rappelle si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Ydra » sur « a,A,*E3360 » : Terre 44-50; « Ydra » sur « a,P,F7139,*E3361,*e3589 » : Terre 44-50. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: talon_d_argile
+    dofusdb_id: 23726
+    name: { fr: "Talon d'Argile", en: "Earthen Weakness" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rappelle la Lance, rapproche le lanceur vers la cible et occasionne des dommages Terre aux ennemis.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: lance_cyclone
+    dofusdb_id: 23729
+    name: { fr: "Lance-cyclone", en: "Cyclone Lancer" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Invoque la Lance, rapproche le lanceur vers elle, occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Lance-Cyclone », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: soulevement
+    dofusdb_id: 23731
+    name: { fr: "Soulèvement", en: "Upheaval" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte les cibles symétriquement par rapport au lanceur et occasionne des dommages Terre aux ennemis en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effet 792 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: javeline_de_myr
+    dofusdb_id: 23734
+    name: { fr: "Javeline de Myr", en: "No Myr Javelin" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse la cible.
+      Invoque la Lance si la case est ou devient libre.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: noa
+    dofusdb_id: 23735
+    name: { fr: "Noa", en: "Noa" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et leur applique l'état Noa en zone :
+      • Occasionne des dommages Air et retire l'état si la cible subit des dommages de poussée.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Le coup de l'état Noa, 26-29 Air, part quand la cible subit des dommages de poussée : quand un sort du Forgelance la pousse contre un obstacle (poussées déclarées bloquées), ou au début du tour suivant si le joueur déclare qu'elle subit une poussée à chaque tour."
+      - "Effets 950/951 : ce sort applique « {{spell,32503,2::Noa}} » (6990). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Noa » sur « a,A,*E3360 » : Air 23-26, Air 28-31; « Noa » sur « a,P,F7139,*E3361,*e3589 » : Air 23-26, Air 28-31. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: noa
+
+  - id: effondrement
+    dofusdb_id: 23736
+    name: { fr: "Effondrement", en: "Collapse" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire les cibles jusqu'au centre en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      N'affecte pas le lanceur.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Effondrement » sur « a,A,*E3360 » : Terre 20-22; « Effondrement » sur « a,P,F7139,*E3361,*e3589 » : Terre 20-22. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+
+  - id: terre_du_milieu
+    dofusdb_id: 23738
+    name: { fr: "Terre du Milieu", en: "Middle Earth" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Augmente la Puissance du lanceur pour chaque ennemi dans la zone d'effet et leur occasionne des dommages Terre en zone.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Terre du Milieu » sur « a,A,*E3360 » : Terre 30-34; « Terre du Milieu » sur « a,P,F7139,*E3361,*e3589 » : Terre 30-34. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effet 138, +50 Puissance au lanceur pendant deux tours, sur l'état `terre_du_milieu_puissance`, par ennemi touché, quatre fois au plus."
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: terre_du_milieu_puissance
+
+  - id: volee_d_airain
+    dofusdb_id: 23741
+    name: { fr: "Volée d'Airain", en: "Brass Volley" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Reprise de Volée », « Volée d'Airain », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: moulin_a_vent
+    dofusdb_id: 23742
+    name: { fr: "Moulin à Vent", en: "Windmill" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte les cibles symétriquement par rapport au centre et occasionne des dommages Air aux ennemis en zone.
+      N'affecte pas directement le lanceur.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Moulin à Vent » sur « a,A,*E3360 » : Air 29-33; « Moulin à Vent » sur « a,P,F7139,*E3361,*e3589 » : Air 29-33. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+
+  - id: degagement
+    dofusdb_id: 23743
+    name: { fr: "Dégagement", en: "Disengaging" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles depuis le centre en zone.
+      N'affecte pas le lanceur.
+      
+      Le sort ne peut se lancer que sur la Lance et la rappelle si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Dégagement » sur « a,A,*E3360 » : Air 29-32; « Dégagement » sur « a,P,F7139,*E3361,*e3589 » : Air 29-32. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: maelstrom
+    dofusdb_id: 23747
+    name: { fr: "Maelstrom", en: "Maelstrom" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Échange de position avec la cible et occasionne des dommages Feu aux ennemis en zone.
+    assumptions:
+      - "Effet 792 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: muspel
+    dofusdb_id: 23750
+    name: { fr: "Muspel", en: "Muspel" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 25 }
+    note: |
+      Augmente les dommages du sort pour chaque ennemi dans la zone d'effet et leur occasionne des dommages Feu en zone.
+      
+      Le sort ne peut se lancer que sur la Lance et la rappelle si le lanceur est Désarmé.
+    assumptions:
+      - "Effet 293, +12 dégâts de base par ennemi touché au-delà du premier, plafonné à quatre crans : 28-32, 40-44, 52-56, 64-68, 76-80. La fourchette de base correspond à un ennemi touché, pas à zéro : le cran se lit sur le réglage « Ennemis touchés »."
+      - "\"Effets 792/1160 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Muspel » sur « a,P,F7139 » : Feu 28-32. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_extra_target
+            amount: 12
+            cap: 4
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: fente
+    dofusdb_id: 23753
+    name: { fr: "Fente", en: "Lunge" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Rappelle la Lance, téléporte le lanceur sur la case ciblée ou symétriquement par rapport à la cible et occasionne des dommages Feu aux ennemis en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Fente », « Rappel de la Lance », « Rappelle la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: estoc_brulant
+    dofusdb_id: 23754
+    name: { fr: "Estoc Brûlant", en: "Burning Estoc" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles depuis le lanceur en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Estoc Brûlant » (6032). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Estoc Brûlant », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: moulin_rouge
+    dofusdb_id: 23755
+    name: { fr: "Moulin Rouge", en: "Spicy Mill" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et attire les cibles jusqu'au centre en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      N'affecte pas le lanceur.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Moulin Rouge » sur « a,A,*E3360 » : Feu 24-28, Feu 24-28; « Moulin Rouge » sur « a,P,F7139,*E3361,*e3589 » : Feu 24-28, Feu 24-28. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage
+
+  - id: fer_rouge
+    dofusdb_id: 23756
+    name: { fr: "Fer Rouge", en: "Hot Iron" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et augmente les dommages qu'ils subissent en zone.
+      Invoque la Lance si la case est ou devient libre.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Effet 1163, « Dommages subis x107 % » sur la cible : elle tient de la pose jusqu'au début du prochain tour du lanceur, et un solveur solo n'en profite que sur les lancers qui suivent celui-ci dans le même tour."
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Fer Rouge » sur « a,A,*E3360 » : Feu 30-34; « Fer Rouge » sur « a,P,F7139,*E3361,*e3589 » : Feu 30-34. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Invoque la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    # ⚠️ PAS de `requires` ici, contrairement aux treize autres : le Fer
+    # Rouge PLANTE la Lance lui-meme. Exiger qu'elle le soit deja creait un
+    # blocage circulaire, et le sort ne partait jamais.
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: vulnerabilite_fer_rouge
+        at_cap: refresh
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+  - id: epilogue
+    dofusdb_id: 23801
+    name: { fr: "Épilogue", en: "Epilogue" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque ou rappelle la Lance.
+      
+      La ligne de vue du sort est désactivée si le lanceur est Désarmé.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Invoque la Lance Immortelle », « Rappel de la Lance », « Rappelle la Lance Immortelle », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+
+  - id: kyrja
+    dofusdb_id: 23823
+    name: { fr: "Kyrja", en: "Kyrja" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Rappelle la Lance, téléporte le lanceur sur la case ciblée, vole de la vie dans le meilleur élément du lanceur aux ennemis et réduit leurs dommages finaux en zone.
+    assumptions:
+      - "Effet 1172, « -10 % Dommages finaux », un tour, sur la cible : le sort réduit ce que l'ennemi frappe (« réduit leurs dommages finaux en zone »). Ce calculateur mesure ce que le lanceur inflige : un malus porté par l'adversaire ne change aucun de ses chiffres."
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Effet 2828, vol de vie dans le meilleur élément, 28-32 (34-38 en critique) : « vole de la vie dans le meilleur élément du lanceur aux ennemis », en déclenchement immédiat. Le vol lui-même n'est pas compté : ce calculateur mesure les dégâts portés."
+      - "Ses seuls dégâts sont ceux de l'effet 2828."
+    lines:
+      - best_element: true
+        # Sa zone vient de l'effet 2828, une ligne depuis le lanceur bornée à la
+        # portée du sort, que l'instantané porte.
+        critical: [34, 38]
+        normal: [28, 32]
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+
+  - id: charge_heroique
+    dofusdb_id: 23824
+    name: { fr: "Charge Héroïque", en: "Heroic Charge" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 20 }
+    note: |
+      Rappelle la Lance, rapproche le lanceur vers la cible et occasionne des dommages dans son meilleur élément aux ennemis.
+      Repousse également la cible si le lanceur termine à son contact.
+      
+      La poussée est plus importante selon la distance entre le lanceur et la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Charge Héroïque » (3494). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Charge Héroïque », « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - best_element: true
+        critical: [35, 40]
+        normal: [29, 33]
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+  - id: chevalerie
+    dofusdb_id: 23826
+    name: { fr: "Chevalerie", en: "Chivalry" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne et augmente les PM des alliés en zone. 
+      
+      Rappelle également la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+
+  - id: oriflamme
+    dofusdb_id: 23828
+    name: { fr: "Oriflamme", en: "Oriflamme" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rappelle et invoque la Lance, applique un bouclier sur les alliés et augmente leurs Résistances Critiques en zone.
+    assumptions:
+      - "Effets 792/1160/2794 : lance aussi « Invoque la Lance Immortelle », « Oriflamme », « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Invoque la Lance : elle est plantee apres ce lancer.
+      - effect: gain
+        resource: lance
+        at_cap: refresh
+
+  - id: vajra
+    dofusdb_id: 23829
+    name: { fr: "Vajra", en: "Vajra" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Rappelle la Lance, téléporte le lanceur sur la case ciblée et vole de la Fuite et de la vie dans le meilleur élément du lanceur aux ennemis en zone.
+    assumptions:
+      - "Effets 752 et 754, « + 20 Fuite » et « - 20 Fuite », un tour sur la cible : le sort « vole de la Fuite ». La Fuite décide si l'on se dégage d'un corps à corps, pas ce qu'un sort inflige, comme le glyphe-aura de Fuite du Verglas et celui de Portée de la Vigie chez le Féca."
+      - "Effets 792/1160 : lance aussi « Rappel de la Lance », « Rappelle la Lance Immortelle », « Vajra », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Effet 2828, vol de vie dans le meilleur élément, 39-44 (47-53 en critique) : « vole de la Fuite et de la vie dans le meilleur élément du lanceur aux ennemis en zone », en déclenchement immédiat sur une zone en cercle. Le vol de vie et celui de Fuite ne sont pas comptés : ce calculateur mesure les dégâts portés."
+      - "Ses seuls dégâts sont ceux de l'effet 2828."
+    lines:
+      - best_element: true
+        # Sa zone vient de l'effet 2828, cercle de rayon 2, que l'instantané
+        # porte.
+        critical: [47, 53]
+        normal: [39, 44]
+    effects:
+      - effect: damage
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+
+  - id: eclipse
+    dofusdb_id: 23834
+    name: { fr: "Éclipse", en: "Eclipse" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: unknown }
+    note: |
+      Rappelle la Lance, applique un bouclier sur le lanceur et ses alliés en zone autour de lui et retire de la Portée à tout le monde.
+      
+      Désarme immédiatement le lanceur pour appliquer des effets sur la case ciblée au tour suivant :
+      • Lance le sort Croissant de Mani si la case est occupée par le lanceur.
+      • Sinon, lance le sort Disque de Sigel.
+    assumptions:
+      - "Aucun délai initial : l'Éclipse part dès le tour 1, comme le porte la donnée."
+      - "Effets 950/951 : ce sort applique « {{spell,32508,2::Éclipse}} » (6994). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "\"Effets 792/1160/2794 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Éclipse » et ce qu'il lance a son tour sur « C » : meilleur element 67-76. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2794 : lance aussi « Croissant de Mani », « Disque de Sigel », « Rappel de la Lance », « Rappelle la Lance Immortelle », « Éclipse », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 1160 à `delay: 1`, meilleur élément 67-76 (80-91 en critique), en frappe différée d'un tour : le sort « désarme immédiatement le lanceur pour appliquer des effets sur la case ciblée au tour suivant », et la donnée porte deux sous-sorts à délai 1. Fourchette du groupe « Disque de Sigel - Ennemi »."
+      - "« Éclipse parfaite » : au tour suivant, la Lance se plante sur la case ciblée et le lanceur est bien Désarmé. Sur une case occupée par un monstre, elle ne se planterait pas : la rotation suppose le cas où elle se plante."
+      - "Deux branches, une seule comptée : le tour suivant lance le « Croissant de Mani » si la case ciblée est occupée par le lanceur, et le « Disque de Sigel » sinon. Choisir entre les deux est du placement : seul le Disque est compté, la branche la plus forte, le Croissant n'ayant aucune fourchette publiée."
+      - "Une seule ligne est comptée, celle du Disque de Sigel."
+    lines: []
+    effects:
+      # La frappe du tour suivant, sur la case ciblee.
+      - effect: schedule
+        id: disque_de_sigel
+        delay: 1
+        payload:
+          # La zone du sous-sort Disque de Sigel (23836, grade 6), effet 2822 : cercle
+          # de taille 3, 25 cases, dégressif de 10 % sur quatre crans. L'instantané de
+          # la classe ne porte pas ce sous-sort, d'où la zone écrite ici.
+          - best_element: true
+            area: { shape: C, size: 3, max_targets: 25, falloff_percent: 10, falloff_steps: 4 }
+            critical: [80, 91]
+            normal: [67, 76]
+      # « Rappelle la Lance » puis « désarme immédiatement le lanceur » : le
+      # sous-sort « Désarme » (23286) pose 3361 dès le lancer, et au tour suivant le
+      # Disque de Sigel invoque la Lance sur la case ciblée. Le lanceur reste
+      # Désarmé, Lance plantée, ce que dit ce compteur.
+      - effect: gain
+        resource: lance
+      - effect: gain
+        resource: eclipse_en_cours
+
+  - id: etreinte_de_valkyr
+    dofusdb_id: 23838
+    name: { fr: "Étreinte de Valkyr", en: "Valkyr's Embrace" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit les dommages reçus par l'allié ciblé et lui applique l'état Étreinte de Valkyr :
+      • Érode les attaquants ennemis de la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,32506,1::Étreinte de Valkyr}} » (3680). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2794 : lance aussi « Étreinte de Valkyr », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 406 : le sort retire SES PROPRES effets, plus ceux d'un sort (25491) qui n'est pas dans l'instantane de la classe. Aucun des deux n'est compte ici, la reduction de dommages et l'erosion des attaquants portant sur l'ALLIE CIBLE : l'annulation n'a rien a annuler."
+    effects: []
+
+  - id: prelude_au_fer
+    dofusdb_id: 23841
+    name: { fr: "Prélude au Fer", en: "Iron Prelude" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur les ennemis et augmente la Puissance des alliés en zone.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Désarmé, le sort se lance sur la Lance et donne sa Puissance aux alliés qui l'entourent : le lanceur, supposé loin d'elle, n'en reçoit rien (masque « a,*E3360 » de l'effet 138). Au contact aussi, faute de savoir où se tient la Lance."
+      - "Effets 792/1160/2960 : lance aussi « Prélude au Fer », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+      - "Effet 138, +200 Puissance au lanceur pendant deux tours, sur l'état `prelude_au_fer_puissance` : la cible de l'effet est « a », les alliés, et le lanceur se compte parmi eux. Les alliés, eux, ne sont pas mesurés ici."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines: []
+    effects:
+      # La Puissance ne vise les alliés, lanceur compris, que si le lanceur est
+      # Armé (masque « a,*E3360 »). Désarmé, le sort part de la Lance (sous-sort
+      # 24446) et ne touche que ceux qui l'entourent : à distance, pas le lanceur.
+      - effect: gain
+        resource: prelude_au_fer_puissance
+        requires: { kind: exactly, resource: lance, amount: 0 }
+
+  - id: crepuscule
+    dofusdb_id: 23842
+    name: { fr: "Crépuscule", en: "Twilight" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Érode et retire de la Portée aux ennemis en zone.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Effets 792/1160/2960 : lance aussi « Crépuscule », « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines: []
+    effects: []
+
+  - id: holmgang
+    dofusdb_id: 23846
+    name: { fr: "Holmgang", en: "Holmgang" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rappelle la Lance et remplace la Garde par le Holmgang :
+      • Rend le lanceur Indéplaçable.
+      • Réduit les dommages subis à distance.
+      • Pose un glyphe-aura qui attire les ennemis qui le traversent ou qui en sortent et leur occasionne des dommages dans le meilleur élément d'attaque du lanceur (une fois par ennemi par tour).
+      
+      Termine le tour en cours du lanceur.
+    assumptions:
+      - "Dans la Rotation : son aura frappe la cible une fois, 34-38 en meilleur élément, si le joueur déclare qu'elle la traverse. Il termine le tour du lanceur : plus rien ne part après lui."
+      - "Effet 1163, « Dommages subis x65 % », sur le lanceur : la réduction que le texte annonce, « réduit les dommages subis à distance ». Elle protège, et ce calculateur compte ce que le lanceur inflige."
+      - "Effet 335, « Change l'apparence », paramètre 2062, permanent sur le lanceur : le Holmgang remplace la Garde et le montre. De l'apparence, dont aucun chiffre ne dépend."
+      - "Effets 950/951 : ce sort applique « Holmgang (caster glyphe) » (5746) ; applique « {{spell,32507,1::Holmgang}} » (3498) ; applique « Indéplaçable » (97) ; applique « Holmgang (cast) » (5742) ; retire « Holmgang (cast) » (5742). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Garde », « Holmgang », « Rappel de la Lance », « Rappelle la Lance Immortelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Rappelle la Lance : elle n'est plus plantee apres ce lancer.
+      - effect: consume
+        resource: lance
+      - effect: gain
+        resource: holmgang_aura
+      - effect: end_turn
+  - id: pluie_d_airain
+    dofusdb_id: 24219
+    name: { fr: "Pluie d'Airain", en: "Brass Rain" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et réduit leurs Résistances Poussée en zone.
+      Les dommages de zone ne sont pas dégressifs.
+      
+      Le sort ne peut se lancer que sur la Lance si le lanceur est Désarmé.
+    assumptions:
+      - "Effet 417, -40 Resistance Poussee sur la cible : la poussee n'est pas un element de degats et aucun sort n'en tire de dommages ici. Aucun chiffre n'en depend."
+      - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Pluie d'Airain » sur « a,A,*E3360 » : Air 19-21; « Pluie d'Airain » sur « a,P,F7139,*E3361,*e3589 » : Air 19-21. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
+      - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Ce sort n'est jamais interdit, il change de cible : armé, il frappe autour du lanceur (état 3360) ; désarmé, depuis la Lance (état 3361, cible « a,P,F7139 »), avec les mêmes fourchettes. Le chiffre affiché est donc juste dans les deux cas. À distance, le mode armé frappe autour d'un lanceur que personne n'entoure, et il exige donc la Lance plantée ; ce que ce calculateur ne tient pas, c'est où la Lance se trouve, donc si l'ennemi est dans son axe."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    # La Lance ne conditionne pas le lancer, elle en change la cible : armé, le
+    # sort frappe autour du lanceur ; désarmé, il frappe depuis la Lance, avec les
+    # mêmes fourchettes. Au contact les deux modes touchent ; au loin, le mode
+    # armé frappe autour d'un lanceur que personne n'entoure : la Lance doit être
+    # plantée.
+    requires: { kind: caster_has, resource: lance }
+    requires_only_at_range: true
+    effects:
+      - effect: damage

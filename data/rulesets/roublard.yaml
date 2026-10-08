@@ -1,0 +1,990 @@
+# Roublard.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: roublard
+name: { fr: "Roublard", en: "Roublard" }
+
+resources:
+  - id: detonations
+    scope: caster
+    max: 5
+    default: 0
+    monotone: increasing
+    note: |
+      Les explosions de Sismobombe et de Bombe Collante que l'Oblitération a
+      accumulées : « Les dommages sont augmentés après chaque explosion de
+      Sismobombe ou de Bombe Collante », et « les effets sont retirés après
+      utilisation du sort » : la réserve se vide au lancer. Cumul 5, six paliers :
+      33-37 sans détonation, puis 43-47, 53-57, 63-67, 73-77 et 83-87, dix de plus
+      à chaque cran, la valeur de l'effet 293 au dernier grade. Faire exploser une
+      bombe demande de l'avoir posée au bon endroit, ce que ce solveur ne simule
+      pas : le budget `detonations_par_tour` dit combien le placement en permet.
+
+  - id: bombes_en_portee
+    scope: caster
+    max: 3
+    default: 0
+    monotone: increasing
+    note: |
+      Les Bombes du lanceur bien placées autour de la cible. Deux suffisent à
+      tendre le mur que Plombage, lancé sur une Bombe, redéclenche : c'est la
+      condition de son mode « sur une bombe ». La Cadence et le Shrapnel ne le
+      lisent pas : leur relance depuis les Bombes, deux au plus, ne porte que le
+      retrait de PM ou de PA, aucun dégât.
+
+      Plafond à trois. Le placement étant hors de portée de ce solveur, le budget
+      `bombes_par_tour` dit ce que le terrain permet. La réserve ne s'efface pas
+      entre les tours : une bombe posée reste jusqu'à ce qu'elle explose, et le
+      budget borne les poses par tour, pas le total. Ce modèle ne porte pas la
+      durée de vie réelle d'une bombe, ni le coût en PA de la Sismobombe, qui
+      augmente d'un par Sismobombe déjà posée.
+
+  - id: cible_bougee_dans_le_mur
+    scope: caster
+    max: 1
+    default: 0
+    declared_by_player: true
+    player_label: "Vos déplacements gardent la cible dans le mur de bombes"
+    note: |
+      Cochez si vos poussées, attirances et échanges de place laissent la cible
+      dans votre mur de bombes : le mur la frappe à chaque fois, à la base de
+      votre tour. Espingole, Pulsar, Rémission, Ruse, Recel, Imposture et
+      Bombarde déplacent la cible.
+
+  - id: bombe_collante_posee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    while_present:
+      - trigger: spell_tagged
+        tag: detonation
+        spends: 1
+        lines:
+          - best_element: true
+            # Pas de fourchette critique distincte : le sort ne peut
+            # pas critiquer et la donnée ne porte aucun effet critique.
+            # Le critique vaut le normal : le laisser inconnu ferait
+            # échouer tout calcul en espérance.
+            critical: [17, 19]
+            normal: [17, 19]
+        note: |
+          L'explosion : « lorsqu'elle est activée, elle occasionne des dommages dans
+          le meilleur élément du lanceur » : effet 2822, 17-19, sans critique, comme
+          le sort qui la pose. Ce qui l'active est un sort d'activation, Détonateur ou
+          Étoupille (tag `detonation`), ou l'explosion d'une autre Bombe, qui demande
+          de savoir où les bombes sont posées les unes par rapport aux autres. Cumul 1 :
+          une seule Bombe Collante à la fois.
+
+budgets:
+  - id: detonations_par_tour
+    name: { fr: "Détonations de bombe par tour", en: "Bomb detonations per turn" }
+    default: 2
+    max: 5
+    note: |
+      Combien d'explosions de Sismobombe ou de Bombe Collante votre placement
+      permet dans un tour. Deux par défaut : poser une bombe coûte 2 PA et la
+      déclencher demande un sort d'activation. Plus haut, les bombes étaient déjà
+      en place au tour précédent.
+
+  - id: bombes_par_tour
+    name: { fr: "Bombes bien placées par tour", en: "Well-placed bombs per turn" }
+    default: 1
+    max: 3
+    note: |
+      Combien de Bombes votre placement met autour de la cible : deux tendent le
+      mur que Plombage redéclenche. Une par défaut, et le mur tient dès le
+      deuxième tour ; zéro décrit un tour où l'on frappe sans préparation, trois
+      un tour où le terrain était prêt.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "L'Entourloupe la pose sur la Bombe echangee, pas sur le lanceur."
+
+spells:
+  - id: roublabot
+    dofusdb_id: 13429
+    name: { fr: "Roublabot", en: "Boombot" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un robot contrôlable qui peut déplacer ou déclencher les Bombes du lanceur.
+      Le robot est détruit à la fin de son tour de jeu.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: roublardise
+    dofusdb_id: 13431
+    name: { fr: "Roublardise", en: "Roguery" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur toutes les Bombes du lanceur.
+      
+      Crée des illusions du lanceur et le téléporte sur la case ciblée.
+      Termine le tour en cours du lanceur.
+    assumptions:
+      - "Effet 1031, « Termine le tour » (`end_turn`) : plus rien ne part après lui."
+      - "Effet 1160 : lance aussi « Roublardise », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1097 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # Effet 1031 : il termine le tour du lanceur.
+      - effect: end_turn
+
+  - id: detonateur
+    dofusdb_id: 13432
+    name: { fr: "Détonateur", en: "Detonator" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    tags: [detonation]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Ajoute 1 Combo à une Bombe du lanceur et déclenche son explosion.
+      Rend 1 PA au lanceur avant l'explosion.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « +1 Combo », « Combo », « Détonateur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1009 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: extraction
+    dofusdb_id: 13433
+    name: { fr: "Extraction", en: "Extraction" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu.
+      Le vol de vie est réduit de moitié sur les alliés.
+    assumptions:
+      - "La seconde ligne Feu, 14-15, est la part alliée : les deux sorts volent la vie, et « le vol de vie est réduit de moitié sur les alliés ». Elle vaut la moitié de la première ; un allié n'étant pas une cible de dégâts, elle n'entre dans aucun calcul ici."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: botte
+    dofusdb_id: 13434
+    name: { fr: "Botte", en: "Kickback" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur les Bombes du lanceur et les pousse depuis le centre en zone.
+      Plus le sort est lancé à proximité d'une Bombe du lanceur, plus elle est poussée.
+      
+      Pousse les autres entités d'une case seulement.
+      N'affecte pas le lanceur.
+    lines: []
+    open_questions:
+      - "Effet 1103 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: tornabombe
+    dofusdb_id: 13435
+    name: { fr: "Tornabombe", en: "Grenado" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Air et retirer des PM selon son Combo en zone à son explosion.
+      • Combo I à IV : -1 PM
+      • Combo V à IX : -2 PM
+      • Combo X à XV : -3 PM
+      • Mur d'Air : -2 PM
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+      
+      Le coût en PA du sort augmente de 1 pour chaque Tornabombe du lanceur présente sur le terrain.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects:
+      - effect: gain
+        resource: bombes_en_portee
+        budget: bombes_par_tour
+        at_cap: skip
+
+  - id: bombe_a_eau
+    dofusdb_id: 13436
+    name: { fr: "Bombe à Eau", en: "Water Bomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Eau et retirer des PA selon son Combo en zone à son explosion.
+      • Combo I à IV : -0 PA
+      • Combo V à IX : -1 PA
+      • Combo X à XV : -2 PA
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+      
+      Le mur de Bombes à Eau retire des PA uniquement aux entités qui le traversent ou commencent leur tour à l'intérieur.
+      • Mur d'Eau : -2 PA
+      
+      Le coût en PA du sort augmente de 1 pour chaque Bombe à Eau du lanceur présente sur le terrain.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects:
+      - effect: gain
+        resource: bombes_en_portee
+        budget: bombes_par_tour
+        at_cap: skip
+
+  - id: aimantation
+    dofusdb_id: 13437
+    name: { fr: "Aimantation", en: "Magnet" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire les Bombes du lanceur vers le centre et leur ajoute 1 Combo en zone.
+      Le Combo ne s'applique qu'une seule fois par Bombe par tour et si les Bombes sont déplacées.
+      
+      Attire les autres entités d'une case seulement.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Aimantation » (2136). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160/2794 : lance aussi « +1 Combo », « Aimantation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: dagues_boomerang
+    dofusdb_id: 13438
+    name: { fr: "Dagues Boomerang", en: "Boomerang Daggers" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Air en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: entourloupe
+    dofusdb_id: 13439
+    name: { fr: "Entourloupe", en: "Dirty Trick" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Ajoute 1 Combo à une Bombe du lanceur, échange de position avec elle et lui applique l'état Pesanteur.
+      Les effets ne s'appliquent que si l'échange de positions peut s'effectuer.
+      
+      Sur un allié : échange uniquement de position avec la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « +1 Combo », « Combo », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: espingole
+    dofusdb_id: 13440
+    name: { fr: "Espingole", en: "Carbine" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles vers les extrémités en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: poudre
+    dofusdb_id: 13441
+    name: { fr: "Poudre", en: "Powder" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend une Bombe du lanceur Indéplaçable.
+      Ajoute 2 Combo à la Bombe :
+      • En déclenchant son explosion si elle est détruite.
+      • En retirant les effets du sort s'il est lancé sur une autre Bombe.
+      
+      Les effets sont retirés si la Bombe est déclenchée par un effet d'explosion.
+    assumptions:
+      - "Effet 792 : lance aussi « +2 Combos », « Combo », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Indéplaçable » (97), lu par Entourloupe, Imposture, Stratagème ; applique « Poudre » (2511), lu par Poudre. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1009 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: pulsar
+    dofusdb_id: 13442
+    name: { fr: "Pulsar", en: "Pulsar" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et repousse les cibles vers les extrémités en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: resquille
+    dofusdb_id: 13443
+    name: { fr: "Resquille", en: "Deception" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des PA en zone.
+      N'affecte pas le lanceur.
+      
+      Sur des Bombes du lanceur : les téléporte symétriquement par rapport au centre de la zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: explobombe
+    dofusdb_id: 13444
+    name: { fr: "Explobombe", en: "Explobomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Feu en zone à son explosion.
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+      
+      Le coût en PA du sort augmente de 1 pour chaque Explobombe du lanceur présente sur le terrain.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects:
+      - effect: gain
+        resource: bombes_en_portee
+        budget: bombes_par_tour
+        at_cap: skip
+
+  - id: remission
+    dofusdb_id: 13445
+    name: { fr: "Rémission", en: "Remission" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique l'état Rémission sur la cible :
+      • Repousse les attaquants si la cible subit des dommages en mêlée.
+      
+      Sur une Bombe du lanceur : réduit les dommages reçus à distance.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Blocage Rémission » (3795) ; applique « Rémission » (2512). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Rémission », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: dernier_souffle
+    dofusdb_id: 13446
+    name: { fr: "Dernier Souffle", en: "Last Breath" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la Vitalité maximale du lanceur pour ajouter temporairement 3 Combo à ses Bombes.
+    assumptions:
+      - "Effet 792 : lance aussi « +3 Combos », « -3 Combos », « Combo », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1033 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: tromblon
+    dofusdb_id: 13449
+    name: { fr: "Tromblon", en: "Blunderbuss" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Érode les cibles et occasionne des dommages Eau en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: kaboom
+    dofusdb_id: 13450
+    name: { fr: "Kaboom", en: "Kaboom" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Kaboom sur les alliés en zone.
+      
+      Sur des Bombes élémentaires du lanceur : ajoute 1 Combo.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,24182,1::Kaboom}} » (92). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « +1 Combo », « Combo », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: obliteration
+    dofusdb_id: 13469
+    name: { fr: "Oblitération", en: "Obliteration" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 25 }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages sont augmentés après chaque explosion de Sismobombe ou de Bombe Collante.
+      
+      Sur une Bombe du lanceur : ajoute du Combo pour chaque explosion de Sismobombe ou de Bombe Collante.
+      
+      Les effets sont retirés après utilisation du sort.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « +0 à 5 Combos », « Oblitération », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effet 293, +10 dégâts de base par détonation, plafonné à cinq : six paliers, 33-37, 43-47, 53-57, 63-67, 73-77, 83-87, et 40-44 à 90-94 en critique. Le bonus entre dans le jet avant l'arrondi caractéristique, le propre d'un dégât de base."
+      - "Effet 406, « enleve les effets du sort » : c'est la reserve de detonations qui se vide au lancer, ce que le texte du sort dit aussi. Ecrit ici en remise a zero de la ressource."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          - kind: per_resource
+            resource: detonations
+            amount: 10
+    effects:
+      - effect: damage
+      - effect: reset
+        resource: detonations
+
+  - id: etoupille
+    dofusdb_id: 13470
+    name: { fr: "Étoupille", en: "Fuze" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    tags: [detonation]
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Déclenche l'explosion d'une Bombe du lanceur.
+      Rend 3 PA au lanceur avant l'explosion.
+    assumptions:
+      - "Effet 1160 : lance aussi « Étoupille », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1009 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: explobombe_resiliente
+    dofusdb_id: 13471
+    name: { fr: "Explobombe Résiliente", en: "Resilient Explobomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Feu en zone à son explosion.
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: ruse
+    dofusdb_id: 13472
+    name: { fr: "Ruse", en: "Ruse" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rapproche le lanceur vers la cible.
+      Applique également un bouclier si la cible est une Bombe du lanceur.
+    lines: []
+    effects: []
+
+  - id: mousquet
+    dofusdb_id: 13473
+    name: { fr: "Mousquet", en: "Musket" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis en zone.
+      Ajoute également 1 Combo aux Bombes du lanceur en zone.
+      
+      Le Combo ne s'applique qu'une seule fois par Bombe par tour.
+    assumptions:
+      - "Effets 792/1160 : lance aussi « +1 Combo », « Mousquet », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: tornabombe_resiliente
+    dofusdb_id: 13474
+    name: { fr: "Tornabombe Résiliente", en: "Resilient Grenado" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Air et retirer des PM selon son Combo en zone à son explosion.
+      • Combo I à IV : -1 PM
+      • Combo V à IX : -2 PM
+      • Combo X à XV : -3 PM
+      • Mur d'Air : -2 PM
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: cadence
+    dofusdb_id: 13475
+    name: { fr: "Cadence", en: "Cadence" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis en zone.
+      Retire également des PM aux ennemis en zone autour des Bombes du lanceur dans la zone d'effet.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Cadence » (2504) ; retire « Cadence » (2504). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "La relance depuis les Bombes du lanceur, deux au plus, ne porte que le retrait de PM, aucun dégât : elle n'est pas comptée."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Cadence » sur « a,P,F3112,F3113,F3114,F5161,F5162,F5163 » : Air 26-28. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effet 1160 : lance aussi « Cadence », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effets 950 et 951 : l'etat qui porte le retrait de PM sur les ennemis en zone, effet 1080 dans la donnee. Il ne modifie aucun degat, ni les siens ni ceux d'un autre sort de la classe."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: stratageme
+    dofusdb_id: 13476
+    name: { fr: "Stratagème", en: "Strategy" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte une Bombe du lanceur à sa position précédente et lui applique un bouclier.
+      Le bouclier ne s'applique que si la téléportation peut s'effectuer.
+    assumptions:
+      - "Effet 1160 : lance aussi « Stratagème », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: recel
+    dofusdb_id: 13477
+    name: { fr: "Recel", en: "Stolen Goods" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et attire la cible.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bombe_a_eau_resiliente
+    dofusdb_id: 13478
+    name: { fr: "Bombe à Eau Résiliente", en: "Resilient Water Bomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Eau et retirer des PA selon son Combo en zone à son explosion.
+      • Combo I à IV : -0 PA
+      • Combo V à IX : -1 PA
+      • Combo X à XV : -2 PA
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+      
+      Le mur de Bombes à Eau retire des PA uniquement aux entités qui le traversent ou commencent leur tour à l'intérieur.
+      • Mur d'Eau : -2 PA
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: bombe_collante
+    dofusdb_id: 13479
+    name: { fr: "Bombe Collante", en: "Sticky Bomb" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe Collante sur la cible.
+      Sur une case libre : pose un piège qui pose une Bombe Collante sur l'entité qui le déclenche ou déclenche l'explosion d'une Bombe du lanceur.
+      
+      La Bombe peut être activée avec les sorts d'activation ou les explosions de bombe.
+      Lorsqu'elle est activée, elle occasionne des dommages dans le meilleur élément du lanceur et déclenche l'explosion de ses Bombes en zone.
+      
+      Une Bombe Collante ne peut pas être appliquée sur une Bombe élémentaire.
+    assumptions:
+      - "Effets 950/951 : ce sort retire « Bombe collé » (4069). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 2794 : les degats de ce sort arrivent par sous-sort, « Bombe Collante » et ce qu'il lance a son tour sur « C » : meilleur element 17-19, meilleur element 17-19. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effet 2794 : lance aussi « Bombe Collante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le lancer ne frappe PAS : il pose la Bombe, et ce sont les 17-19 dans le meilleur element de l'explosion qui frappent, une fois qu'un sort d'activation la declenche. Effets 950 et 951 : la pose et le retrait de cet etat."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects:
+      # Sans ce gain, la ressource `bombe_collante_posee` n'est jamais accordée
+      # et l'explosion ne part jamais : le sort ne rapporterait rien, en silence.
+      - effect: gain
+        resource: bombe_collante_posee
+      - effect: gain
+        resource: detonations
+        budget: detonations_par_tour
+        at_cap: skip
+
+  - id: croisement
+    dofusdb_id: 13480
+    name: { fr: "Croisement", en: "Crossing" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Attire les Bombes du lanceur jusqu'au centre et leur ajoute 1 Combo en zone.
+      
+      Le Combo ne s'applique qu'une seule fois par Bombe par tour et si les Bombes sont déplacées.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Croisement / Piège Magnétique » (3691) ; retire « Croisement / Piège Magnétique » (3691). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « +1 Combo », « Croisement », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Croisement » (2501), lu par Croisement. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: arquebuse
+    dofusdb_id: 13482
+    name: { fr: "Arquebuse", en: "Arquebus" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages Terre aux ennemis.
+    assumptions:
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mitraille
+    dofusdb_id: 13483
+    name: { fr: "Mitraille", en: "Machine Gun" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PM.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: piege_magnetique
+    dofusdb_id: 13484
+    name: { fr: "Piège Magnétique", en: "Magnetic Trap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un piège mono-cellule qui attire les cibles, ajoute 1 Combo aux Bombes du lanceur et déclenche leur explosion en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: sismobombe_resiliente
+    dofusdb_id: 13486
+    name: { fr: "Sismobombe Résiliente", en: "Resilient Seismobomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Terre en zone à son explosion.
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects: []
+
+  - id: bombe_ambulante
+    dofusdb_id: 13487
+    name: { fr: "Bombe Ambulante", en: "Walking Bomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Bombe contrôlable qui peut copier l'élément et une partie du Combo d'une Bombe du lanceur.
+      
+      Elle est détruite à la fin de son deuxième tour de jeu si elle n'a pas obtenu d'élément.
+    assumptions:
+      - "Effet 1160 : lance aussi « Mimésis », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: plombage
+    dofusdb_id: 13488
+    name: { fr: "Plombage", en: "Weigh Down" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis.
+      
+      Sur une Bombe élémentaire du lanceur : occasionne des dommages Feu aux ennemis situés entre deux Bombes élémentaires alignées et ajoute 1 Combo à ces Bombes.
+      
+      Le Combo ne s'applique qu'une seule fois par Bombe par tour.
+    assumptions:
+      - "Les Bombes du Roublard ne marchent pas comme la Lance du Forgelance : lancé sur une Bombe, Plombage redéclenche le mur, il ne frappe pas depuis chaque bombe."
+      - "Effets 792/1160 : les degats de ce sort arrivent par sous-sort, « Plombage » sur « C » : Feu 30-34. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effets 792/1160 : lance aussi « +1 Combo », « Plombage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Lancé sur une Bombe, il redéclenche le mur de bombes où se tient la cible, deux fois par tour au plus (ses deux lancers). Le mode « sur une bombe » se greffe à la rotation (`avec_le_mur_de_bombes`) avec le mur que le joueur déclare : la base du mur au tour du lanceur, son combo monté d'un cran par Plombage, sans critique. Il s'ouvre dès que deux bombes sont bien placées."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: imposture
+    dofusdb_id: 13489
+    name: { fr: "Imposture", en: "Imposture" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de positions avec la cible et applique l'état Kaboom sur le lanceur.
+      • Sur un allié : lui applique également l'état.
+      • Sur une Bombe élémentaire du lanceur : ajoute 1 Combo à la Bombe.
+      Applique l'état Imposture sur le lanceur et l'allié ciblé au tour suivant, empêchant l'application de l'état Kaboom.
+      
+      Le Combo et l'état Kaboom ne s'appliquent que si l'échange de positions peut s'effectuer.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,24182,1::Kaboom}} » (92) ; applique « Imposture » (4068). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « +1 Combo », « Imposture », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: megabombe
+    dofusdb_id: 13490
+    name: { fr: "Mégabombe", en: "Megabomb" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Mégabombe contrôlable qui peut occasionner des dommages Neutre et dévorer des Bombes pour augmenter ses dommages.
+      
+      Lorsqu'elle est détruite, elle explose en ajoutant 1 Combo aux Bombes du lanceur et déclenche leur explosion dans un cercle de taille 2.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: sismobombe
+    dofusdb_id: 13491
+    name: { fr: "Sismobombe", en: "Seismobomb" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose une Bombe qui peut occasionner des dommages Terre en zone à son explosion.
+      
+      Sur une cible : applique les effets de la Bombe en zone.
+      N'affecte pas le lanceur.
+      Ajoute également 1 Combo et déclenche l'explosion d'une Bombe si la cible est une de ses Bombes.
+      
+      Le coût en PA du sort augmente de 1 pour chaque Sismobombe du lanceur présente sur le terrain.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort retire « Bombe Collante alliée » (641), lu par Détonateur, Étoupille ; retire « Bombe Collante ennemie » (665), lu par Détonateur, Étoupille. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 1008 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire les effets de « Poudre », que ce calculateur ne compte pas. L'annulation n'a donc rien a annuler et ne coute rien. La Bombe elle-meme n'est PAS retiree : le compteur qui la porte survit."
+    effects:
+      - effect: gain
+        resource: bombes_en_portee
+        budget: bombes_par_tour
+        at_cap: skip
+      - effect: gain
+        resource: detonations
+        budget: detonations_par_tour
+        at_cap: skip
+
+  - id: grenaille
+    dofusdb_id: 14411
+    name: { fr: "Grenaille", en: "Shot Pellets" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Feu en zone.
+      Le vol de vie est réduit de moitié sur les alliés.
+      
+      N'affecte pas le lanceur.
+    assumptions:
+      - "La seconde ligne Feu, 15-17, est la part alliée : les deux sorts volent la vie, et « le vol de vie est réduit de moitié sur les alliés ». Elle vaut la moitié de la première ; un allié n'étant pas une cible de dégâts, elle n'entre dans aucun calcul ici."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: casemate
+    dofusdb_id: 14412
+    name: { fr: "Casemate", en: "Bunker" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend une Bombe du lanceur Invulnérable et lui ajoute 1 Combo.
+      
+      Les effets sont transmis à la Bombe issue d'une Ambulante.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Casemate » (2499). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « +1 Combo », « Combo », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Invulnérable » (56), qui porte invulnerable, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: shrapnel
+    dofusdb_id: 14414
+    name: { fr: "Shrapnel", en: "Shrapnel" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis en zone.
+      Retire également des PA aux ennemis en zone autour des Bombes du lanceur dans la zone d'effet.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Shrapnel » (1442) ; retire « Shrapnel » (1442). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "La relance depuis les Bombes du lanceur, deux au plus, ne porte que le retrait de PA, aucun dégât : elle n'est pas comptée."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Shrapnel » sur « a,P,F3112,F3113,F3114,F5161,F5162,F5163 » : Eau 17-19. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effet 1160 : lance aussi « Shrapnel », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effets 950 et 951 : l'etat qui porte le retrait de PA sur les ennemis en zone, effet 1079 dans la donnee. Il ne modifie aucun degat, ni les siens ni ceux d'un autre sort de la classe."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bombarde
+    dofusdb_id: 14415
+    name: { fr: "Bombarde", en: "Bombard" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse les cibles en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Bombarde », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

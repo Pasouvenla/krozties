@@ -1,0 +1,17 @@
+[package]
+name = "dofus-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Multi-turn rotation solver over a declarative ruleset."
+
+[dependencies]
+dofus-grid = { path = "../grid" }
+dofus-damage = { path = "../damage" }
+dofus-ruleset = { path = "../ruleset" }
+
+[dev-dependencies]
+dofus-damage = { path = "../damage" }
+dofus-ruleset = { path = "../ruleset" }
+serde_json = { workspace = true }

@@ -1,0 +1,928 @@
+# Eliotrope.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+#
+# Le portail est la mécanique centrale : la moitié des sorts de la classe
+# porte un bonus « si le sort est projeté dans un portail ». Ce solveur ne
+# simule pas la grille, et les portails se déclarent : combien de sorts y
+# passent (`portails_traverses`) et à quelle distance l'un de l'autre
+# (`cases_entre_portails`). Les bonus de portail qui ne touchent pas aux
+# dégâts restent en questions ouvertes.
+
+schema_version: 1
+game_version: "3.6.12"
+class: eliotrope
+name: { fr: "Eliotrope", en: "Eliotrope" }
+
+resources:
+  - id: extinction_poison
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 14594
+    while_present:
+      # `turn_start` pour un poison de fin de tour, convention du parc : « fin de
+      # tour de la cible » tombe, pour une recherche par tours, au même endroit que
+      # le début du nôtre (comme la Sève Paralysante du Sadida, la Sentence du Iop
+      # et la Flèche Tyrannique du Crâ).
+      - trigger: turn_start
+        lines:
+          - element: fire
+            critical: [38, 42]
+            normal: [32, 35]
+        note: |
+          Le poison Feu de fin de tour, « si le sort est projeté dans un portail »
+          (durée 1).
+    note: |
+      Le poison que ce sort ajoute quand il passe par un portail. Il ne tombe que
+      si le joueur déclare jouer ses portails : la condition lit
+      `portails_traverses`, le compteur que le joueur renseigne ; à zéro, ce
+      poison n'existe pas. Le compteur dit combien de sorts passent par un portail
+      dans le tour, pas lesquels : un seul passage déclaré fait tomber les poisons
+      des deux sorts, ce qui les surestime si le joueur n'en projette qu'un.
+  - id: affliction_poison
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 14584
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: water
+            critical: [28, 32]
+            normal: [23, 26]
+        note: |
+          Le poison Eau de début de tour, « si le sort est projeté dans un portail »
+          (durée 1).
+    note: |
+      Le poison que ce sort ajoute quand il passe par un portail. Il ne tombe que
+      si le joueur déclare jouer ses portails : la condition lit
+      `portails_traverses`, le compteur que le joueur renseigne ; à zéro, ce
+      poison n'existe pas. Le compteur dit combien de sorts passent par un portail
+      dans le tour, pas lesquels : un seul passage déclaré fait tomber les poisons
+      des deux sorts, ce qui les surestime si le joueur n'en projette qu'un.
+  - id: orgueil_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 14614
+    modifies_damage:
+      # Effet 138 a `delay: 1` : la Puissance arrive AU TOUR SUIVANT.
+      - kind: characteristic
+        amount: 150
+    note: |
+      La Puissance que l'Orgueil accorde au tour suivant : « Applique l'état
+      Orgueil sur l'allié ciblé [...] Augmente la Puissance de la cible au tour
+      suivant. » Effet 138 à 150 sur la cible « a », `delay: 1` ; le lanceur peut
+      se cibler lui-même, sa portée minimale étant de zéro. Le renvoi de dommages
+      n'est pas compté : il demande de savoir qui attaque la cible.
+  - id: cases_entre_portails
+    scope: caster
+    max: 10
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Cases entre tes deux portails"
+    modifies_damage:
+      # Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case
+      # d'eloignement entre 2 portails) », parametres 0 et 2 : rien a la pose,
+      # et DEUX POUR CENT PAR CASE. Le moteur additionne les crans d'un meme
+      # etat, donc dix cases valent +20 % et non 1,02 dix fois.
+      - kind: final_multiplier
+        percent: 102
+        # Effet 1171, « % Dommages finaux » : ils s'additionnent à ceux des
+        # Dofus et de l'équipement.
+        finaux: true
+    note: |
+      La distance, en cases, entre vos deux portails ouverts : +2 % de dommages
+      finaux par case, dix cases au plus (au-delà, saisir dix). Ce bonus ne vaut
+      que pour un sort projeté, et le calcul l'applique à tous les lancers :
+      laissez zéro si vous ne projetez pas tout.
+
+  - id: portails_traverses
+    scope: caster
+    max: 10
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Sorts projetés dans un portail"
+    modifies_damage:
+      # Effet 1171, `dice_num` a 2 : « 2 % Dommages finaux », un multiplicateur,
+      # donc applique tout a la fin du pipeline. Le moteur l'applique PAR CHARGE,
+      # si bien que dix crans valent 1,02^10, soit environ 22 %.
+      - kind: final_multiplier
+        percent: 102
+        # Effet 1171, « % Dommages finaux » : ils s'additionnent à ceux des
+        # Dofus et de l'équipement.
+        finaux: true
+    note: |
+      Combien de sorts vous projetez dans un portail par tour : +2 % de dommages
+      finaux par sort projeté, cumulable dix fois (effet 1171, trois tours). Le
+      compteur vaut dès le début du combat, là où le jeu le monte sort après
+      sort : le chiffre est juste quand le cumul est tenu, trop haut en début de
+      combat. Laissez zéro si vous ne jouez pas vos portails.
+  - id: cabale_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 138, duree 2 dans l'instantane, copiee telle quelle.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 14617
+    modifies_damage:
+      # Effet 138, `dice_num` a 100 au grade 3 pour la cible « a,r ». Cent
+      # points de PUISSANCE, qui entrent dans le meme facteur que la
+      # caracteristique : `100 + carac + puissance`.
+      - kind: characteristic
+        amount: 100
+    note: |
+      La Puissance que la Cabale accorde au lanceur pour deux tours. La cible de
+      l'effet est « a », les alliés, et le lanceur se compte parmi eux. La donnée
+      porte deux effets 138 : cent points pour « a,r » et deux cents pour « a,R »,
+      sort projeté dans un portail ; c'est la valeur sans portail qui est écrite,
+      un plancher pour un Eliotrope qui joue ses portails.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Aucun sort de l'Eliotrope ne la pose."
+
+spells:
+  - id: portail
+    dofusdb_id: 14574
+    name: { fr: "Portail", en: "Portal" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un portail.
+      
+      Lorsque plusieurs portails sont actifs, ils permettent de se téléporter ou de projeter des sorts.
+      Les dommages et soins des sorts projetés sont augmentés par les portails.
+      
+      Les dommages et soins finaux du lanceur sont augmentés lorsqu'il projette un sort dans un portail (cumulable 10 fois).
+      Les combattants ennemis ne peuvent pas emprunter un portail au premier tour de jeu.
+    lines: []
+    open_questions:
+      - "Effet 1171 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+      - "Effet 2971 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: affront
+    dofusdb_id: 14575
+    name: { fr: "Affront", en: "Insult" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone. 
+      La poussée n'est pas appliquée si le sort est projeté dans un portail.
+    assumptions:
+      - "Effet 1160 : lance aussi « Affront », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La poussée n'est pas modélisée : ce calculateur ne simule pas la grille."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: poing_fulgurant
+    dofusdb_id: 14576
+    name: { fr: "Poing Fulgurant", en: "Lightning Fist" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse la cible.
+      La poussée est plus importante si le sort est projeté dans un portail.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: distribution
+    dofusdb_id: 14577
+    name: { fr: "Distribution", en: "Distribution" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne les alliés d'une partie des dommages occasionnés à la cible en zone autour d'elle.
+    assumptions:
+      - "Effet 1160 : lance aussi « Distribution », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 2973 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: rayon_de_wakfu
+    dofusdb_id: 14579
+    name: { fr: "Rayon de Wakfu", en: "Wakfu Ray" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et occasionne des dommages Feu aux ennemis en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: transcendance
+    dofusdb_id: 14580
+    name: { fr: "Transcendance", en: "Transcendence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend le lanceur Intaclable et augmente le nombre de lancers par tour du sort Portail ou la Portée maximale du sort Errance.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effet 281 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 290 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: therapie
+    dofusdb_id: 14581
+    name: { fr: "Thérapie", en: "Therapy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre aux ennemis ou soigne l'allié ciblé et attire la cible.
+    assumptions:
+      - "L'attirance de la cible n'est pas modélisée : ce calculateur ne simule pas la grille."
+      - "Les deux lignes que porte la donnée sont la même valeur selon que la cible est alliée ou ennemie : une seule compte."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: neutral
+    dofusdb_id: 14582
+    name: { fr: "Neutral", en: "Neutral" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Désactive un portail.
+      
+      Le coût en PA du sort est remboursé.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 1183 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: commotion
+    dofusdb_id: 14583
+    name: { fr: "Commotion", en: "Shock" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire les cibles vers le centre en zone.
+      L'attirance affecte le lanceur uniquement si le sort est projeté dans un portail.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: affliction
+    dofusdb_id: 14584
+    name: { fr: "Affliction", en: "Affliction" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis ou soigne l'allié ciblé.
+      Applique également un poison Eau de début de tour sur l'ennemi ciblé ou soigne l'allié ciblé au début de son tour si le sort est projeté dans un portail.
+    assumptions:
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Affliction » sur « a,A,R » : Eau 23-26. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Les soins aux alliés ne sont pas modélisés : ce calculateur maximise les dégâts infligés."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Le poison du portail : il n'existe que si le joueur declare en jouer.
+      - effect: gain
+        resource: affliction_poison
+        requires: { kind: caster_has, resource: portails_traverses }
+
+  - id: stupeur
+    dofusdb_id: 14585
+    name: { fr: "Stupeur", en: "Stupor" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose deux portails sous le lanceur et la cible et échange de position avec cette dernière.
+    assumptions:
+      - "Effet 1160 : lance aussi « Stupeur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+    effects: []
+
+  - id: cicatrisation
+    dofusdb_id: 14587
+    name: { fr: "Cicatrisation", en: "Healing" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés en zone.
+    lines: []
+    effects: []
+
+  - id: offense
+    dofusdb_id: 14588
+    name: { fr: "Offense", en: "Offence" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: odyssee
+    dofusdb_id: 14589
+    name: { fr: "Odyssée", en: "Odyssey" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sur un ennemi : éloigne le lanceur de la cible et attire la cible.
+      Sur un allié : repousse la cible et rapproche le lanceur vers elle.
+    lines: []
+    effects: []
+
+  - id: camouflet
+    dofusdb_id: 14590
+    name: { fr: "Camouflet", en: "Snub" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis en zone.
+      Retire également des Dommages aux ennemis en zone si le sort est projeté dans un portail.
+    assumptions:
+      - "⚠️ Le bonus obtenu « si le sort est projeté dans un portail » n'est pas compté : les portails sont du placement, que ce calculateur ne simule pas. Le total affiché est donc un plancher. Ici, 40 Dommages retirés aux ennemis, ce qui de toute façon ne changerait pas les dégâts qu'on leur porte."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sillage
+    dofusdb_id: 14591
+    name: { fr: "Sillage", en: "Choppy Wake" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un portail sous le lanceur et le téléporte sur la case ciblée.
+    assumptions:
+      - "Effet 1160 : lance aussi « Sillage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+    effects: []
+
+  - id: brimade
+    dofusdb_id: 14592
+    name: { fr: "Brimade", en: "Bullying" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis en zone et repousse les cibles depuis le centre de la zone.
+      La poussée affecte le lanceur uniquement si le sort est projeté dans un portail.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: audace
+    dofusdb_id: 14593
+    name: { fr: "Audace", en: "Audacious" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur de la cible et occasionne des dommages Eau aux ennemis.
+      Le rapprochement n'est pas appliqué si le sort est projeté dans un portail.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: extinction
+    dofusdb_id: 14594
+    name: { fr: "Extinction", en: "Extinction" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Applique également un poison Feu de fin de tour sur la cible si le sort est projeté dans un portail.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      # Le poison du portail : il n'existe que si le joueur declare en jouer.
+      - effect: gain
+        resource: extinction_poison
+        requires: { kind: caster_has, resource: portails_traverses }
+
+  - id: raillerie
+    dofusdb_id: 14595
+    name: { fr: "Raillerie", en: "Ridicule" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      Retire également des PM si le sort est projeté dans un portail.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: entraide
+    dofusdb_id: 14596
+    name: { fr: "Entraide", en: "Mutual Assistance" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Entraide sur le lanceur, qui applique des effets lorsqu'une entité traverse un portail : 
+      • Augmente les PA du lanceur.
+      • Soigne le lanceur et ses alliés en zone autour de lui.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Entraide » (6252). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Entraide », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 111, +1 PA au lanceur : conditionné à ce qu'une entité traverse un portail, ce qui est du placement."
+    effects: []
+
+  - id: mepris
+    dofusdb_id: 14602
+    name: { fr: "Mépris", en: "Contempt" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse les cibles en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: tribulation
+    dofusdb_id: 14603
+    name: { fr: "Tribulation", en: "Tribulation" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et attire les cibles vers le centre en zone.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Tribulation cibles » (3979). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 2960 : lance aussi « Tribulation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'attirance des cibles vers le centre n'est pas modélisée : ce calculateur ne simule pas la grille."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: errance
+    dofusdb_id: 14604
+    name: { fr: "Errance", en: "Wandering" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose un portail.
+      
+      Lorsque plusieurs portails sont actifs, ils permettent de se téléporter ou de projeter des sorts.
+      Les dommages et soins des sorts projetés sont augmentés par les portails.
+      
+      Les dommages et soins finaux du lanceur sont augmentés lorsqu'il projette un sort dans un portail (cumulable 10 fois).
+      Les combattants ennemis ne peuvent pas emprunter un portail au premier tour de jeu.
+    lines: []
+    open_questions:
+      - "Effet 1171 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+      - "Effet 2971 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: convulsion
+    dofusdb_id: 14605
+    name: { fr: "Convulsion", en: "Convulsion" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse les cibles vers les extrémités en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: faisceau
+    dofusdb_id: 14606
+    name: { fr: "Faisceau", en: "Lazybeam" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu en zone.
+      Les dommages deviennent du vol de vie si le sort est projeté dans un portail.
+      
+      N'affecte pas le lanceur.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: interruption
+    dofusdb_id: 14607
+    name: { fr: "Interruption", en: "Interruption" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Désactive tous les portails.
+    lines: []
+    open_questions:
+      - "Effet 1183 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: outrage
+    dofusdb_id: 14608
+    name: { fr: "Outrage", en: "Affront" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu.
+      Augmente également la Portée du lanceur si le sort est projeté dans un portail.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: exil
+    dofusdb_id: 14609
+    name: { fr: "Exil", en: "Exile" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Pose et active un portail sous une cible.
+    lines: []
+    open_questions:
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+      - "Effet 1182 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: sinecure
+    dofusdb_id: 14610
+    name: { fr: "Sinécure", en: "Sinecure" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Air aux ennemis ou soigne l'allié ciblé.
+      Réduit également les Résistances Poussée de l'ennemi ciblé si le sort est projeté dans un portail.
+    assumptions:
+      - "⚠️ Le bonus obtenu « si le sort est projeté dans un portail » n'est pas compté : les portails sont du placement, que ce calculateur ne simule pas. Le total affiché est donc un plancher. Ici, une réduction des Résistances Poussée, que la poussée n'étant pas simulée ne changerait rien."
+      - "Les deux lignes que porte la donnée sont la même valeur selon que la cible est alliée ou ennemie : une seule compte."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: resonance
+    dofusdb_id: 14611
+    name: { fr: "Résonance", en: "Resonance" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Résonance sur la cible :
+      • Pose et active un portail sous la cible sur la première attaque subie.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Résonance » (6251). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Résonance », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
+      - "Effet 1182 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: vestige
+    dofusdb_id: 14612
+    name: { fr: "Vestige", en: "Vestige" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Totem Eliotrope qui peut poser et activer un portail sous son attaquant allié et augmenter ses PM (cumulable 2 fois).
+      Le Totem se soigne lorsqu'une entité traverse un portail.
+      
+      Il ne peut y avoir qu'un seul Totem Eliotrope par équipe. Si le Totem est encore présent et que celui-ci est ré-invoqué, l'ancien est détruit pour laisser place au nouveau.
+    lines: []
+    effects: []
+
+  - id: sermon
+    dofusdb_id: 14613
+    name: { fr: "Sermon", en: "Sermon" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et repousse la cible.
+      La poussée est plus importante si le sort est projeté dans un portail.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: orgueil
+    dofusdb_id: 14614
+    name: { fr: "Orgueil", en: "Pride" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Orgueil sur l'allié ciblé :
+      • Renvoie une partie des dommages subis par la cible à son attaquant.
+      
+      Augmente la Puissance de la cible au tour suivant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Orgueil » (6049). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Orgueil », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1223 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # La Puissance arrive AU TOUR SUIVANT (effet 138 a `delay: 1`) et ne
+      # dure que ce tour-la.
+      - effect: schedule_gain
+        resource: orgueil_puissance
+        delay: 1
+
+  - id: resilience
+    dofusdb_id: 14615
+    name: { fr: "Résilience", en: "Resilience" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne l'allié ciblé.
+      Augmente également ses soins reçus si le sort est projeté dans un portail.
+    lines: []
+    effects: []
+
+  - id: exode
+    dofusdb_id: 14616
+    name: { fr: "Exode", en: "Exodus" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: cabale
+    dofusdb_id: 14617
+    name: { fr: "Cabale", en: "Cabal" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Puissance et les PM des alliés en zone.
+      Le bonus est plus important si le sort est projeté dans un portail.
+    assumptions:
+      - "Effet 138, +100 Puissance au lanceur pendant deux tours, sur l'état `cabale_puissance` : la cible de l'effet est « a », les alliés, et le lanceur se compte parmi eux. Les alliés, eux, ne sont pas mesurés ici."
+    lines: []
+    open_questions:
+      - "⚠️ Le bonus DOUBLE si le sort est projete dans un portail : la donnee porte 100 Puissance pour la cible « a,r » et 200 pour « a,R ». Seuls les cent sans portail sont ecrits, les portails etant du placement que ce calculateur ne simule pas. Un Eliotrope qui joue ses portails vaut donc plus que ce qui est affiche."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects:
+      - effect: gain
+        resource: cabale_puissance
+
+  - id: aplomb
+    dofusdb_id: 14618
+    name: { fr: "Aplomb", en: "Composure" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau.
+      Augmente également les PM du lanceur si le sort est projeté dans un portail.
+    assumptions:
+      - "⚠️ Le bonus obtenu « si le sort est projeté dans un portail » n'est pas compté : les portails sont du placement, que ce calculateur ne simule pas. Le total affiché est donc un plancher. Ici, un PM au lanceur, dont un calcul de dégâts ne fait rien."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: cataclysme
+    dofusdb_id: 14619
+    name: { fr: "Cataclysme", en: "Cataclysm" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et soigne les alliés selon les dommages occasionnés en zone.
+    assumptions:
+      - "Effets 950 et 951 : l'etat « Cataclysme » (2252) n'est lu que par le Cataclysme lui-meme. C'est le marqueur de zone, celui qui empeche une meme entite d'etre frappee deux fois par le meme lancer. Sur une cible unique il n'a rien a empecher et ne change rien."
+      - "Effets 792/1160 : lance aussi « Cataclysme », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins rendus aux alliés selon les dégâts occasionnés ne sont pas modélisés : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: persiflage
+    dofusdb_id: 14620
+    name: { fr: "Persiflage", en: "Persiflage" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Retire de la Portée et occasionne des dommages Terre.
+      Le retrait devient un vol si le sort est projeté dans un portail.
+    assumptions:
+      - "Effet 1160 : lance aussi « Persiflage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "⚠️ Le bonus obtenu « si le sort est projeté dans un portail » n'est pas compté : les portails sont du placement, que ce calculateur ne simule pas. Le total affiché est donc un plancher. Ici, le retrait de Portée devient un vol, ce qui ne change aucun chiffre de dégâts."
+      - "La portée décide d'où l'on lance, pas de ce que le lancer inflige."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: coalition
+    dofusdb_id: 14621
+    name: { fr: "Coalition", en: "Coalition" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PA de l'allié ciblé et lui applique l'état Coalition :
+      • Soigne la cible lorsqu'elle traverse un portail.
+      
+      Le bonus est plus important si le sort est projeté dans un portail.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Coalition » (6249). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Coalition », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 111 (PA) : le gain va a l'ALLIE CIBLE, pas au lanceur, et ce solveur ne resout qu'un lanceur seul. Rien a ecrire ici, et ce n'est pas un trou : le sort vaut zero en duel parce que le jeu ne donne rien au Cra qui le lance."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: conjuration
+    dofusdb_id: 14622
+    name: { fr: "Conjuration", en: "Conjuration" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur la cible.
+      Réduit également les soins reçus par l'ennemi ciblé si le sort est projeté dans un portail.
+    assumptions:
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    effects: []
+
+  - id: insolence
+    dofusdb_id: 14637
+    name: { fr: "Insolence", en: "Insolence" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Eau aux ennemis.
+      Le recul n'est pas appliqué si le sort est projeté dans un portail.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sarcasme
+    dofusdb_id: 14638
+    name: { fr: "Sarcasme", en: "Sarcasm" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre. 
+      Retire également des PA si le sort est projeté dans un portail.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

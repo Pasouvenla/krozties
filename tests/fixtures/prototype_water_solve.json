@@ -1,0 +1,202 @@
+{
+  "2": {
+    "objective": 45782.0,
+    "turns": [
+      {
+        "turn": 1,
+        "damage": 5783.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (4 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (3 PA)"
+        ]
+      },
+      {
+        "turn": 2,
+        "damage": 5088.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Compte-goutte (3 PA) [no TF]",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 3,
+        "damage": 8836.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Glas [6 stacks]"
+        ]
+      },
+      {
+        "turn": 4,
+        "damage": 5523.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Compte-goutte (3 PA) [no TF]",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)"
+        ]
+      },
+      {
+        "turn": 5,
+        "damage": 6628.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Compte-goutte (3 PA) [no TF]",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)"
+        ]
+      },
+      {
+        "turn": 6,
+        "damage": 5088.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Compte-goutte (3 PA) [no TF]",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 7,
+        "damage": 8836.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Glas [6 stacks]"
+        ]
+      }
+    ]
+  },
+  "3": {
+    "objective": 47822.0,
+    "turns": [
+      {
+        "turn": 1,
+        "damage": 5783.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Gelure (2 PA) [no TF]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (4 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (3 PA)"
+        ]
+      },
+      {
+        "turn": 2,
+        "damage": 5371.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 3,
+        "damage": 9076.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Glas [6 stacks]"
+        ]
+      },
+      {
+        "turn": 4,
+        "damage": 5302.0,
+        "casts": [
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 5,
+        "damage": 7208.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 6,
+        "damage": 6006.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Clepsydre (4 PA)"
+        ]
+      },
+      {
+        "turn": 7,
+        "damage": 9076.0,
+        "casts": [
+          "Gelure (2 PA) [TF, +2 PA]",
+          "Ralentissement (2 PA)",
+          "Ralentissement (2 PA)",
+          "Petrification (2 PA)",
+          "Compte-goutte (3 PA) [TF, +2 PA]",
+          "Petrification (2 PA)",
+          "Permutation (4 PA) [TF, +2 PA]",
+          "Glas [6 stacks]"
+        ]
+      }
+    ]
+  }
+}

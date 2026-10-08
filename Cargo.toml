@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/damage",
+    "crates/grid",
+    "crates/ruleset",
+    "crates/engine",
+    "crates/build",
+    "crates/app",
+    "crates/cli",
+    "crates/krozties",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "AGPL-3.0-or-later"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+# Volontairement PAS `panic = "abort"`. Un sort dont la modélisation est
+# incomplète peut faire paniquer le calcul, et avec `abort` ce panic emporte le
+# serveur entier : la page ne reçoit rien, aucun message, et le prochain clic
+# tombe sur une connexion refusée. Le déroulement de pile permet d'attraper le
+# panic dans le fil de la requête et de répondre une erreur lisible.

@@ -1,0 +1,1015 @@
+# Zobal.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: zobal
+name: { fr: "Zobal", en: "Zobal" }
+
+resources:
+  - id: nevrose_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 13426
+    modifies_damage:
+      - kind: characteristic
+        amount: 250
+    note: |
+      La Puissance que la Névrose accorde, pour deux tours : « Augmente la
+      Puissance de l'allié ciblé et applique l'état Pesanteur sur la cible. »
+      Effet 138 à 250 sur la cible « a », sans condition ; le lanceur peut se
+      cibler lui-même, la portée minimale du sort étant de zéro. La Pesanteur
+      n'est pas modélisée : elle porte sur le déplacement.
+  - id: furia
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 112 : « Dommages », tous elements confondus, 40 pendant 2 tours.
+      # Fixe, donc apres l'arrondi caracteristique et non dedans.
+      - kind: flat_damage
+        amount: 40
+    note: |
+      « Occasionne des dommages Terre et augmente les Dommages du lanceur. »
+      Cumul 1 : un second lancer ne fait que rafraîchir ses deux tours.
+
+  - id: psychopathe
+    # Psychopathe (99), qu'exigent onze sorts, seul ou avec l'Intrepide.
+    game_states: [99]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    modifies_damage: []
+    note: |
+      L'état posé par le Masque du Psychopathe et par sa variante, le Masque de
+      l'Hystérique (effet 950 sur 99). Il se porte jusqu'à ce qu'un autre masque
+      le remplace : chaque masque lance d'abord « Gestion des masques » (18634),
+      qui retire Intrépide, Psychopathe et Pleutre, puis pose le sien. Trois
+      compteurs, un seul à un à la fois.
+
+      Il ne modifie aucun dégât par lui-même : c'est le Carnavalo qui lit l'état.
+      `monotone: none` : porter un masque, c'est ne pas porter les deux autres.
+
+  - id: hysterique_poussee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    modifies_damage:
+      - kind: push_damage
+        amount: 80
+    note: |
+      Les 80 Dommages Poussée du Masque de l'Hystérique (effet 414, sur le
+      lanceur), distincts de `psychopathe`, que le Masque du Psychopathe pose
+      sans ces Dommages Poussée. Hypothèses : durée -1 dans la donnée, donc
+      permanent ; un seul cumul ; un changement de masque ne le retire pas,
+      « Gestion des masques » ne retirant que les trois états de masque.
+
+  - id: bocciara_poussee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Duree 2 dans la donnee : le tour du lancer et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: push_damage
+        amount: 80
+    note: |
+      Les 80 Dommages Poussée de la Bocciara (effet 414, sur le lanceur). Un
+      seul cumul : la donnée ne dit pas s'ils s'additionnent quand le sort est
+      relancé.
+
+  - id: masque_intrepide
+    # Intrepide (98), qu'exigent seize sorts, seul ou avec un autre masque.
+    game_states: [98]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    # Effet 111, +1 PA au lanceur tant que le masque est porte.
+    grants_ap: 1
+    note: |
+      L'état que posent le Masque de l'Intrépide et le Masque de l'Infatigable,
+      exclusif des deux autres comme le Psychopathe.
+
+      +1 PA tant que le masque est porté : effet 111 sur le lanceur, sans durée,
+      et « Gestion des masques » (18636) retire les effets du masque quitté
+      (effet 406). Trois morceaux : le PA du tour de la pose (`ap_bonus` du
+      masque, sauf s'il était déjà porté, `max_stack` à 1), celui de chaque tour
+      suivant (`grants_ap`), et le PA perdu quand un autre masque le remplace,
+      compté comme un surcoût de ce masque-là. Aucun masque au début du combat :
+      la rotation en pose un avant son premier sort à masque, pour 1 PA.
+
+  - id: masque_pleutre
+    # Pleutre (100), qu'exigent douze sorts, seul ou avec un autre masque.
+    game_states: [100]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      L'etat que posent le Masque du Pleutre et le Masque du Couard. Exclusif
+      des deux autres, comme le Psychopathe.
+
+  - id: inferno
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138 : de la Puissance, qui entre DANS l'arrondi caracteristique,
+      # contrairement aux Dommages de la Furia.
+      - kind: characteristic
+        amount: 200
+    note: |
+      « Occasionne des dommages Feu et augmente la Puissance du lanceur. » 200 de
+      Puissance pendant deux tours, cumul 1. La Puissance d'Inferno passe dans
+      l'arrondi, les Dommages de la Furia s'ajoutent après : à magnitude égale, le
+      premier vaut bien plus.
+
+
+  - id: vie_restante
+    scope: caster
+    max: 100
+    default: 100
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Vie restante (%)"
+    note: |
+      La part de votre vie maximum qui vous reste, en pour cent, valable pour
+      toute la rotation, soins et régénération compris. La vie maximum vient du
+      build : 50, plus 5 par niveau, plus la Vitalité.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "La Nevrose la pose sur sa cible, et la rotation la suppose lancee sur le Zobal lui-meme : il est alors sous Pesanteur. Pivot et Debandade, seuls a l'exiger absente, n'ont aucun effet ici et ne sont jamais lances. ⚠️ S'ils en recoivent un, il faudra compter la Pesanteur de la Nevrose."
+  - state: 4106
+    name: "Masque Grimacant non invoque et limite atteinte"
+    note: "Pose quand le Masque Grimacant est invoque et la limite atteinte. La Grimace n'a aucun effet dans ce calculateur : la rotation ne la lance pas."
+
+spells:
+  - id: diffraction
+    dofusdb_id: 13385
+    name: { fr: "Diffraction", en: "Diffraction" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique un bouclier sur tout le monde selon la distance avec le lanceur :
+      • 0 à 5 cases : 450% du niveau en bouclier.
+      • 6 à 11 cases : 250% du niveau en bouclier.
+      • 12 cases et plus : 50% du niveau en bouclier.
+      Le bouclier est réduit de moitié sur les invocations.
+    assumptions:
+      - "Effet 1160 : lance aussi « Diffraction », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: masque_de_l_intrepide
+    dofusdb_id: 13386
+    name: { fr: "Masque de l'Intrépide", en: "Intrepid Mask" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque de l'Intrépide sur le lanceur :
+      • Applique l'état Intrépide sur le lanceur.
+      • Augmente les PA du lanceur et de ses alliés (hors Zobals) dans une croix d'une case.
+      • Attire les entités vers le centre en zone.
+    assumptions:
+      - "Effet 111, +1 PA au lanceur tant que le masque est porté (voir la ressource `masque_intrepide`). Les PA donnés aux alliés ne sont pas comptés, ce calculateur résolvant un personnage seul."
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque de l'Intrépide », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Intrépide » (98), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: psychopathe
+      - effect: reset
+        resource: masque_pleutre
+      # +1 PA des la pose, s'il n'etait pas deja porte.
+      - effect: gain
+        resource: masque_intrepide
+        ap_bonus: { amount: 1 }
+        at_cap: skip
+
+  - id: masque_du_pleutre
+    dofusdb_id: 13387
+    name: { fr: "Masque du Pleutre", en: "Coward Mask" }
+    ap_cost:
+      base: 1
+      # Quitter l'Intrepide retire son PA : « Gestion des masques » (18636)
+      # retire les effets du masque quitte.
+      increased_by: { resource: masque_intrepide, per_stack: 1, ceiling: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque du Pleutre sur le lanceur :
+      • Applique l'état Pleutre sur le lanceur.
+      • Augmente les PM et la Fuite du lanceur et de ses alliés (hors Zobals) en zone.
+    assumptions:
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Pleutre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Pleutre » (100), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: masque_intrepide
+      - effect: reset
+        resource: psychopathe
+      - effect: gain
+        resource: masque_pleutre
+
+  - id: masque_du_psychopathe
+    dofusdb_id: 13388
+    name: { fr: "Masque du Psychopathe", en: "Psychopath Mask" }
+    ap_cost:
+      base: 1
+      # Quitter l'Intrepide retire son PA : « Gestion des masques » (18636)
+      # retire les effets du masque quitte.
+      increased_by: { resource: masque_intrepide, per_stack: 1, ceiling: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque du Psychopathe sur le lanceur :
+      • Applique l'état Psychopathe sur le lanceur.
+      • Augmente les dommages en mêlée et le Tacle du lanceur et de ses alliés (hors Zobals) en zone.
+    assumptions:
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Psychopathe », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Psychopathe » (99), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 753 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2800 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: masque_intrepide
+      - effect: reset
+        resource: masque_pleutre
+      - effect: gain
+        resource: psychopathe
+
+  - id: martelo
+    dofusdb_id: 13389
+    name: { fr: "Martelo", en: "Martelo" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PM en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: retention
+    dofusdb_id: 13390
+    name: { fr: "Rétention", en: "Retention" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Air et retire des PA.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: parafuso
+    dofusdb_id: 13391
+    name: { fr: "Parafuso", en: "Parafuso" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et attire les cibles vers le centre en zone.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: distance
+    dofusdb_id: 13392
+    name: { fr: "Distance", en: "Distance" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et repousse la cible.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: apathie
+    dofusdb_id: 13393
+    name: { fr: "Apathie", en: "Apathy" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et retire des PM.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: furia
+    dofusdb_id: 13394
+    name: { fr: "Furia", en: "Furia" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et augmente les Dommages du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "En plus de ses dégâts, donne 40 Dommages au lanceur pendant deux tours (effet 112). Ce bonus est fixe : il s'ajoute après l'arrondi caractéristique et profite à tous les sorts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: furia
+
+
+  - id: cabriole
+    dofusdb_id: 13395
+    name: { fr: "Cabriole", en: "Capering" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur sur la case ciblée ou symétriquement par rapport à la cible et occasionne des dommages Air aux ennemis en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effet 1160 : lance aussi « Cabriole », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La téléportation du lanceur n'est pas modélisée : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: boliche
+    dofusdb_id: 13396
+    name: { fr: "Boliche", en: "Boliche" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible, occasionne des dommages Eau aux ennemis et repousse la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: plastron
+    dofusdb_id: 13397
+    name: { fr: "Plastron", en: "Plastron" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur les alliés en zone.
+      Le bouclier est réduit de moitié sur les invocations.
+    lines: []
+    effects: []
+
+  - id: tortoruga
+    dofusdb_id: 13398
+    name: { fr: "Tortoruga", en: "Tortoruga" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 4
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur l'allié ciblé.
+      Le bouclier est réduit de moitié sur les invocations.
+    lines: []
+    effects: []
+
+  - id: transe
+    dofusdb_id: 13399
+    name: { fr: "Transe", en: "Trance" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Sacrifie une partie de la vie du lanceur pour appliquer un bouclier sur les alliés en zone.
+      Le bouclier est réduit de moitié sur les invocations.
+    lines: []
+    open_questions:
+      - "Effet 1048 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
+    effects: []
+
+  - id: reuche
+    dofusdb_id: 13400
+    name: { fr: "Reuche", en: "Bling" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 6
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rapproche le lanceur vers la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Aucune limite de lancers par tour dans les donnees ; borne ici a 6, ce que le budget de PA d'un tour permet."
+    effects: []
+
+  - id: debandade
+    dofusdb_id: 13401
+    name: { fr: "Débandade", en: "Stampede" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur sur la case ciblée et augmente ses PM.
+    lines: []
+    effects: []
+
+  - id: fougue
+    dofusdb_id: 13402
+    name: { fr: "Fougue", en: "Ardour" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Rend l'allié ciblé Intaclable ou l'ennemi ciblé Insoignable.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Insoignable » (76), qui porte incurable, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: appui
+    dofusdb_id: 13403
+    name: { fr: "Appui", en: "Shove Off" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible et occasionne des dommages Feu, Terre, Eau et Air aux ennemis et repousse la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+      - element: earth
+        critical: unknown
+        normal: unknown
+      - element: water
+        critical: unknown
+        normal: unknown
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mascarade
+    dofusdb_id: 13404
+    name: { fr: "Mascarade", en: "Masquerade" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Occasionne des dommages Neutre au lanceur et à la cible :
+      • Les dommages sur la cible dépendent de la vie restante du lanceur.
+      • Les dommages sur le lanceur dépendent de sa vie manquante.
+      • Les effets sont permutés si le lanceur est à moins de 50% de sa vie.
+      
+      Sur le lanceur : échange de position avec son Masque Grimaçant.
+    assumptions:
+      - "Effets 89 et 279, 25 % d'une vie du lanceur sur la cible : la vie restante au-dessus de 50 %, la vie manquante en dessous (« les effets sont permutés si le lanceur est à moins de 50 % de sa vie »), soit toujours la plus grande des deux. Dégâts bruts, que seules les résistances Neutre réduisent, en pour cent puis en fixe : ni Puissance, ni caractéristique, ni multiplicateur, ni critique."
+      - "Le coup que le lanceur prend lui-meme, l'autre moitie du sort, n'est pas compte : ce calculateur compte ce qu'il inflige."
+      - "Effet 1160 : lance aussi « Mascarade », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: neutral
+        percent_of_life: { percent: 25, of: larger }
+    effects:
+      - effect: damage
+
+  - id: picada
+    dofusdb_id: 13405
+    name: { fr: "Picada", en: "Picada" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PA.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: masque_du_couard
+    dofusdb_id: 13406
+    name: { fr: "Masque du Couard", en: "Poltroon Mask" }
+    ap_cost:
+      base: 1
+      # Quitter l'Intrepide retire son PA : « Gestion des masques » (18636)
+      # retire les effets du masque quitte.
+      increased_by: { resource: masque_intrepide, per_stack: 1, ceiling: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque du Couard sur le lanceur :
+      • Augmente les dommages à distance et la Portée du lanceur et de ses alliés (hors Zobals) en zone.
+    assumptions:
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Pleutre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Pleutre » (100), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 2804 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: masque_intrepide
+      - effect: reset
+        resource: psychopathe
+      - effect: gain
+        resource: masque_pleutre
+
+  - id: agular
+    dofusdb_id: 13407
+    name: { fr: "Agular", en: "Agular" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Réduit les soins reçus par les cibles et occasionne des dommages Air en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: appeau
+    dofusdb_id: 13408
+    name: { fr: "Appeau", en: "Decoy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Attire la cible et vole de la vie dans l'élément Feu aux ennemis.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: masque_de_l_infatigable
+    dofusdb_id: 13409
+    name: { fr: "Masque de l'Infatigable", en: "Tireless Mask" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque de l'Infatigable sur le lanceur :
+      • Applique un bouclier sur le lanceur.
+      • Augmente les PA du lanceur et de ses alliés (hors Zobals) en zone.
+    assumptions:
+      - "Effet 111, +1 PA au lanceur tant que le masque est porté (voir la ressource `masque_intrepide`). Les PA donnés aux alliés ne sont pas comptés, ce calculateur résolvant un personnage seul."
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque de l'Intrépide », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Intrépide » (98), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: psychopathe
+      - effect: reset
+        resource: masque_pleutre
+      # +1 PA des la pose, s'il n'etait pas deja porte.
+      - effect: gain
+        resource: masque_intrepide
+        ap_bonus: { amount: 1 }
+        at_cap: skip
+
+  - id: pivot
+    dofusdb_id: 13410
+    name: { fr: "Pivot", en: "Pivot" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: armadur
+    dofusdb_id: 13411
+    name: { fr: "Armadur", en: "Armadur" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM et la Fuite de l'allié ciblé.
+    lines: []
+    open_questions:
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: scudo
+    dofusdb_id: 13412
+    name: { fr: "Scudo", en: "Scudo" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur l'allié ciblé.
+      Le bouclier est réduit de moitié sur les invocations.
+    lines: []
+    effects: []
+
+  - id: masque_de_l_hysterique
+    dofusdb_id: 13414
+    name: { fr: "Masque de l'Hystérique", en: "Hysterical Mask" }
+    ap_cost:
+      base: 1
+      # Quitter l'Intrepide retire son PA : « Gestion des masques » (18636)
+      # retire les effets du masque quitte.
+      increased_by: { resource: masque_intrepide, per_stack: 1, ceiling: 1 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique le Masque de l'Hystérique sur le lanceur :
+      • Augmente les Dommages Poussée du lanceur et de ses alliés (hors Zobals) en zone.
+      • Repousse les cibles en zone.
+    assumptions:
+      - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Psychopathe », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Psychopathe » (99), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      # « Gestion des masques » (18634) retire les trois etats, puis le
+      # masque pose le sien.
+      - effect: reset
+        resource: masque_intrepide
+      - effect: reset
+        resource: masque_pleutre
+      - effect: gain
+        resource: psychopathe
+      - effect: gain
+        resource: hysterique_poussee
+
+  - id: cavalcade
+    dofusdb_id: 13415
+    name: { fr: "Cavalcade", en: "Cavalcade" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible et occasionne des dommages Air aux ennemis.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ginga
+    dofusdb_id: 13417
+    name: { fr: "Ginga", en: "Ginga" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur l'allié ciblé et rend la cible Indéplaçable.
+      Le bouclier est réduit de moitié sur les invocations.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Indéplaçable » (97). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    effects: []
+
+  - id: comedie
+    dofusdb_id: 13418
+    name: { fr: "Comédie", en: "Comedy" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Téléporte les cibles symétriquement par rapport au centre puis les repousse en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Comédie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: bocciara
+    dofusdb_id: 13419
+    name: { fr: "Bocciara", en: "Bocciara" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et augmente les Dommages Poussée du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: bocciara_poussee
+        at_cap: refresh
+
+  - id: catalepsie
+    dofusdb_id: 13420
+    name: { fr: "Catalepsie", en: "Catalepsy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Terre et retire de la Fuite en zone.
+    assumptions:
+      - "Le retrait de Fuite en zone n'est pas modélisé : ce calculateur ne simule pas la grille. Le vol de vie est compté comme des dégâts, le soin rendu ne pesant pas sur une recherche de dégâts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: apostasie
+    dofusdb_id: 13421
+    name: { fr: "Apostasie", en: "Apostasy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur de la cible, la repousse et occasionne des dommages Feu aux ennemis.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ponteira
+    dofusdb_id: 13422
+    name: { fr: "Ponteira", en: "Ponteira" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des Dommages.
+    assumptions:
+      - "Le retrait de 50 Dommages à la cible n'est pas modélisé : réduire ce que l'adversaire inflige ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: inferno
+    dofusdb_id: 13423
+    name: { fr: "Inferno", en: "Inferno" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et augmente la Puissance du lanceur.
+      Les dommages n'affectent pas le lanceur.
+    assumptions:
+      - "En plus de ses dégâts, donne 200 Puissance au lanceur pendant deux tours (effet 138). La Puissance entre DANS l'arrondi caractéristique, contrairement aux Dommages de la Furia : à magnitude égale elle vaut bien plus."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: inferno
+
+
+  - id: grimace
+    dofusdb_id: 13424
+    name: { fr: "Grimace", en: "Grimace" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Masque Grimaçant maîtrisable qui tacle les ennemis et partage ses dommages avec son invocateur tant qu'il est en vie.
+      Lorsqu'un ennemi se fait tacler par le Masque, lui et son invocateur gagnent du bouclier.
+      
+      Le Masque Grimaçant s'applique également des effets selon le masque porté par son invocateur :
+      • Intrépide : attire les entités en zone autour de lui.
+      • Pleutre : augmente ses PM.
+      • Psychopathe : repousse les entités à son contact.
+      
+      Le Masque est téléporté sur la case ciblée si le sort est relancé quand il est en vie.
+      À sa mort, le temps de relance du sort est fixé à 2 tours.
+    assumptions:
+      - "Effet 2794 : lance aussi « Grimace », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1045 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: brincadeira
+    dofusdb_id: 13425
+    name: { fr: "Brincadeira", en: "Brincaderia" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire de la Portée.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: nevrose
+    dofusdb_id: 13426
+    name: { fr: "Névrose", en: "Neurosis" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Puissance de l'allié ciblé et applique l'état Pesanteur sur la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pesanteur » (7). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines: []
+    effects:
+      - effect: gain
+        resource: nevrose_puissance
+
+  - id: ronda
+    dofusdb_id: 14681
+    name: { fr: "Ronda", en: "Ronda" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et attire les cibles vers le lanceur en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Ronda », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'attirance des cibles vers le lanceur n'est pas modélisée : ce calculateur ne simule pas la grille."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: purgatorio
+    dofusdb_id: 14682
+    name: { fr: "Purgatorio", en: "Purgatorio" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages Feu aux ennemis.
+    assumptions:
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: transfiguration
+    dofusdb_id: 18650
+    name: { fr: "Transfiguration", en: "Transfiguration" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Transfiguration sur le lanceur et l'ennemi ciblé, en appliquant des effets sur l'ennemi selon le masque porté :
+      • État Intrépide : réduit les dommages finaux occasionnés.
+      • État Pleutre : réduit les résistances à distance.
+      • État Psychopathe : réduit les résistances en mêlée.
+      Le cumul est partagé entre les effets.
+      
+      Chaque changement de masque réduit le temps de relance du sort d'un tour et réapplique les effets du sort si le lanceur est dans l'état Transfiguration.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Transfiguration » (4464). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Transfiguration », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1172 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2802 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 2806 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: carnavalo
+    dofusdb_id: 18651
+    name: { fr: "Carnavalo", en: "Carnavalo" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    crit: { base_rate: 15 }
+    note: |
+      Applique un bouclier sur le lanceur, occasionne des dommages dans son meilleur élément d'attaque aux ennemis et repousse la cible.
+      Chaque effet devient plus important selon le masque porté par le lanceur :
+      • État Intrépide : le bouclier est plus important.
+      • État Pleutre : la poussée est plus importante.
+      • État Psychopathe : les dommages sont plus importants.
+      
+      Chaque changement de masque diminue l'intervalle de relance du sort d'un tour.
+    assumptions:
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+      - "Le palier Psychopathe est ecrit en bonus de degats de base, +15 normal et +16 critique. La donnee du jeu porte en realite DEUX effets 2822 distincts, 24-28 sans l'etat et 39-43 avec : les deux ecritures donnent le meme nombre, le bonus de base entrant dans le jet avant l'arrondi caracteristique."
+    lines:
+      - best_element: true
+        critical: [29, 34]
+        normal: [24, 28]
+        base_bonus:
+          - kind: while_resource
+            resource: psychopathe
+            amount: 15
+            critical_amount: 16
+    effects:
+      - effect: damage

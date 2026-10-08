@@ -1,0 +1,1019 @@
+# Osamodas.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: osamodas
+name: { fr: "Osamodas", en: "Osamodas" }
+
+resources:
+  - id: pacte_bestial_pa
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 111, duree 3 dans l'instantane, cible « C ».
+    duration: { turns: 3, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 31141
+    grants_ap: 2
+    note: |
+      Les deux PA que le Pacte Bestial donne au lanceur : « Applique l'état
+      Bestial sur le lanceur : augmente ses PA », sans condition (cible « C »).
+      Les PA ouvrent chaque tour où l'état tient, là où `ap_bonus` rend des PA
+      dans le tour du lancer. « La durée de l'état et du bonus PA est prolongée
+      si le lanceur invoque une créature Osamodas » : une invocation lancée sous
+      l'état les fait repartir pour trois tours (voir `bestial`). Relancé sous
+      l'état, le Pacte les retire.
+
+  - id: bestial
+    name: { fr: "Bestial", en: "Bestial" }
+    scope: caster
+    max: 1
+    default: 0
+    # Effet 950 du sous-sort 32557 (rang 1), duree 3 : trois tours de jeu.
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+      # Rang 9 du sous-sort, lance a la fin de l'etat : effet 1045 sur les
+      # quatorze sorts d'invocation, relance fixee a zero.
+      then_reset_cooldowns: [tofu, bouftou, crapipou, dragoune, ventritofu, bouflourd, crapipaud, dragonnet, craquolosse, crocolereux, sulfenix, scarafoudre, esprit_glouton, esprit_facetieux]
+    game_states: [6295]
+    note: |
+      L'état Bestial du Pacte Bestial (6295). Le Pacte n'agit que par son
+      sous-sort 32557 : les effets 950, 111, 1171, 2971 et 90 du sort lui-même
+      sont `forClientOnly`, pour l'infobulle.
+
+      * Lancé sans l'état (rang 1, cible « C,e6295 ») : l'état pour trois tours,
+        les PA (`pacte_bestial_pa`), et le sacrifice des invocations en jeu.
+      * Lancé sous l'état (rang 9, cible « C,E6295 ») : il retire tous ses
+        effets et remet la relance des sorts d'invocation à zéro, sans rien
+        reposer : une bascule.
+      * Une invocation Osamodas lancée sous l'état est sacrifiée aussitôt (rang
+        3, déclencheur « CI ») et relance le rang 1 : l'état et les PA repartent
+        pour trois tours (`maxStack` 1 sur les PA). C'est la « durée prolongée »
+        du texte.
+      * À la fin de l'état, la relance des sorts d'invocation retombe à zéro.
+
+  - id: pacte_bestial_finaux
+    name: { fr: "Pacte Bestial", en: "Bestial Pact" }
+    scope: caster
+    max: 90
+    default: 0
+    monotone: increasing
+    modifies_damage:
+      # Effet 1171 des rangs 5, 6 et 7 du sous-sort : 3, 6 ou 9 % de dommages
+      # finaux par invocation sacrifiee, selon son palier. Un cran vaut 3 %.
+      - kind: final_multiplier
+        percent: 103
+        finaux: true
+    note: |
+      Les dommages finaux du Pacte Bestial, en crans de 3 % : chaque invocation
+      Osamodas sacrifiée en donne un par palier de PI (un Tofu 3 %, un Ventritofu
+      6 %, un Craquolosse 9 %), pour trois tours, cumulables sans limite (rangs 5
+      à 7 du sous-sort 32557, `maxStack` -1). Le total porte le bonus ; la chaîne
+      `pacte_bestial_sacrifices` fait vieillir chaque sacrifice et retire du total
+      ceux qui arrivent à leur terme. Les gains viennent de la Rotation, qui sait
+      quelles invocations sont en jeu. Les soins finaux (2971) et le transfert de
+      vie (90) ne sont pas des dégâts.
+
+  - id: pacte_bestial_sacrifices
+    scope: caster
+    max: 30
+    default: 0
+    shifts_into: pacte_bestial_sacrifices_1
+    note: |
+      Les crans du Pacte Bestial gagnes ce tour-ci. Voir `pacte_bestial_finaux`.
+
+  - id: pacte_bestial_sacrifices_1
+    scope: caster
+    max: 30
+    default: 0
+    shifts_into: pacte_bestial_sacrifices_2
+
+  - id: pacte_bestial_sacrifices_2
+    scope: caster
+    max: 30
+    default: 0
+    drains: pacte_bestial_finaux
+    note: |
+      Les crans gagnes deux tours plus tot : ils vivent leur troisieme et
+      dernier tour, puis quittent le total.
+
+  - id: cortege_sauvage
+    name: { fr: "Cortège Sauvage", en: "Wild Procession" }
+    scope: caster
+    max: 1
+    default: 0
+    # Effets 182 et 285 (sous-sort 32555, rang 2), duree 2 : deux tours de jeu.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Cortège Sauvage : -1 PA sur les quatorze sorts d'invocation (effet 285,
+      sous-sort 32555) et +3 Invocations (effet 182), pour le tour du lancer et le
+      suivant.
+
+  - id: cortege_sauvage_morts
+    scope: caster
+    max: 1
+    default: 0
+    # Le rang 1 du sous-sort 32555 (effet 141, « tue la cible » sur les
+    # invocations 8070 a 8083) part au debut des deux tours qui suivent le
+    # lancer, delais 1 et 2.
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      « Toutes les invocations Osamodas meurent au debut du tour du lanceur
+      tant qu'il est sous les effets du sort » : au debut des deux tours qui
+      suivent le lancer, apres avoir joue le leur. Les compteurs des
+      invocations s'y accrochent par `reset_at_turn_start_while`, que la
+      Rotation pose.
+
+  - id: pics_du_prespic
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 115, valeur 10, duree 2 : dix points de TAUX de coup critique.
+      - kind: critical_rate
+        percent: 10
+    note: |
+      « Augmente egalement les Critiques du lanceur et de l'allie cible. » Seule
+      la moitie du lanceur compte ici, ce calculateur ne resolvant qu'une
+      rotation solo.
+
+  - id: morsure_du_serpent
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: water
+            critical: [22, 24]
+            normal: [19, 21]
+        note: |
+          Le poison, au debut du tour de la cible, deux tours de duree.
+    note: |
+      « Augmente les dommages subis par la cible et lui applique un poison Eau de
+      début de tour. » Le sort ne frappe pas au lancer : sa seule ligne est celle
+      du poison, « Début de tour », durée 2, et ses 19-21 sont ceux du poison. Le
+      malus de dommages subis est à part, dans `morsure_du_serpent_vulnerabilite` :
+      la donnée le pose pour le seul tour du lancer, le poison pour deux.
+
+  - id: morsure_du_serpent_vulnerabilite
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 1163 à durée 0 : le tour du lancer seulement, comme le Bond du Iop.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 1163 a 104 : les dommages subis par la cible sont multiplies par
+      # 1,04.
+      - kind: final_multiplier
+        percent: 104
+    note: |
+      Le malus de dommages subis de la Morsure du Serpent, séparé de son poison :
+      leurs durées diffèrent dans la donnée.
+
+  - id: cri_de_l_ours
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 138 : de la Puissance, dans l'arrondi caracteristique.
+      - kind: characteristic
+        amount: 150
+    note: |
+      « Augmente egalement la Puissance du lanceur et des allies cibles » : 150
+      pendant deux tours, Cumul 1.
+
+  - id: dents_du_piranya
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      # Effet 112 : des Dommages fixes, APRES l'arrondi caracteristique.
+      - kind: flat_damage
+        amount: 20
+    note: |
+      « Augmente egalement les Dommages du lanceur et des allies cibles » : 20
+      pendant deux tours, Cumul 1. Fixe, donc bien moins fort que la Puissance
+      du Cri de l'Ours a magnitude comparable.
+
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Aucun sort de l'Osamodas ne la pose : elle viendrait d'un adversaire, et la cible est passive."
+  - state: 6322
+    name: "Esprit Facetieux"
+    note: "L'etat du Gobgob Facetieux en vie. L'Esprit Facetieux n'a aucun effet dans ce calculateur (degats d'invocation non comptes) : la rotation ne le lance pas, donc jamais une seconde fois."
+  - state: 6323
+    name: "Esprit Glouton"
+    note: "L'etat du Gobgob Glouton en vie. Meme raison que l'Esprit Facetieux."
+
+spells:
+  - id: cri_du_corbac
+    dofusdb_id: 31110
+    name: { fr: "Cri du Corbac", en: "Crobak Call" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie aux ennemis ou soigne les alliés dans l'élément Air.
+      Augmente également les PM du lanceur et de l'allié ciblé.
+      
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "Les PM donnés au lanceur et à l'allié ne sont pas modélisés : le déplacement n'est pas simulé."
+      - "Les soins ne le sont pas non plus."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: pics_du_prespic
+    dofusdb_id: 31111
+    name: { fr: "Pics du Prespic", en: "Prespic Peaks" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie aux ennemis ou soigne les alliés dans l'élément Feu.
+      Augmente également les Critiques du lanceur et de l'allié ciblé.
+      
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "Effet 115, +10 % de Critiques au lanceur pendant deux tours, compté par `kind: critical_rate`."
+      - "La moitié donnée à l'allié ciblé n'est pas comptée : ce calculateur résout une rotation à un seul lanceur."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: pics_du_prespic
+
+  - id: morsure_du_serpent
+    dofusdb_id: 31112
+    name: { fr: "Morsure du Serpent", en: "Snake Bite" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Augmente les dommages subis par la cible et lui applique un poison Eau de début de tour.
+    assumptions:
+      - "Ce sort n'inflige aucun dégât immédiat : il pose un poison Eau de 19-21 qui tombe au début du tour de la cible, deux fois."
+      - "Il augmente aussi de 4 % les dommages que la cible subit (effet 1163, paramètre 104), ce qui est compté."
+    lines: []
+    effects:
+      - effect: gain
+        resource: morsure_du_serpent
+      - effect: gain
+        resource: morsure_du_serpent_vulnerabilite
+
+
+  - id: crocs_du_mulou
+    dofusdb_id: 31113
+    name: { fr: "Crocs du Mulou", en: "Fangs of Boowolf" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et augmente les dommages en mêlée du lanceur et des alliés en zone.
+    assumptions:
+      - "⚠️ Les 5 % de dommages en mêlée donnés au lanceur pendant deux tours ne sont PAS comptés : les quatre pourcentages de contexte sont fixés à l'import et ne varient pas en combat. Le total est un plancher."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fouet
+    dofusdb_id: 31114
+    name: { fr: "Fouet", en: "Whip" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: 5 }
+    note: |
+      Occasionne des dommages dans le meilleur élément du lanceur aux ennemis et repousse la cible.
+      Augmente également les PM de la cible si c'est une invocation alliée.
+    assumptions:
+      - "Effet 128, les PM donnes a la cible : ils ne vont qu'a une invocation ALLIEE, jamais a l'ennemi. Les invocations ne sont pas simulees ici, leur mobilite ne change donc aucun degat du joueur."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [18, 21]
+        normal: [15, 17]
+    effects:
+      - effect: damage
+
+  - id: tofu
+    dofusdb_id: 31115
+    name: { fr: "Tofu", en: "Tofu" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Tofu maîtrisable qui peut occasionner des dommages Air, soigner, retirer du Tacle et repousser.
+    lines: []
+    effects: []
+
+  - id: bouftou
+    dofusdb_id: 31116
+    name: { fr: "Bouftou", en: "Gobball" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Bouftou maîtrisable qui peut occasionner des dommages Terre, soigner, retirer de la Fuite et se téléporter.
+    lines: []
+    effects: []
+
+  - id: crapipou
+    dofusdb_id: 31117
+    name: { fr: "Crapipou", en: "Sweetoad" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Crapipou maîtrisable qui peut occasionner des dommages et appliquer un poison Eau, soigner, augmenter ou retirer de la Portée et s'éloigner.
+    lines: []
+    effects: []
+
+  - id: dragoune
+    dofusdb_id: 31118
+    name: { fr: "Dragoune", en: "Dragoone" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Dragoune maîtrisable qui peut occasionner des dommages Feu, soigner, retirer de la Puissance et échanger de positions.
+    lines: []
+    effects: []
+
+  - id: cortege_sauvage
+    dofusdb_id: 31119
+    name: { fr: "Cortège Sauvage", en: "Wild Procession" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les Invocations du lanceur et réduit le coût en PA des sorts d'invocation Osamodas.
+      
+      Toutes les invocations Osamodas meurent au début du tour du lanceur tant qu'il est sous les effets du sort.
+    assumptions:
+      - "-1 PA sur les sorts d'invocation et +3 Invocations pour le tour du lancer et le suivant (`cortege_sauvage`), invocations Osamodas tuées au début des deux tours qui suivent (`cortege_sauvage_morts`). Les +3 Invocations et la mort des invocations se branchent dans la Rotation, avec les invocations du deck."
+      - "Effet 335 : un changement d'apparence, sans effet sur le combat."
+      - "Effet 141 du sort lui-meme : `forClientOnly`, l'infobulle de la mort des invocations, que porte le sous-sort 32555."
+    lines: []
+    effects:
+      - effect: gain
+        resource: cortege_sauvage
+      - effect: gain
+        resource: cortege_sauvage_morts
+
+  - id: piqure_motivante
+    dofusdb_id: 31120
+    name: { fr: "Piqûre Motivante", en: "High-Energy Shot" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PA et les PM de la cible.
+      Les effets sont plus importants sur les invocations.
+    lines: []
+    assumptions:
+      - "Sur une invocation, +2 PA pendant trois tours (effet 111, cible « j,J ») : la rotation greffe un mode « sur une invocation » qui les donne à celle qu'ils servent le plus, et elle joue en plus ce qu'ils paient (`avec_les_invocations`). Sur un allié ou soi, +1 PA : rien pour le lanceur seul."
+    effects: []
+
+  - id: saute_granouille
+    dofusdb_id: 31121
+    name: { fr: "Saute-granouille", en: "Leap-Froog" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur symétriquement par rapport à la cible et occasionne des dommages Eau aux ennemis.
+      Téléporte également la cible symétriquement par rapport au lanceur si c'est une invocation.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: souffle_draconique
+    dofusdb_id: 31122
+    name: { fr: "Souffle Draconique", en: "Draconic Breath" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Éloigne le lanceur des cibles, occasionne des dommages Feu aux ennemis et repousse les cibles en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: charge_bestiale
+    dofusdb_id: 31123
+    name: { fr: "Charge Bestiale", en: "Bestial Charge" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible et occasionne des dommages Terre aux ennemis.
+      Attire également les invocations jusqu'au centre en zone autour de la cible.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: aeropique
+    dofusdb_id: 31124
+    name: { fr: "Aéropique", en: "Air Ace" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Rapproche le lanceur vers la cible, occasionne des dommages Air aux ennemis et repousse la cible.
+      Repousse également les entités au contact de la cible si cette dernière est une invocation.
+    assumptions:
+      - "Effet 1160 : lance aussi « Aéropique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements de ce sort, rapprochement et poussée, ne sont pas modélisés : ce calculateur ne simule pas la grille."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: discipline
+    dofusdb_id: 31125
+    name: { fr: "Discipline", en: "Discipline" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 10 }
+    note: |
+      Occasionne des dommages dans le meilleur élément du lanceur et retire des PM aux ennemis, et attire la cible.
+    assumptions:
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [23, 26]
+        normal: [19, 22]
+    effects:
+      - effect: damage
+
+  - id: ventritofu
+    dofusdb_id: 31126
+    name: { fr: "Ventritofu", en: "Tofurby" }
+    ap_cost: { base: 4, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Ventritofu maîtrisable qui peut occasionner des dommages Air, augmenter la Fuite, se téléporter, téléporter symétriquement des entités, repousser et se rapprocher.
+    lines: []
+    effects: []
+
+  - id: bouflourd
+    dofusdb_id: 31127
+    name: { fr: "Bouflourd", en: "Gobbulky" }
+    ap_cost: { base: 4, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Bouflourd maîtrisable qui peut occasionner des dommages Terre, réduire les dommages subis, se rapprocher et attirer.
+    lines: []
+    effects: []
+
+  - id: crapipaud
+    dofusdb_id: 31128
+    name: { fr: "Crapipaud", en: "Sweetoadie" }
+    ap_cost: { base: 4, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Crapipaud maîtrisable qui peut occasionner des dommages et appliquer un poison Eau, augmenter les PM, repousser et se téléporter symétriquement.
+    lines: []
+    effects: []
+
+  - id: dragonnet
+    dofusdb_id: 31129
+    name: { fr: "Dragonnet", en: "Wyrmling" }
+    ap_cost: { base: 4, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Dragonnet maîtrisable qui peut occasionner des dommages Feu, augmenter la Puissance et repousser.
+    lines: []
+    effects: []
+
+  - id: relais_spirituel
+    dofusdb_id: 31130
+    name: { fr: "Relais Spirituel", en: "Spirit Relay" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de position avec une invocation du lanceur et lui applique l'état Relais :
+      • Les prochains échanges se feront entre l'invocation dans l'état et la prochaine invocation ciblée.
+      
+      Les échanges ne s'appliquent que si les invocations sont à 5 cases ou moins du lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Relais Spirituel », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Relais » (6291), lu par Relais Spirituel. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: esprit_glouton
+    dofusdb_id: 31131
+    name: { fr: "Esprit Glouton", en: "Gluttonous Spirit" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 6
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Gobgob Glouton contrôlable qui peut occasionner des dommages Neutre selon sa vie, tuer des invocations alliés pour augmenter sa Vitalité et ses PM, intercepter les dommages d'un allié et se téléporter en créant des illusions.
+      
+      Le temps de relance est fixé à la mort du Gobgob.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 1045 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Aucune limite de lancers par tour dans les donnees ; borne ici a 6, ce que le budget de PA d'un tour permet."
+    effects: []
+
+  - id: cri_de_l_ours
+    dofusdb_id: 31132
+    name: { fr: "Cri de l'Ours", en: "Bear Cry" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et vole de la vie dans l'élément Terre aux ennemis en zone.
+      Augmente également la Puissance du lanceur et des alliés ciblés.
+      
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "En plus de ses dégâts, donne 150 Puissance au lanceur pendant deux tours (effet 138). La Puissance entre dans l'arrondi caractéristique et profite à tous les sorts."
+      - "Les soins aux alliés ne sont pas modélisés : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: cri_de_l_ours
+
+
+  - id: serres_du_vautour
+    dofusdb_id: 31133
+    name: { fr: "Serres du Vautour", en: "Vulture Talons" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et soigne leurs attaquants en zone.
+    assumptions:
+      - "Le soin rendu aux attaquants de la cible n'est pas modélisé : ce calculateur maximise les dégâts infligés."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: griffes_du_chtigre
+    dofusdb_id: 31134
+    name: { fr: "Griffes du Chtigre", en: "Chtiger Claws" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et réduit les soins reçus par la cible.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: dents_du_piranya
+    dofusdb_id: 31135
+    name: { fr: "Dents du Piranya", en: "Piranya Teeth" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et vole de la vie dans l'élément Eau aux ennemis en zone.
+      Augmente également les Dommages du lanceur et des alliés ciblés.
+      
+      Les soins n'affectent pas le lanceur.
+    assumptions:
+      - "En plus de ses dégâts, donne 20 Dommages au lanceur pendant deux tours (effet 112). Ce bonus est fixe, il s'ajoute après l'arrondi caractéristique."
+      - "Les soins aux alliés ne sont pas modélisés."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: dents_du_piranya
+
+
+  - id: cravache
+    dofusdb_id: 31136
+    name: { fr: "Cravache", en: "Crop" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 5 }
+    note: |
+      Attire les cibles vers le centre et occasionne des dommages dans le meilleur élément du lanceur aux ennemis en zone.
+      Téléporte les cibles symétriquement par rapport au centre si la case centrale est occupée.
+      
+      N'affecte pas directement le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Cravache », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - best_element: true
+        critical: [14, 16]
+        normal: [11, 13]
+    effects:
+      - effect: damage
+
+  - id: deplumage
+    dofusdb_id: 31137
+    name: { fr: "Déplumage", en: "Plucking" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et réduit les Résistances Poussée des ennemis en zone.
+    assumptions:
+      - "La réduction des Résistances Poussée ne change rien ici : la poussée n'est pas simulée, donc ses dégâts ne tombent jamais."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: toison_d_or
+    dofusdb_id: 31138
+    name: { fr: "Toison d'Or", en: "Golden Fleece" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Applique un bouclier sur les alliés et occasionne des dommages Terre aux ennemis en zone.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bave_du_crapaud
+    dofusdb_id: 31139
+    name: { fr: "Bave du Crapaud", en: "Toad Slobber" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et retire des Dommages aux ennemis en zone.
+    assumptions:
+      - "Le retrait de Dommages aux ennemis n'est pas modélisé : réduire ce que l'adversaire inflige ne change rien aux dégâts qu'on lui porte."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: c_ur_sauvage
+    dofusdb_id: 31140
+    name: { fr: "Cœur Sauvage", en: "Wild Heart" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis et augmente les soins reçus du lanceur et des alliés en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: pacte_bestial
+    dofusdb_id: 31141
+    name: { fr: "Pacte Bestial", en: "Bestial Pact" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Bestial sur le lanceur :
+      • Augmente ses PA.
+      • Sacrifie toutes ses présentes et futures invocations Osamodas pour augmenter ses dommages et soins finaux.
+      • Transfère une partie de la vie des invocations sacrifiées vers le lanceur.
+      • Les effets sont plus importants selon le coût en PI de l'invocation.
+      
+      Les Gobgobs ne sont pas affectés par le sort.
+      La durée de l'état et du bonus PA est prolongée si le lanceur invoque une créature Osamodas.
+      Le temps de relance des sorts d'invocation Osamodas est réinitialisé et les effets du sort sont retirés à la perte de l'état ou si le sort est relancé.
+    assumptions:
+      - "Effet 111, +2 PA au lanceur pendant trois tours, sur l'état `pacte_bestial_pa` : cible « C », « applique l'état Bestial sur le lanceur : augmente ses PA », sans condition. Une invocation lancée sous l'état les fait repartir pour trois tours."
+      - "D'après le sous-sort 32557 : l'état Bestial (`bestial`), le sacrifice des invocations Osamodas et leurs dommages finaux (`pacte_bestial_finaux`, 3 % par palier de PI et par invocation, trois tours chacun). Relancé sous l'état, il retire tout et remet la relance des sorts d'invocation à zéro. Le sacrifice et ses dommages finaux se branchent dans la Rotation, avec les invocations du deck. À vérifier en jeu : Tofu (palier 1) et Craquolosse (palier 3) sacrifiés, +12 % de dommages finaux pendant trois tours ?"
+      - "Effets 950, 111, 1171, 2971 et 90 du sort lui-meme : `forClientOnly`, l'infobulle. Le sort agit par son sous-sort 32557."
+      - "Effets 2971 (soins finaux) et 90 (transfert de vie des invocations sacrifiees) : pas des degats."
+    lines: []
+    effects:
+      # Relance sous Bestial (rang 9) : il retire tous ses effets et remet la
+      # relance des sorts d'invocation, sans rien reposer. Lus AVANT la bascule
+      # de la fin.
+      - effect: reset
+        resource: pacte_bestial_finaux
+        requires: { kind: caster_has, resource: bestial }
+      - effect: reset
+        resource: pacte_bestial_sacrifices
+        requires: { kind: caster_has, resource: bestial }
+      - effect: reset
+        resource: pacte_bestial_sacrifices_1
+        requires: { kind: caster_has, resource: bestial }
+      - effect: reset
+        resource: pacte_bestial_sacrifices_2
+        requires: { kind: caster_has, resource: bestial }
+      - effect: reset
+        resource: pacte_bestial_pa
+        requires: { kind: caster_has, resource: bestial }
+      - effect: reset_cooldowns
+        spells: [tofu, bouftou, crapipou, dragoune, ventritofu, bouflourd, crapipaud, dragonnet, craquolosse, crocolereux, sulfenix, scarafoudre, esprit_glouton, esprit_facetieux]
+        requires: { kind: caster_has, resource: bestial }
+      # Premier lancer (rang 1) : les PA. Le sacrifice des invocations en jeu
+      # s'insere ici, depuis la Rotation.
+      - effect: gain
+        resource: pacte_bestial_pa
+        requires: { kind: exactly, resource: bestial, amount: 0 }
+      - effect: toggle
+        resource: bestial
+
+  - id: communion_animale
+    dofusdb_id: 31142
+    name: { fr: "Communion Animale", en: "Animal Communion" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Partage les dommages entre le lanceur et une invocation alliée.
+      
+      Sur le lanceur : partage les dommages entre toutes ses invocations.
+    assumptions:
+      - "Effet 1160 : lance aussi « Communion Animale », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1061 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: tornade_de_plumes
+    dofusdb_id: 31143
+    name: { fr: "Tornade de Plumes", en: "Feather Tornado" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte le lanceur sur la case ciblée, occasionne des dommages Air aux ennemis et repousse les cibles depuis le centre en zone.
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: frappe_du_craqueleur
+    dofusdb_id: 31144
+    name: { fr: "Frappe du Craqueleur", en: "Crackler Punch" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre et attire les cibles jusqu'au centre en zone.
+      N'affecte pas le lanceur.
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: chant_du_phenix
+    dofusdb_id: 31145
+    name: { fr: "Chant du Phénix", en: "Song of the Phoenix" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés, occasionne des dommages Feu aux ennemis et repousse les cibles depuis le centre en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: tourbillon
+    dofusdb_id: 31146
+    name: { fr: "Tourbillon", en: "Whirlwind" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Téléporte les alliés symétriquement par rapport au centre et occasionne des dommages Eau aux ennemis en zone.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: martinet
+    dofusdb_id: 31147
+    name: { fr: "Martinet", en: "Swift Whip" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 15 }
+    note: |
+      Attire toutes les invocations du lanceur vers la cible et occasionne des dommages dans le meilleur élément du lanceur aux ennemis.
+      
+      Les invocations Osamodas attaquent également si elles sont à portée et en ligne de vue de la cible.
+      Les dommages et soins des invocations sont réduits de 50% pendant l'utilisation du sort.
+      • Tofu : Bisou Béco
+      • Bouftou : Saute-bouftou
+      • Crapipou : Croassement
+      • Dragoune : Dracorage
+      • Ventritofu : Ventripoussée
+      • Bouflourd : Charge du Bouflourd
+      • Crapipaud : Crapobatie
+      • Dragonnet : Souffle du Dragon
+      • Scarafoudre : Scarafusée
+      • Craquolosse : Fronde Rocheuse
+      • Crocoléreux : Crocs Coléreux
+      • Sulfénix : Sulfuria
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Martinet » (6390) ; retire « Martinet » (6390). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : ce sort fait attaquer les invocations du lanceur, « Martinet » et ce qu'il lance à son tour sur « j,P » : Air 22-25 en vol de vie, Terre 24-27 en vol de vie, Eau 23-26 en vol de vie, Feu 25-28 en vol de vie, Air 21-23, Terre 20-22, Eau 21-24 en vol de vie, Feu 25-28 en vol de vie, Air 21-23, Terre 18-20, Eau 20-22, Feu 19-21."
+      - "Les invocations attaquent avec le Martinet : la rotation greffe au sort une ligne par invocation de ce type en jeu, à 50 %, avec l'attaque que son texte lui donne (`avec_les_invocations`). Portée et ligne de vue sont supposées acquises."
+      - "Le detail de la donnee, pour memoire. L'effet 792 mene a un sous-sort qui porte le meme nom, 31440, et c'est lui qui fait tout, sur TROIS niveaux : le grade 1 pose -50 % de Dommages finaux, le grade 2 un etat, le grade 3 douze appels 1160, un par invocation. Les douze attaques : Tofu / Bisou Beco Air 22-25, Bouftou / Saute-bouftou Terre 24-27, Crapipou / Croassement Eau 23-26, Dragoune / Dracorage Feu 25-28, Ventritofu / Ventripoussee Air 21-23, Bouflourd / Charge du Bouflourd Terre 20-22, Crapipaud / Crapobatie Eau 21-24, Dragonnet / Souffle du Dragon Feu 25-28, Scarafoudre / Scarafusee Air 21-23, Craquolosse / Fronde Rocheuse Terre 18-20, Crocolereux / Crocs Colereux Eau 20-22, Sulfenix / Sulfuria Feu 19-21."
+      - "Le -50 % de Dommages finaux ne touche que les invocations, pas la ligne propre du Martinet ; la donnée pose le malus sur le lanceur. Confirmé en jeu."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+    lines:
+      - best_element: true
+        critical: [25, 29]
+        normal: [21, 24]
+    effects:
+      - effect: damage
+
+  - id: scarafoudre
+    dofusdb_id: 31148
+    name: { fr: "Scarafoudre", en: "Scarabolt" }
+    ap_cost: { base: 5, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Scarafoudre maîtrisable qui peut occasionner des dommages Air, se téléporter, retirer des chances de Critique et appliquer du bouclier.
+    lines: []
+    effects: []
+
+  - id: craquolosse
+    dofusdb_id: 31149
+    name: { fr: "Craquolosse", en: "Crackolossus" }
+    ap_cost: { base: 5, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Craquolosse maîtrisable qui peut occasionner des dommages Terre, attirer, retirer des PM et augmenter les résistances.
+    lines: []
+    effects: []
+
+  - id: crocolereux
+    dofusdb_id: 31150
+    name: { fr: "Crocoléreux", en: "Crocurmudgeon" }
+    ap_cost: { base: 5, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Crocoléreux maîtrisable qui peut occasionner des dommages Eau, retirer des Critiques et réduire les soins et les dommages reçus.
+    lines: []
+    effects: []
+
+  - id: sulfenix
+    dofusdb_id: 31151
+    name: { fr: "Sulfénix", en: "Sulphoenix" }
+    ap_cost: { base: 5, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Sulfénix maîtrisable qui peut occasionner des dommages Feu, soigner et se téléporter.
+    lines: []
+    effects: []
+
+  - id: laisse_spirituelle
+    dofusdb_id: 31152
+    name: { fr: "Laisse Spirituelle", en: "Spiritual Leash" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état En laisse sur la cible pour le tour en cours :
+      • Suit le lanceur immédiatement et lorsqu'il utilise ses PM.
+      
+      Sur le lanceur : applique l'état sur toutes ses invocations.
+      
+      L'état est retiré si le lanceur ou la cible sont déplacés.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « En Laisse » (6290). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Laisse Spirituelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 2184 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: esprit_facetieux
+    dofusdb_id: 31153
+    name: { fr: "Esprit Facétieux", en: "Mischievous Spirit" }
+    ap_cost: { base: 3, reduced_by: { resource: cortege_sauvage } }
+    casts_per_turn: 6
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Gobgob Facétieux contrôlable qui peut échanger de positions, réduire la durée des effets et se sacrifier pour copier une invocation Osamodas.
+      
+      Le temps de relance est fixé à la mort du Gobgob.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 1045 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Aucune limite de lancers par tour dans les donnees ; borne ici a 6, ce que le budget de PA d'un tour permet."
+    effects: []

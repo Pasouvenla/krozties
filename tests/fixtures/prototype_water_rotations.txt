@@ -1,0 +1,158 @@
+Glas damage by stack count (critical), odd turn / even turn:
+   1 stack(s): 1893 / 1576
+   2 stack(s): 2125 / 1771
+   3 stack(s): 2357 / 1964
+   4 stack(s): 2588 / 2156
+   5 stack(s): 2821 / 2350
+   6 stack(s): 3053 / 2544
+
+=== 12 AP/turn | up to 3 Telefrag generated per turn | strict generate/consume alternation | 7-turn horizon ===
+searching...
+solved in 2.6s
+
+Turn 1 (odd, Reve Nebuleux UP)  5607-5959 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Petrification (4 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Petrification (3 PA)
+
+Turn 2 (even, Reve Nebuleux DOWN)  5193-5549 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Petrification (2 PA)
+   4. Compte-goutte (3 PA) [TF, +2 PA]
+   5. Petrification (2 PA)
+   6. Permutation (4 PA) [TF, +2 PA]
+   7. Clepsydre (4 PA)
+
+Turn 3 (odd, Reve Nebuleux UP)  8882-9270 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Petrification (2 PA)
+   5. Compte-goutte (3 PA) [TF, +2 PA]
+   6. Petrification (2 PA)
+   7. Permutation (4 PA) [TF, +2 PA]
+   8. Glas [6 stacks]
+
+Turn 4 (even, Reve Nebuleux DOWN)  5132-5472 crit damage
+   1. Ralentissement (2 PA)
+   2. Ralentissement (2 PA)
+   3. Petrification (2 PA)
+   4. Gelure (2 PA) [TF, +2 PA]
+   5. Petrification (2 PA)
+   6. Permutation (4 PA) [TF, +2 PA]
+   7. Clepsydre (4 PA)
+
+Turn 5 (odd, Reve Nebuleux UP)  6977-7439 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Petrification (2 PA)
+   5. Compte-goutte (3 PA) [TF, +2 PA]
+   6. Petrification (2 PA)
+   7. Permutation (4 PA) [TF, +2 PA]
+   8. Clepsydre (4 PA)
+
+Turn 6 (even, Reve Nebuleux DOWN)  5813-6199 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Petrification (2 PA)
+   5. Compte-goutte (3 PA) [TF, +2 PA]
+   6. Petrification (2 PA)
+   7. Permutation (4 PA) [TF, +2 PA]
+   8. Clepsydre (4 PA)
+
+Turn 7 (odd, Reve Nebuleux UP)  8882-9270 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Petrification (2 PA)
+   5. Compte-goutte (3 PA) [TF, +2 PA]
+   6. Petrification (2 PA)
+   7. Permutation (4 PA) [TF, +2 PA]
+   8. Glas [6 stacks]
+
+Total over 7 turns : 46486-49158
+Per turn                  : 6641-7023
+(before target resistances)
+
+=== 12 AP/turn | up to 2 Telefrag generated per turn | strict generate/consume alternation | 7-turn horizon ===
+searching...
+solved in 2.4s
+
+Turn 1 (odd, Reve Nebuleux UP)  5607-5959 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Petrification (4 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Petrification (3 PA)
+
+Turn 2 (even, Reve Nebuleux DOWN)  4934-5242 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Compte-goutte (3 PA) [no TF]
+   5. Petrification (2 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Clepsydre (4 PA)
+
+Turn 3 (odd, Reve Nebuleux UP)  8660-9012 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Petrification (2 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Petrification (2 PA)
+   8. Glas [6 stacks]
+
+Turn 4 (even, Reve Nebuleux DOWN)  5352-5694 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Compte-goutte (3 PA) [no TF]
+   6. Petrification (2 PA)
+   7. Compte-goutte (3 PA) [TF, +2 PA]
+   8. Petrification (2 PA)
+
+Turn 5 (odd, Reve Nebuleux UP)  6424-6832 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Compte-goutte (3 PA) [no TF]
+   6. Petrification (2 PA)
+   7. Compte-goutte (3 PA) [TF, +2 PA]
+   8. Petrification (2 PA)
+
+Turn 6 (even, Reve Nebuleux DOWN)  4934-5242 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Ralentissement (2 PA)
+   3. Ralentissement (2 PA)
+   4. Compte-goutte (3 PA) [no TF]
+   5. Petrification (2 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Clepsydre (4 PA)
+
+Turn 7 (odd, Reve Nebuleux UP)  8660-9012 crit damage
+   1. Gelure (2 PA) [TF, +2 PA]
+   2. Gelure (2 PA) [no TF]
+   3. Ralentissement (2 PA)
+   4. Ralentissement (2 PA)
+   5. Petrification (2 PA)
+   6. Compte-goutte (3 PA) [TF, +2 PA]
+   7. Petrification (2 PA)
+   8. Glas [6 stacks]
+
+Total over 7 turns : 44571-46993
+Per turn                  : 6367-6713
+(before target resistances)
+

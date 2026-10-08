@@ -1,0 +1,1112 @@
+# Eniripsa.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: eniripsa
+name: { fr: "Eniripsa", en: "Eniripsa" }
+
+resources:
+  - id: mot_galvanisant_puissance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    dofusdb_source: 25745
+    modifies_damage:
+      - kind: characteristic
+        amount: 150
+    note: |
+      La Puissance que le Mot Galvanisant accorde, pour deux tours : « Augmente
+      la Puissance de l'allié ciblé et lui applique un bouclier et l'état
+      Encouragé. » Effet 138 à 150 sur la cible « a » ; le lanceur peut se cibler
+      lui-même, sa portée minimale étant de zéro. « Le cumul est partagé entre
+      les Encouragements » : ce bonus ne s'additionne pas à celui d'un autre sort
+      d'Encouragement, aucun autre n'étant écrit ici. Le bouclier et la Fée
+      Galvanisante ne sont pas comptés.
+  - id: moquerie
+    scope: caster
+    max: 3
+    default: 0
+    monotone: increasing
+    gain_once_per_turn: true
+    # « Les effets ne peuvent etre augmentes qu'une seule fois par tour. »
+    # QUATRE sorts de la classe appliquent une Moquerie ; sans ce drapeau, en
+    # lancer deux dans le meme tour donnerait deux crans au lieu d'un et le
+    # Choeur Strident serait SURESTIME.
+    dofusdb_source: 25861
+    note: |
+      Les crans du Chœur Strident : le sort « augmente ses dommages à
+      l'application d'une Moquerie par le lanceur ou à la mort d'un de ses Feux
+      Follets », et « les effets se décrémentent après utilisation du sort ». Le
+      compteur monte d'un cran par tour au plus, et le Chœur en dépense un à
+      chaque lancer : trois tours de Moqueries sans lancer remplissent les trois
+      crans. Sans durée : seul le lancer consomme les crans.
+
+      La seconde source, la mort d'un Feu Follet, n'est pas comptée : le compteur
+      monte moins vite qu'en jeu, ce qui laisse le sort au plancher.
+
+
+  - id: mot_secret_arme
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    note: |
+      Le Mot Secret a ete lance au moins une fois : c'est ce qui autorise sa
+      maturation a courir. Sans ce drapeau, `gain_per_turn` monterait des le
+      premier tour et le tout premier lancer du combat toucherait le bonus sans
+      l'avoir merite.
+
+  - id: mot_secret_maturation
+    scope: caster
+    max: 3
+    default: 0
+    # NI CROISSANT NI DECROISSANT : le cran DEUX est le bon, le trois est la
+    # fenetre manquee. Plus n'est pas mieux, le solveur ne doit pas l'elaguer
+    # comme si ca l'etait.
+    monotone: none
+    gain_per_turn: 1
+    gain_per_turn_while: mot_secret_arme
+    dofusdb_source: 25882
+    note: |
+      La maturation du Mot Secret. « Les soins et les dommages sont augmentes
+      DANS 2 TOURS si le sort n'est pas relance au tour suivant » : effet 293,
+      valeur 30, DELAI 2 et DUREE 1 dans la donnee.
+
+      Le compteur monte d'un cran par debut de tour tant que le sort a ete
+      lance, et le lancer le remet a zero, ce qui est exactement l'effet 406
+      « retire les effets du sort ». D'ou la lecture des quatre crans :
+
+        0  le tour du lancer
+        1  le tour suivant, trop tot
+        2  LA FENETRE, deux tours apres, et le bonus vaut +30
+        3  la fenetre est passee, la duree de 1 ayant expire
+
+      Relancer au cran 1 ramene a zero et repousse la fenetre de deux tours :
+      le solveur arbitre lui-meme entre un lancer de plus et un lancer plus
+      fort, ce qui est precisement la question que pose ce sort.
+
+      ⚠️ Une charge differee aurait ete le reflexe et aurait fausse le sort. Le
+      moteur REFUSE de relancer un sort dont une charge est en vol, la ou le
+      jeu autorise le relancement et se contente d'annuler la maturation : le
+      sort aurait perdu un lancer sur deux au lieu d'un bonus.
+
+  - id: peintures
+    scope: target
+    max: 30
+    capped_by_targets: true
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Combien d'ennemis portent la Peinture du Pinceau Tribal, que la rotation
+      pose et consomme elle-même, plafonné au nombre d'ennemis du scénario. La
+      Peinture dure deux tours (effet 950, état 4440) ; le compteur n'a qu'une
+      durée pour tous les ennemis, remise à neuf à chaque pose. Le lancer sur soi
+      monte de 8 dégâts de base par ennemi peint, cinq au plus : 19-22 nu, puis
+      27-30 à un cran, jusqu'à 59-62 à cinq.
+
+  - id: pinceau_cibles
+    scope: caster
+    max: 30
+    capped_by_targets: true
+    default: 0
+    monotone: decreasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      Combien d'ennemis le Pinceau Tribal a déjà visés dans le tour. Le sort part
+      une fois par cible : on ne peint pas un ennemi pour propager depuis lui dans
+      le même tour, il faut un autre ennemi peint. Tout ennemi visé est peint (le
+      premier mode peint sa cible, le second vise une cible déjà peinte) : il
+      reste un ennemi peint et libre tant que `peintures` dépasse ce compteur.
+      Remis à zéro à la fin du tour.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 7
+    name: "Pesanteur"
+    note: "Aucun sort de l'Eniripsa ne la pose."
+  - state: 4190
+    name: "Lapino Invoque et limite atteinte"
+    note: "Pose quand le Lapino est invoque et la limite atteinte. Le Mot d'Amitie n'a aucun effet dans ce calculateur : la rotation ne le lance pas."
+  - state: 4192
+    name: "Fiole Alchimique Invoquee et limite atteinte"
+    note: "Pose quand la Fiole est invoquee et la limite atteinte. Les degats du Mot Alchimique ne sont pas chiffres (lignes inconnues) : la rotation n'en tire rien et ne le relance pas au-dela de la limite."
+
+spells:
+  - id: mot_de_frayeur
+    dofusdb_id: 13175
+    name: { fr: "Mot de Frayeur", en: "Frightening Word" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Repousse la cible.
+    lines: []
+    effects: []
+
+  - id: mot_d_envol
+    dofusdb_id: 13184
+    name: { fr: "Mot d'Envol", en: "Lifting Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Échange de position avec l'allié ciblé.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    effects: []
+
+  - id: mot_de_reconstitution
+    dofusdb_id: 13187
+    name: { fr: "Mot de Reconstitution", en: "Word of Recovery" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 6
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne totalement l'allié ciblé mais le rend Insoignable.
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « Insoignable » (76), qui porte incurable, un drapeau qui change ce qu'une cible peut infliger ou subir. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: mot_exsangue
+    dofusdb_id: 13217
+    name: { fr: "Mot Exsangue", en: "Bloodless Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau et soigne les attaquants de la cible.
+      
+      Sur un allié : soigne la cible.
+    assumptions:
+      - "Effet 786, « soin sur l'attaquant : 25 % des dommages » : le sort rend de la vie aux attaquants de la cible. Des points de vie rendus, pas des degats portes."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_de_solidarite
+    dofusdb_id: 13219
+    name: { fr: "Mot de Solidarité", en: "Uniting Word" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Transfère une partie de la vie de l'allié ciblé à tous les alliés Encouragés.
+      Le transfert venant d'une Fée du lanceur est plus important.
+      
+      Sur un allié Encouragé : transfère une partie de la vie de tous les alliés Encouragés à la cible.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Mot de Solidarité » (584) ; retire « Mot de Solidarité » (584). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 792/1160 : lance aussi « Mot de Solidarité », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: mot_stimulant
+    dofusdb_id: 25742
+    name: { fr: "Mot Stimulant", en: "Stimulating Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PA de l'allié ciblé et lui applique l'état Encouragé.
+      Le cumul est partagé entre les Encouragements.
+      
+      Sur une case libre : invoque une Fée Stimulante.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Stimulé » (4159). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque une Fée Stimulante », « Mot Stimulant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,26209,1::Encouragé}} » (4157), lu par Bosquet Enchanté, Mot de Solidarité. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 111 (PA) : le gain va a l'ALLIE CIBLE, pas au lanceur, et ce solveur ne resout qu'un lanceur seul. Rien a ecrire ici, et ce n'est pas un trou : le sort vaut zero en duel parce que le jeu ne donne rien au Cra qui le lance."
+    effects: []
+
+  - id: mot_de_jouvence
+    dofusdb_id: 25743
+    name: { fr: "Mot de Jouvence", en: "Word of Youth" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur l'allié ciblé, le soigne immédiatement et en début de tour et lui applique l'état Encouragé.
+      Le cumul est partagé entre les Encouragements.
+      
+      Sur une case libre : invoque une Fée de Jouvence.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Rajeuni » (4160). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque une Fée de Jouvence », « Mot de Jouvence », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,26209,1::Encouragé}} » (4157), lu par Bosquet Enchanté, Mot de Solidarité. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects: []
+
+  - id: mot_vivifiant
+    dofusdb_id: 25744
+    name: { fr: "Mot Vivifiant", en: "Life-Giving Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente les PM et la Fuite de l'allié ciblé et lui applique l'état Encouragé.
+      Le cumul est partagé entre les Encouragements.
+      
+      Sur une case libre : invoque une Fée Vivifiante.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Vivifié » (4161). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque une Fée Vivifiante », « Mot Vivifiant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,26209,1::Encouragé}} » (4157), lu par Bosquet Enchanté, Mot de Solidarité. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+      - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: mot_galvanisant
+    dofusdb_id: 25745
+    name: { fr: "Mot Galvanisant", en: "Galvanising Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Puissance de l'allié ciblé et lui applique un bouclier et l'état Encouragé.
+      Le cumul est partagé entre les Encouragements.
+      
+      Sur une case libre : invoque une Fée Galvanisante.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Galvanisé » (4162). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque une Fée Galvanisante », « Mot Galvanisant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effets 950/951 : ce sort applique « {{spell,26209,1::Encouragé}} » (4157), lu par Bosquet Enchanté, Mot de Solidarité. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
+    effects:
+      - effect: gain
+        resource: mot_galvanisant_puissance
+
+  - id: mot_de_declin
+    dofusdb_id: 25746
+    name: { fr: "Mot de Déclin", en: "Word of Decline" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Réduit la durée des effets sur l'ennemi ciblé, lui réduit ses soins reçus et lui applique l'état Moqué.
+      Le cumul est partagé entre les Moqueries.
+      
+      Sur une case libre : invoque un Feu de Déclin.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Décadent » (4165) ; applique « {{spell,26210,1::Moqué}} » (4163). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque un Feu de Déclin », « Mot de Déclin », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines: []
+    effects:
+      # « lui applique l'etat Moque » : c'est ce qui fait monter le cran du
+      # Choeur Strident, une fois par tour quel que soit le nombre de Moqueries.
+      - effect: gain
+        resource: moquerie
+
+  - id: mot_decourageant
+    dofusdb_id: 25747
+    name: { fr: "Mot Décourageant", en: "Discouraging Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire des PA et de l'Esquive PA à l'ennemi ciblé et lui applique l'état Moqué.
+      Le cumul est partagé entre les Moqueries.
+      
+      Sur une case libre : invoque un Feu Décourageant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Découragé » (4164) ; applique « {{spell,26210,1::Moqué}} » (4163). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque un Feu Décourageant », « Mot Décourageant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 162 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « lui applique l'etat Moque » : c'est ce qui fait monter le cran du
+      # Choeur Strident, une fois par tour quel que soit le nombre de Moqueries.
+      - effect: gain
+        resource: moquerie
+
+  - id: mot_deprimant
+    dofusdb_id: 25748
+    name: { fr: "Mot Déprimant", en: "Depressing Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire de la Puissance et des Dommages à l'ennemi ciblé et lui applique l'état Moqué.
+      Le cumul est partagé entre les Moqueries.
+      
+      Sur une case libre : invoque un Feu Déprimant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Déprimé » (4166) ; applique « {{spell,26210,1::Moqué}} » (4163). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque un Feu Déprimant », « Mot Déprimant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects:
+      # « lui applique l'etat Moque » : c'est ce qui fait monter le cran du
+      # Choeur Strident, une fois par tour quel que soit le nombre de Moqueries.
+      - effect: gain
+        resource: moquerie
+
+  - id: mot_accablant
+    dofusdb_id: 25749
+    name: { fr: "Mot Accablant", en: "Overwhelming Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Retire des PM et de l'Esquive PM à l'ennemi ciblé et lui applique l'état Moqué.
+      Le cumul est partagé entre les Moqueries.
+      
+      Sur une case libre : invoque un Feu Accablant.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Accablé » (4167) ; applique « {{spell,26210,1::Moqué}} » (4163). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Invoque un Feu Accablant », « Mot Accablant », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 163 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects:
+      # « lui applique l'etat Moque » : c'est ce qui fait monter le cran du
+      # Choeur Strident, une fois par tour quel que soit le nombre de Moqueries.
+      - effect: gain
+        resource: moquerie
+
+  - id: mot_d_amitie
+    dofusdb_id: 25795
+    name: { fr: "Mot d'Amitié", en: "Friendship Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Lapino maîtrisable qui peut soigner ou appliquer un bouclier.
+      Il peut également se transformer s'il est dans l'état Contrôlé pour occasionner des dommages dans l'élément de l'{{spell,25930,1::Alchi-Rhétorique}}.
+      
+      Le Lapino est téléporté et immobilisé sur la case ciblée si le sort est relancé quand il est en vie.
+      
+      À sa mort, le lanceur pose un glyphe sous le Lapino qui occasionne des dommages aux ennemis ou soigne les alliés dans le meilleur élément du lanceur et le temps de relance du sort est fixé à 2 tours.
+    assumptions:
+      - "Le glyphe que le lanceur pose à la mort du Lapino n'est pas compté : sous-sort Lapinoglyphe (25948), 20 de base dans le meilleur élément au début du tour des ennemis, deux tours, un cercle de 2 cases, l'autre glyphe soignant les alliés. Aucune fourchette ne lui est publiée, et il n'est pas vérifié en jeu."
+      - "Effet 1045, « relance fixee a 2 tours » a la mort du Lapino : non suivi, la mort d'une invocation n'etant pas simulee. Il ne touche aucun degat compte."
+      - "Les attaques du Lapino (Lapinopoing 21-25, Souffle Alchimique 26-30) sont des dégâts d'invocation, non comptés ici."
+      - "Effet 2794 : lance aussi « Mot d'Amitié », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: mot_alchimique
+    dofusdb_id: 25802
+    name: { fr: "Mot Alchimique", en: "Alchemical Word" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Fiole vide statique qui peut être remplie d'un élément avec l'{{spell,25931,1::Alchi-Rhétorique}}.
+      Lorsqu'elle est attaquée par un allié, il consomme son contenu pour que le lanceur le soigne et augmente les caractéristiques selon le contenu.
+      Lorsqu'elle est détruite, elle occasionne des dommages selon son contenu aux ennemis et aux autres Fioles du lanceur en zone.
+      
+      Sur une Fiole pleine du lanceur : consomme le contenu de la Fiole.
+      Sur une Fiole vide du lanceur : détruit la Fiole et rembourse le coût en PA.
+      
+      Utiliser le sort sur une Fiole rembourse l'utilisation du sort dans le tour.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus. Aucun chiffre n'en depend."
+      - "Effets 118, 119, 123 et 126 : +150 Force, Agilite, Chance et Intelligence pendant trois tours, sur la cible « a », c'est-a-dire un ALLIE et non le lanceur, dont les effets portent la marque « C » partout ailleurs dans ce fichier. Le bonus demande en outre que la Fiole soit attaquee PAR UN ALLIE. Ce calculateur resout un personnage seul : ni l'une ni l'autre condition ne se presente."
+      - "Effet 1160 : lance aussi « Mot Alchimique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+      - element: fire
+        critical: unknown
+        normal: unknown
+      - element: water
+        critical: unknown
+        normal: unknown
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: scalpel
+    dofusdb_id: 25832
+    name: { fr: "Scalpel", en: "Scalpel" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 25 }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages aux ennemis ou soigne les alliés dans le meilleur élément.
+    assumptions:
+      - "Effet 3002, soins dans le meilleur element : sur un allie le sort soigne au lieu de frapper. Ce calculateur ne mesure que les degats."
+      - "Sort « dans le meilleur élément du lanceur » : la ligne frappe dans l'élément où le build a le plus de caractéristique, la même fourchette valant pour les cinq éléments."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - best_element: true
+        critical: [48, 53]
+        normal: [40, 44]
+    effects:
+      - effect: damage
+
+  - id: vacarme
+    dofusdb_id: 25856
+    name: { fr: "Vacarme", en: "Commotion" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés ou occasionne des dommages Feu aux ennemis.
+      
+      Sur un Feu Follet du lanceur : applique les effets en zone et augmente les dommages finaux de tous les Feux Follets du lanceur.
+    assumptions:
+      - "Effet 1160, Feu 25-28 sur les Feux Follets : « sur un Feu Follet du lanceur, applique les effets en zone ». C'est le sort relance depuis une invocation, meme fourchette que sa ligne propre. Ecarte au meme titre que les degats d'invocation."
+      - "Effet 1171, +25 % de Dommages finaux : « augmente les dommages finaux de tous les Feux Follets du lanceur », ses invocations, non comptées ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: cri_assourdissant
+    dofusdb_id: 25857
+    name: { fr: "Cri Assourdissant", en: "Deafening Cry" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PA.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_tapageur
+    dofusdb_id: 25858
+    name: { fr: "Mot Tapageur", en: "Raucous Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et occasionne des dommages Feu aux ennemis en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: chapardage
+    dofusdb_id: 25859
+    name: { fr: "Chapardage", en: "Pilfering" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la Portée à la cible et de la vie dans l'élément Feu aux ennemis.
+    assumptions:
+      - "Effet 320, vol de 2 Portee : la Portee decide d'ou l'on peut lancer, jamais de ce que l'on inflige."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_turbulent
+    dofusdb_id: 25860
+    name: { fr: "Mot Turbulent", en: "Turbulent Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés, occasionne des dommages Feu aux ennemis et leur applique l'état Turbulent en zone :
+      • Repousse les entités au contact de la cible à la fin de son tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,26215,1::Turbulent}} » (4201). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Mot Turbulent », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ch_ur_strident
+    dofusdb_id: 25861
+    name: { fr: "Chœur Strident", en: "Shrill Choir" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu aux ennemis ou soigne les alliés.
+      Les dommages et les soins sont augmentés à l'application d'une Moquerie par le lanceur ou à la mort d'un de ses Feux Follets.
+      
+      Les effets ne peuvent être augmentés qu'une seule fois par tour, et se décrémentent après utilisation du sort.
+    assumptions:
+      - "Effet 293, +5 dégâts de base par cran, trois au plus, sur le compteur `moquerie` : quatre sorts de la classe appliquent une Moquerie (Mot de Déclin, Mot Décourageant, Mot Déprimant et Mot Accablant). Seule la seconde source, la mort d'un Feu Follet, est hors de portée."
+      - "« Les effets se decrementent apres utilisation du sort » : le lancer depense un cran, ecrit apres la ligne de degats pour que le sort profite du cran qu'il consomme. Trois tours de Moqueries sans lancer remplissent le compteur, un lancer par tour le maintient a l'equilibre."
+      - "Effet 2935, +5 soins de base : le pendant du precedent cote soins, que ce calculateur ne mesure pas."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Chœur Strident », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus:
+          # Quatre paliers, 40-44 nu puis 45-49, 50-54 et 55-59, et 48-53 à 63-68 en
+          # critique : cinq points par cran des deux côtés, à largeur constante, donc un
+          # bonus de dégâts de base.
+          - kind: per_resource
+            resource: moquerie
+            amount: 5
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: moquerie
+
+  - id: mot_distrayant
+    dofusdb_id: 25862
+    name: { fr: "Mot Distrayant", en: "Distracting Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Attire les cibles vers le centre, soigne les alliés et occasionne des dommages Feu aux ennemis en zone.
+      L'attirance n'affecte pas le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: cri_de_guerre
+    dofusdb_id: 25863
+    name: { fr: "Cri de Guerre", en: "War Cry" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse les cibles en zone.
+      Les dommages de zone ne sont pas dégressifs.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_rituel
+    dofusdb_id: 25864
+    name: { fr: "Mot Rituel", en: "Ritual Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    note: |
+      Pose un glyphe-aura qui peint les entités en zone.
+      Occasionne également des dommages Terre aux ennemis dans la zone d'effet et soigne les alliés à l'intérieur de la zone.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus. Aucun chiffre n'en depend."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_furieux
+    dofusdb_id: 25865
+    name: { fr: "Mot Furieux", en: "Furious Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse les cibles en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: pinceau_tribal
+    dofusdb_id: 25866
+    name: { fr: "Pinceau Tribal", en: "Tribal Paintbrush" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Peint la cible et soigne les alliés ou occasionne des dommages Terre aux ennemis.
+      
+      Sur une cible Peinte : propage la Peinture, soigne les alliés et occasionne des dommages Terre aux ennemis en zone.
+      
+      Sur le lanceur : consomme toutes les Peintures pour occasionner des dommages Terre à tous les ennemis Peints.
+      • Les dommages sont augmentés pour chaque ennemi touché avant d'appliquer les effets.
+      • Augmente les Dommages Poussée du lanceur pour chaque allié touché.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus. Aucun chiffre n'en depend."
+      - "Effet 414, +30 Dommages Poussée du lanceur par allié touché : la rotation est solo, aucun allié n'est touché, donc rien à compter."
+      - "Trois modes de lancer, qui se partagent les deux lancers du tour. Sur une cible non peinte : 19 à 22 Terre, et la cible est peinte. Sur une cible peinte (effets 792 et 1160) : 19 à 22 à chaque ennemi du cercle de 2 cases, qui sont tous peints. Sur soi : 19 à 22, plus 8 par ennemi peint (cinq au plus), sur chaque ennemi peint, puis la Peinture disparaît (sous-sort 25924, grade 2)."
+      - "Effets 950/951 : la Peinture (4440) dure deux tours et se compte en ennemis, jamais au-delà du nombre de cibles. Le sort ne part qu'une fois par cible : peindre un ennemi puis propager depuis lui attend le tour suivant, sauf s'il reste un autre ennemi déjà peint."
+      - "Sans placement, les ennemis déclarés sont supposés dans le cercle de 2 cases de la cible propagée, comme pour toute zone : une propagation les peint tous."
+      - "Effets 792/1160 : lance aussi « Peinture », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: peintures
+      - effect: gain
+        resource: pinceau_cibles
+    mode_name: { fr: "sur une cible non peinte", en: "on an unpainted target" }
+    blocked_at_max: peintures
+    modes:
+      - name: { fr: "sur une cible peinte", en: "on a painted target" }
+        requires_more_than: { resource: peintures, than: pinceau_cibles }
+        lines:
+          - element: earth
+            critical: unknown
+            normal: unknown
+        effects:
+          - effect: damage
+          - effect: gain
+            resource: peintures
+            up_to_zone: true
+          - effect: gain
+            resource: pinceau_cibles
+      - name: { fr: "sur soi", en: "on self" }
+        on_self: true
+        requires: { kind: caster_has, resource: peintures }
+        lines:
+          - element: earth
+            repeats_per: peintures
+            differs_from_snapshot: "La consommation est le sous-sort 25924 (grade 2), qui frappe chaque ennemi peint : sa ligne ne se tire pas de celles du sort, ses fourchettes viennent de DofusDB."
+            # Une frappe par ennemi peint, que `repeats_per` compte, chacune sur la
+            # seule case de son ennemi : le cercle de taille 2 du sort est celui de la
+            # propagation, et le prendre ici compterait chaque ennemi plusieurs fois.
+            area: { shape: P, size: 1, max_targets: 1 }
+            critical: [23, 26]
+            normal: [19, 22]
+            base_bonus:
+              - kind: steps
+                resource: peintures
+                steps: [8, 8, 8, 8, 8, 0]
+        effects:
+          - effect: damage
+          - effect: reset
+            resource: peintures
+
+  - id: juron
+    dofusdb_id: 25867
+    name: { fr: "Juron", en: "Profanity" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et repousse la cible.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: peinture_de_guerre
+    dofusdb_id: 25868
+    name: { fr: "Peinture de Guerre", en: "Warpaint" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Peint la cible et occasionne des dommages Terre aux ennemis ou soigne les alliés.
+      
+      <b>État Peinture :</b>
+      • Sur un ennemi : réduit ses Résistances Poussée.
+      • Sur un allié : soigne au début de son tour.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus. Aucun chiffre n'en depend."
+      - "Effet 417, -N Resistance Poussee : la poussee n'est pas un element de degats et aucun sort n'en tire de dommages ici."
+      - "Effets 950/951 : ce sort applique « {{spell,26214,3::Peinture}} » (4440). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Peinture », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: onguent_ancestral
+    dofusdb_id: 25869
+    name: { fr: "Onguent Ancestral", en: "Ancestral Ointment" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis ou soigne les alliés.
+      Réduit également les soins reçus par l'ennemi ciblé ou augmente ceux par l'allié ciblé.
+    assumptions:
+      - "Effet 3000, soins Terre : ce calculateur mesure les degats portes, pas les points de vie rendus. Aucun chiffre n'en depend."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_vampirique
+    dofusdb_id: 25870
+    name: { fr: "Mot Vampirique", en: "Vampiric Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis ou transfère une partie de la vie du lanceur à l'allié ciblé.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Mot Vampirique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: lamentations
+    dofusdb_id: 25871
+    name: { fr: "Lamentations", en: "Lamentations" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et soigne les alliés selon les dommages occasionnés en zone.
+      N'affecte pas le lanceur.
+    assumptions:
+      - "Effet 406 : il retire l'etat que le sort a pose. Sans mecanique modelisee derriere, il n'a rien a retirer."
+      - "Effet 2973, « soin : N % des dommages occasionnes » : des points de vie rendus, pas des degats portes."
+      - "Effets 950/951 : ce sort applique « Lamentations » (4230). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Alchi-Rhétorique », « Lamentations », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: sanglots
+    dofusdb_id: 25872
+    name: { fr: "Sanglots", en: "Sobs" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau à la cible et soigne les alliés selon les dommages occasionnés en zone autour d'elle.
+    assumptions:
+      - "Effet 406 : il retire l'etat que le sort a pose. Sans mecanique modelisee derriere, il n'a rien a retirer."
+      - "Effet 2973, « soin : N % des dommages occasionnes » : des points de vie rendus, pas des degats portes."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Sanglots », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_interdit
+    dofusdb_id: 25873
+    name: { fr: "Mot Interdit", en: "Forbidden Word" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit la durée des effets sur la cible, occasionne des dommages Eau aux ennemis ou soigne les alliés.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fontaine_de_jouvence
+    dofusdb_id: 25874
+    name: { fr: "Fontaine de Jouvence", en: "Fountain of Youth" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne les alliés et pose un glyphe de fin de tour qui soigne les alliés en zone.
+      Rend le lanceur Intaclable tant qu'il est dans le glyphe.
+    assumptions:
+      - "Les déplacements et les poses au sol de ce sort, téléportation, poussée, attirance, glyphe ou piège, ne sont pas modélisés : ce calculateur ne simule pas la grille. Ses dégâts, eux, sont exacts."
+    lines: []
+    open_questions:
+      - "Effet 402 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: cryotherapie
+    dofusdb_id: 25875
+    name: { fr: "Cryothérapie", en: "Cryotherapy" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau aux ennemis et applique l'état Cryothérapie sur la cible :
+      • Applique un bouclier sur l'allié ciblé ou retire de la Fuite aux ennemis.
+      • Retire les effets du sort pour soigner les alliés et occasionner des dommages Eau aux ennemis en zone si la cible perd l'état.
+    assumptions:
+      - "Effet 1160, Eau 14-16 : « retire les effets du sort pour soigner », dit le texte. C'est la seconde detente de l'etat Cryotherapie, qui frappe ou soigne selon la cible, et elle demande d'avoir pose l'etat au tour precedent. Meme fourchette que la ligne propre."
+      - "Effet 754, -60 Fuite sur la cible : la Fuite decide si un corps a corps se quitte, jamais ce qu'un sort inflige."
+      - "Effets 950/951 : ce sort applique « {{spell,26243,2::Cryothérapie}} » (4462). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_defendu
+    dofusdb_id: 25876
+    name: { fr: "Mot Défendu", en: "Defensive Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et attire les cibles vers la case ciblée en zone.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_espiegle
+    dofusdb_id: 25877
+    name: { fr: "Mot Espiègle", en: "Mischievous Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PM.
+    assumptions:
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_malicieux
+    dofusdb_id: 25878
+    name: { fr: "Mot Malicieux", en: "Malicious Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique l'état Malice sur la cible :
+      • Retire de la Puissance à la cible pour chaque PM qu'elle utilise (cumulable 10 fois).
+    assumptions:
+      - "Effet 186, -30 Puissance sur la CIBLE par PM qu'elle utilise, cumulable dix fois : c'est l'adversaire qui frappera moins fort, pas le lanceur qui frappera plus."
+      - "Effets 950/951 : ce sort applique « {{spell,26211,1::Malice}} » (4205). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Mot Malicieux », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_farceur
+    dofusdb_id: 25879
+    name: { fr: "Mot Farceur", en: "Prankster's Word" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis ou soigne les alliés et applique l'état Farce sur la cible :
+      • Téléporte la cible à sa position précédente à la fin de son tour.
+    assumptions:
+      - "Effet 1100, « teleporte la cible a sa position precedente a la fin de son tour » : un deplacement, et ce calculateur ne simule pas la grille."
+      - "Effets 950/951 : ce sort applique « {{spell,26212,1::Farce}} » (4206). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Mot Farceur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_fleuri
+    dofusdb_id: 25880
+    name: { fr: "Mot Fleuri", en: "Flowery Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air aux ennemis et applique l'état Floraison sur les cibles en zone :
+      • Soigne les alliés en zone autour de la cible à la fin de son tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « {{spell,26213,2::Floraison}} » (4438). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », « Mot Fleuri », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: bosquet_enchante
+    dofusdb_id: 25881
+    name: { fr: "Bosquet Enchanté", en: "Enchanted Thicket" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et occasionne des dommages Air aux ennemis en zone.
+      La zone s'étend autour des Fées du lanceur et des alliés Encouragés.
+      
+      Les effets ne sont appliqués qu'une seule fois par lancer.
+    assumptions:
+      - "Effet 1160, Air 34-38 : « la zone s'etend autour des FEES du lanceur et des allies Encourages », et « les effets ne sont appliques qu'une seule fois par lancer ». Ce sous-sort est l'extension de la zone, pas une frappe de plus sur la meme cible : le texte l'exclut explicitement."
+      - "Effets 950/951 : ce sort applique « Bosquet Enchanté » (4437) ; retire « Bosquet Enchanté » (4437). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mot_secret
+    dofusdb_id: 25882
+    name: { fr: "Mot Secret", en: "Secret Word" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés et occasionne des dommages Air aux ennemis en zone.
+      Les soins et les dommages sont augmentés dans 2 tours si le sort n'est pas relancé au tour suivant.
+      
+      Augmente les soins finaux de toutes les Fées du lanceur si une entité est touchée.
+    assumptions:
+      - "Effets 293 et 3793, +30 dégâts de base, sur le compteur `mot_secret_maturation` : valeur 30, délai 2, durée 1, plus l'effet 406 qui annule quand on relance. Deux fourchettes, 28-32 nu et 58-62 « 1 charge - Dans 2 tours », 34-38 et 64-68 en critique : +30 sur les quatre bornes, à largeur constante."
+      - "L'ABSTENTION est ce qui rendait ce sort difficile, et elle s'ecrit : un drapeau arme par le lancer, un compteur qui monte tant qu'il tient et que le lancer remet a zero. Le cran DEUX est la fenetre, le trois la fenetre manquee. Le solveur arbitre donc lui-meme entre relancer chaque tour et laisser murir, ce qu'aucune charge differee n'aurait permis : le moteur refuse de relancer un sort dont une charge est en vol."
+      - "Effet 406 : il annule la maturation quand le sort est relance trop tot. Sans le bonus modelise, il n'a rien a annuler."
+      - "Effet 3793 : l'autre moitie de la maturation ci-dessus, sans description officielle."
+      - "Effet 2935, +30 soins de base : le pendant du bonus de degats ci-dessous, cote soins."
+      - "Effet 2971, +25 % de Soins finaux : ce calculateur mesure les degats portes, pas les points de vie rendus."
+      - "Effets 1160/2160 : lance aussi « Alchi-Rhétorique », « Mot Secret », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        active_at: { resource: mot_secret_maturation, exactly: 0 }
+        critical: [34, 38]
+        normal: [28, 32]
+      - element: air
+        active_at: { resource: mot_secret_maturation, exactly: 1 }
+        critical: [34, 38]
+        normal: [28, 32]
+      - element: air
+        active_at: { resource: mot_secret_maturation, exactly: 2 }
+        critical: [64, 68]
+        normal: [58, 62]
+      - element: air
+        active_at: { resource: mot_secret_maturation, exactly: 3 }
+        critical: [34, 38]
+        normal: [28, 32]
+    effects:
+      - effect: damage
+      # Effet 406, « retire les effets du sort » : le lancer annule la
+      # maturation en cours. Ecrit APRES les degats, pour que le lancer
+      # profite du cran qu'il efface.
+      - effect: reset
+        resource: mot_secret_maturation
+      - effect: gain
+        resource: mot_secret_arme
+
+  - id: murmure
+    dofusdb_id: 25883
+    name: { fr: "Murmure", en: "Murmur" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et vole des PM aux ennemis.
+      
+      Sur un allié : soigne la cible et augmente ses PM.
+    assumptions:
+      - "Effet 128, +1 PM a un ALLIE, marque « a » : ce calculateur resout un personnage seul."
+      - "Effet 77, vol d'un PM : un PM retire ne change aucun degat porte."
+      - "Effet 1160 : lance aussi « Alchi-Rhétorique », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

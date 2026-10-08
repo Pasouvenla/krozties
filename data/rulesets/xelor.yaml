@@ -1,0 +1,858 @@
+# Xelor. Covers every elemental path: the path lives in the build's deck and
+# characteristics, not here. Sources are in-game tooltips unless a note says
+# otherwise.
+
+schema_version: 1
+game_version: "3.6.12"
+class: xelor
+name: { fr: "Xélor", en: "Xelor" }
+
+note: |
+  Non-critical damage ranges and per-spell critical rates are missing almost
+  everywhere: the prototypes assumed every hit crits, so they never needed
+  either. `dofus data-gaps` lists exactly what to read off the tooltips.
+
+resources:
+  - id: telefrag
+    name: { fr: "Téléfrag", en: "Telefrag" }
+    scope: target
+    max: 1
+    default: 0
+    monotone: none
+    note: |
+      Téléfrag. Capped at one, which encodes strict generate/consume
+      alternation: a target can hold two Téléfrags, but a spell that consumes
+      Téléfrag consumes every stack at once.
+
+      `monotone: none` et non `increasing` : un générateur lancé sur une cible
+      qui en porte déjà est `at_cap: skip` et ne rend pas ses 2 PA, si bien que
+      ne pas en porter est parfois meilleur. Sur `increasing`, la dominance
+      jetterait l'état qui permet au générateur suivant d'être remboursé.
+
+  - id: glas_stacks
+    # « 1 Telefrag consomme » (707), que le Glas exige (HS=707).
+    game_states: [707]
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    note: |
+      Really a trigger on "the target loses a Téléfrag", not a per-spell effect.
+      Until triggers exist in the schema, every consuming spell lists the gain
+      explicitly. Any new consumer must remember to do the same.
+
+  - id: petrification
+    dofusdb_id: 13290
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+      note: |
+        UNVERIFIED: whether all stacks drop together or one falls off per turn.
+        The tooltip says "cumulable 2 fois" and states neither the reduction nor
+        the decay. Modelled all-at-once, matching the prototypes.
+
+  - id: position_precedente
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    gain_at_turn_end: 1
+    note: |
+      Plusieurs sorts « téléportent la cible à sa position précédente » : sans
+      déplacement antérieur, pas de téléportation, donc pas de Téléfrag.
+      Modélisé ainsi : acquis en fin de tour, donc absent au tour 1 et présent
+      ensuite, et accordé immédiatement par les sorts qui déplacent vraiment,
+      Permutation et Engrenage. L'hypothèse retenue est qu'après un tour complet
+      tout le monde a bougé.
+
+  - id: horloge
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration:
+      turns: 2
+      refresh: on_apply
+      on_expire: reset_to_default
+    note: |
+      Horloge raises its OWN base damage for later casts, and does not stack.
+      A second cast in the same turn is buffed by the first, because a spell's
+      damage reads the state as it stands before that cast's own effects apply.
+
+  - id: aiguille
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    dofusdb_source: 13244
+    duration:
+      turns: 1
+      refresh: on_apply
+      on_expire: reset_to_default
+      note: |
+        Deux tours (effet 950, durée 2).
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: earth
+            critical: [13, 16]
+            normal: unknown
+        note: |
+          Le poison, qui tombe au debut du tour de la cible sans condition. Deux
+          tours de duree, donc deux tics.
+      - trigger: resource_consumed
+        resource: telefrag
+        once_per_turn: true
+        lines:
+          - element: earth
+            critical: [13, 16]
+            normal: unknown
+        note: |
+          La détente, distincte du poison : retirer le Téléfrag d'une cible sous
+          Aiguille déclenche une ligne de dégâts, une fois par tour, deux fois sur la
+          durée de l'état. Un lancer d'Aiguille peut donc produire quatre frappes :
+          deux poisons et deux détentes.
+
+  - id: fletrissement_cumul
+    scope: caster
+    max: 3
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      « Les dommages sont augmentés après chaque lancer si la cible est
+      Téléfrag » : effet 293, valeur 6, durée 3, sur le lanceur. Le bonus se
+      cumule trois fois, et le sort est limité à deux lancers par cible et par
+      tour, ce qui borne la montée. Il ne porte que sur le Flétrissement : un
+      `base_bonus` sur sa ligne, et non un `modifies_damage` sur la ressource,
+      qui toucherait tous les sorts de la classe.
+
+
+budgets:
+  - id: telefrag_per_turn
+    name: { fr: "Téléfrags posables par tour", en: "Telefrags per turn" }
+    default: 3
+    max: 6
+    note: |
+      Combien de Téléfrags votre placement permet de poser par tour : plus haut,
+      la rotation devient plus optimiste que ce qui est jouable ; plus bas, elle
+      décrit un combat où l'on est gêné.
+
+costly:
+  - id: remise_petrification
+    name: { fr: "Remise de PA de la Pétrification", en: "Petrification AP discount" }
+    resources: [petrification]
+    note: |
+      Un PA de moins par cumul sur la Pétrification, plancher à un.
+
+
+  - id: cumuls_de_glas
+    name: { fr: "Cumuls de Glas", en: "Knell stacks" }
+    resources: [glas_stacks]
+    note: |
+      Les cumuls de Glas, qui ajoutent six de dégâts de base par cran aux sorts
+      qui les lisent.
+
+states_outside_model:
+  # Etats que lisent des conditions de lancement et qu'aucun compteur ne
+  # represente : le moteur les tient pour ABSENTS.
+  - state: 6
+    name: "Enracine"
+    note: "Aucun sort du Xelor ne le pose sur lui, et la Vingt-cinquieme Heure le retire."
+  - state: 7
+    name: "Pesanteur"
+    note: "Aucun sort du Xelor ne la pose sur lui, et la Vingt-cinquieme Heure la retire."
+  - state: 97
+    name: "Indeplacable"
+    note: "Le Paradoxe le pose sur l'invocation, pas sur le Xelor, et la Vingt-cinquieme Heure le retire."
+
+spells:
+  - id: fuite_du_temps
+    dofusdb_id: 13251
+    name: { fr: "Fuite du Temps", en: "Time Flight" }
+    ap_cost: { base: 1 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Augmente la Fuite de l'allié ciblé.
+      Téléporte la cible à sa position précédente au tour suivant.
+
+      Peut générer un Téléfrag.
+    assumptions:
+      - "Effet 1160 : lance aussi « Fuite du Temps », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le sort n'inflige aucun dégât : il coûte 1 PA et pose un Téléfrag au début du tour suivant, pas immédiatement, ce qui convertit un PA orphelin de fin de tour en Téléfrag."
+      - "Ce Téléfrag ne se prend pas sur le budget du tour : il l'augmente de un. Le budget chiffre ce que vous mettez en place en vous déplaçant, et ce sort s'arme un tour à l'avance."
+      - "La téléportation vise la position précédente de la cible (effet 1100, delay 1) : sans déplacement antérieur il n'y a rien à téléporter, donc rien à armer. Même condition que Gelure."
+      - "Le bonus de Fuite accordé à un allié n'est pas modélisé : ce calculateur ne simule ni les alliés ni l'esquive."
+    lines: []
+    effects:
+      - effect: schedule_gain
+        resource: telefrag
+        delay: 1
+        requires: { kind: target_has, resource: position_precedente }
+
+  - id: gelure
+    dofusdb_id: 13245
+    name: { fr: "Gelure", en: "Frostbite" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Gelure », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: [13, 15]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        # A target already holding a Telefrag cannot take a second one, so the
+        # generator is cast for its damage alone: no budget spent, no AP refund.
+        at_cap: skip
+        requires: { kind: target_has, resource: position_precedente }
+
+  - id: ralentissement
+    dofusdb_id: 13242
+    name: { fr: "Ralentissement", en: "Slowdown" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    lines:
+      - element: water
+        critical: [18, 20]
+        normal: unknown
+    assumptions:
+      - "Effet 1160 : lance aussi « Ralentissement », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Le vol de PA est supposé échouer : la cible y résiste dès le haut niveau, et plus personne ne joue de build retrait de PA. Le sort est donc compté pour ses seuls dégâts, sans le PA rendu."
+    effects:
+      # The steal reads the Téléfrag before anything else touches it: cast order
+      # within a turn matters, and putting this after a consumer wastes the refund.
+      #
+      # Déclaré, mais sans effet : voir AP_THEFT_LANDS dans le moteur. La donnée dit
+      # bien que le sort vole un PA ; ce qui est faux, c'est de compter sur sa
+      # réussite.
+      - effect: damage
+      - effect: steal_ap
+        amount: 1
+        requires: { kind: target_has, resource: telefrag }
+
+  - id: compte_goutte
+    dofusdb_id: 13259
+    name: { fr: "Compte-Gouttes", en: "Dropper" }
+    ap_cost: { base: 3 }
+    # 3 par tour et 2 par cible, comme la donnée (maxCastPerTurn,
+    # maxCastPerTarget).
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Compte-goutte », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: [22, 25]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        # A target already holding a Telefrag cannot take a second one, so the
+        # generator is cast for its damage alone: no budget spent, no AP refund.
+        at_cap: skip
+        requires: { kind: target_has, resource: position_precedente }
+
+  - id: permutation
+    dofusdb_id: 13285
+    name: { fr: "Permutation", en: "Swap" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effet 1160 : lance aussi « Permutation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: [25, 29]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        # A target already holding a Telefrag cannot take a second one, so the
+        # generator is cast for its damage alone: no budget spent, no AP refund.
+        at_cap: skip
+      - effect: gain
+        resource: position_precedente
+
+  - id: petrification
+    dofusdb_id: 13290
+    name: { fr: "Pétrification", en: "Petrification" }
+    ap_cost:
+      base: 4
+      reduced_by:
+        resource: petrification
+        per_stack: 1
+        floor: 1
+    # 3 par tour et 2 par cible, comme la donnée (maxCastPerTurn,
+    # maxCastPerTarget).
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    requires: { kind: target_has, resource: telefrag }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Pétrification », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: [32, 36]
+        normal: unknown
+    note: |
+      The cost is read BEFORE this cast's own effects, so the first Pétrification
+      of a sequence pays full price and does not discount itself. Tested in game:
+      4 AP at 0 stacks, 3 at 1, 2 at 2.
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+      - effect: gain
+        resource: glas_stacks
+      - effect: gain
+        resource: petrification
+
+  - id: clepsydre
+    dofusdb_id: 13298
+    name: { fr: "Clepsydre", en: "Clepsydra" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    requires: { kind: target_has, resource: telefrag }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Clepsydre », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: [40, 44]
+        normal: unknown
+    note: |
+      The carry is listed BEFORE the consume on purpose. It reads the Téléfrag
+      that this same cast is about to remove, so reordering these two silently
+      loses one AP per cast.
+    effects:
+      - effect: damage
+      - effect: carry_ap
+        amount: 1
+        cap: 3
+        requires: { kind: target_has, resource: telefrag }
+      - effect: consume
+        resource: telefrag
+      - effect: gain
+        resource: glas_stacks
+
+  - id: glas
+    dofusdb_id: 13300
+    name: { fr: "Glas", en: "Knell" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: unknown }
+    requires: { kind: caster_has, resource: glas_stacks }
+    note: |
+      Four independent damage lines from one base roll: flat elemental damage and
+      flat critical damage both apply four times. Verified at 6 stacks on a
+      multi-element build: 3164 exactly.
+    lines:
+      - element: fire
+        critical: [4, 4]
+        normal: [3, 3]
+        base_bonus: [{ kind: per_resource, resource: glas_stacks, amount: 3 }]
+      - element: earth
+        critical: [4, 4]
+        normal: [3, 3]
+        base_bonus: [{ kind: per_resource, resource: glas_stacks, amount: 3 }]
+      - element: air
+        critical: [4, 4]
+        normal: [3, 3]
+        base_bonus: [{ kind: per_resource, resource: glas_stacks, amount: 3 }]
+      - element: water
+        critical: [4, 4]
+        normal: [3, 3]
+        base_bonus: [{ kind: per_resource, resource: glas_stacks, amount: 3 }]
+    effects:
+      - effect: damage
+      - effect: reset
+        resource: glas_stacks
+
+  - id: souvenir
+    dofusdb_id: 13281
+    name: { fr: "Souvenir", en: "Memory" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 4
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Life steal, not plain damage: effect 93 rather than 98. The heal is not
+      modelled: this is a damage optimiser.
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Souvenir », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: [13, 15]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+        requires: { kind: target_has, resource: position_precedente }
+
+  - id: engrenage
+    dofusdb_id: 13299
+    name: { fr: "Engrenage", en: "Cogwheel" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Engrenage », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: [26, 29]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+      - effect: gain
+        resource: position_precedente
+
+  - id: poussiere
+    dofusdb_id: 13257
+    name: { fr: "Poussière", en: "Dust" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Générateur conditionnel : son texte dit qu'elle « téléporte également les
+      cibles Téléfrag dans la zone », donc elle n'en génère un que s'il y en a
+      déjà un. Au tour 1, sur une cible vierge, ce sont 4 PA pour les seuls
+      dégâts.
+    assumptions:
+      - "Effets 1160/2794 : lance aussi « Poussière », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: [35, 38]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+        requires: { kind: target_has, resource: telefrag }
+
+  - id: refraction
+    dofusdb_id: 13286
+    name: { fr: "Réfraction", en: "Refraction" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    requires: { kind: target_has, resource: telefrag }
+    note: |
+      La donnée porte deux lignes Feu identiques, la zone répétant la ligne :
+      une seule est modélisée, la seconde compterait deux fois.
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622) ; applique « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Réfraction » sur « A,E251 » : Feu 16-18. Ils sont DEJA comptes et ne s'ajoutent pas."
+    lines:
+      - element: fire
+        critical: [19, 22]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+      - effect: gain
+        resource: glas_stacks
+
+  - id: horloge
+    dofusdb_id: 13256
+    name: { fr: "Horloge", en: "Clock" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    requires: { kind: target_has, resource: telefrag }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Horloge », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: [28, 30]
+        normal: unknown
+        base_bonus: [{ kind: while_resource, resource: horloge, amount: 24 }]
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+      - effect: gain
+        resource: glas_stacks
+      - effect: gain
+        resource: horloge
+
+  - id: sablier
+    dofusdb_id: 13261
+    name: { fr: "Sablier de Xélor", en: "Xelor's Hourglass" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Le texte dit « Le retardement est réduit pour chaque Téléfrag consommé sur
+      la cible » sans chiffre, et la donnée non plus : l'effet est scripté. Un tour
+      par consommation, mesuré en jeu : deux consommations dans le tour font
+      tomber la charge dans ce même tour.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Sablier » (6128). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Sablier de Xélor » et ce qu'il lance a son tour sur « a,e6126 » : Feu 23-25; « Sablier de Xélor » et ce qu'il lance a son tour sur « A,e6132 » : Feu 23-25. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effet 1160 : lance aussi « Sablier de Xélor », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: [13, 15]
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: schedule
+        id: sablier_blast
+        delay: 2
+        accelerated_by:
+          - on_consumed: telefrag
+            reduce_by: 1
+            resolve_immediately_at_zero: true
+        payload:
+          - element: fire
+            critical: [28, 30]
+            normal: unknown
+
+  - id: aiguille
+    dofusdb_id: 13244
+    name: { fr: "Aiguille", en: "Needle" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    lines: []
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Aiguille » (2328). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : les degats de ce sort arrivent par sous-sort, « Aiguille » sur « a,A » : Terre 9-12, Terre 9-12. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Le lancer lui-même n'inflige aucun dégât : il pose l'état, et ce sont les deux déclenchements de l'état, un par tour au plus, qui frappent. Confirmé en jeu."
+      - "Aucun intervalle de relance : la donnée donne minCastInterval 0, et c'est la limite d'un lancer par cible et par tour qui borne le sort."
+    effects:
+      - effect: gain
+        resource: aiguille
+
+# ---------------------------------------------------------------------------
+# Les autres sorts qui frappent.
+#
+# Les chiffres viennent de l'instantané ; ce qui n'est pas modélisé est porté
+# en question ouverte sur chaque sort.
+#
+# Les sorts sans ligne de dégâts sont absents, sauf la Fuite du Temps : elle
+# coûte un PA, ne frappe pas, et pose un Téléfrag au tour suivant, sans
+# dépendre d'aucune position. Les onze autres générateurs (Téléportation,
+# Paradoxe, Raulebaque, Rémanence, Astrolabe, Faille, Espace-temps,
+# Rembobinage, Prémonition, Désynchronisation, Instabilité) rapportent selon
+# où tout le monde se trouve, que ce solveur ne simule pas : leur génération
+# est approchée par le budget `telefrag_per_turn`, que le joueur règle.
+# ---------------------------------------------------------------------------
+
+  - id: dessechement
+    dofusdb_id: 13284
+    name: { fr: "Dessèchement", en: "Drying Up" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622) ; applique « Dessèchement » (6140) ; retire « Dessèchement » (6140). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Dessèchement » sur « a,A » : Air 31-34. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effets 1160/2160 : lance aussi « Dessèchement », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Consomme le Téléfrag des cibles (effet 951 sur l'état 3622), ce qui déclenche l'Aiguille. Le gain de PM par entité Téléfrag touchée et le rebond ne sont pas modélisés : ni l'un ni l'autre ne pèse sur les dégâts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+
+  - id: distorsion
+    dofusdb_id: 13289
+    name: { fr: "Distorsion", en: "Distortion" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Distorsion », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Téléporte à la position précédente (effet 1100) : sans déplacement antérieur il n'y a rien à téléporter, donc pas de Téléfrag. Même modèle que Gelure."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+        requires: { kind: target_has, resource: position_precedente }
+
+  - id: fletrissement
+    dofusdb_id: 13254
+    name: { fr: "Flétrissement", en: "Shrivelling" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effet 1160 : lance aussi « Flétrissement », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Chaque lancer sur une cible Téléfrag ajoute 6 aux dégâts de base du sort, cumulable trois fois et pendant trois tours. Le sort est limité à deux lancers par cible et par tour, ce qui borne la montée."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: fletrissement_cumul, amount: 6 }]
+    effects:
+      - effect: damage
+      # Lu APRES les degats : « augmentes APRES chaque lancer », donc le lancer
+      # qui accorde le cumul n'en profite pas lui-meme.
+      - effect: gain
+        resource: fletrissement_cumul
+        requires: { kind: target_has, resource: telefrag }
+
+  - id: frappe_de_xelor
+    dofusdb_id: 13252
+    name: { fr: "Frappe de Xélor", en: "Xelor's Punch" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Frappe de Xélor », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Téléporte la cible symétriquement par rapport au lanceur (effet 1105). C'est un déplacement franc, qui ne dépend d'aucun historique : la génération est inconditionnelle, et la cible acquiert une position précédente."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+      - effect: gain
+        resource: position_precedente
+
+  - id: gousset
+    dofusdb_id: 14651
+    name: { fr: "Gousset", en: "Harmpit" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Deux lignes Air dans la donnée, 12-14 immédiat et 30-32 différé : deux
+      effets distincts, les fourchettes différant, et non une ligne que la zone
+      répète. Le sort pose une glyphe sur la case de la cible à la fin du tour de
+      lancer, si la cible est alors Téléfrag ; la glyphe frappe à la fin du tour
+      suivant du lanceur toute entité qui s'y trouve, cible d'origine comprise.
+
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Gousset », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La frappe différée de 30-32 est comptée, et sa condition se lit à la FIN du tour, pas au lancer : le sort consomme lui-même le Téléfrag qu'il exige, et il faut en réappliquer un après lui, dans le même tour, pour que la glyphe se pose. Vérifié en jeu."
+      - "La glyphe frappe toute entité présente, cible d'origine comprise. « En zone autour » n'exclut pas la cible."
+      - "Le retrait de PA sur la cible n'est pas modélisé : il ne change rien à un calcul de dégâts."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+      # Arme APRES la consommation, et sans effet sur l'ordre : la condition ne
+      # se lit plus ici mais une fois le tour joue, sur l'etat final.
+      - effect: schedule
+        id: gousset_differe
+        delay: 1
+        requires_at: turn_end
+        requires: { kind: target_has, resource: telefrag }
+        payload:
+          - element: air
+            critical: unknown
+            normal: unknown
+
+  - id: pendule
+    dofusdb_id: 13294
+    name: { fr: "Pendule", en: "Pendulum" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    initial_cooldown: 1
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Pendule » (6939) ; retire « Pendule » (6939). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2160 : les degats de ce sort arrivent par sous-sort, « Pendule » sur « C » : Air 33-36. Ils sont DEJA comptes et ne s'ajoutent pas."
+      - "Effets 1160/2160 : lance aussi « Pendule », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les données portent deux fois la même ligne Air : c'est la zone qui répète, et une cible unique ne la subit qu'une fois. Une seule est comptée."
+      - "Le sort porte deux téléportations, le lanceur symétriquement par rapport à la cible (effet 1104) puis son retour à sa position précédente (effet 1100), mais une seule engendre un Téléfrag : la PREMIÈRE. Confirmé en jeu. Elle ne dépend d'aucun historique, la génération est donc inconditionnelle et disponible dès le tour 1."
+      - "Ce sont les deux téléportations du LANCEUR : la cible ne bouge pas. Le sort ne lui donne donc pas de position précédente, contrairement à Permutation ou Engrenage qui la déplacent vraiment. Sans cela, il aurait permis à Gelure, Compte-goutte et Souvenir de générer dès le tour 1 sans qu'aucun déplacement ait eu lieu."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+
+  - id: perturbation
+    dofusdb_id: 13288
+    name: { fr: "Perturbation", en: "Disruption" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Perturbation », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Téléportation symétrique de la cible (effet 1105), donc génération inconditionnelle. Le vol de vie n'est pas modélisé : c'est un optimiseur de dégâts."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+      - effect: gain
+        resource: position_precedente
+
+  - id: rayon_obscur
+    dofusdb_id: 13253
+    name: { fr: "Rayon Obscur", en: "Dark Ray" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Rayon Obscur », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les dégâts montent de 12 par entité Téléfrag présente dans la zone, avant que les effets ne s'appliquent (effet 293, valeur 12, sans durée). Sur une cible unique cela vaut +12 si elle porte un Téléfrag. Le sort consomme ensuite ce Téléfrag, ce qui déclenche l'Aiguille."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: telefrag, amount: 12 }]
+    effects:
+      - effect: damage
+      # Lu APRES les degats : le bonus par Telefrag se calcule "avant
+      # d'appliquer les effets", donc la consommation vient ensuite. L'inverse
+      # ferait perdre les 12 points au moment meme ou ils comptent.
+      - effect: consume
+        resource: telefrag
+
+  - id: rouage
+    dofusdb_id: 13283
+    name: { fr: "Rouage", en: "Cog" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 1160/2160 : lance aussi « Rouage », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Téléportation symétrique par rapport au centre (effet 1106), le même effet que Poussière et Engrenage : génération inconditionnelle. Le vol de vie de zone n'est pas modélisé."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+      - effect: gain
+        resource: position_precedente
+
+  - id: regulateur
+    dofusdb_id: 13248
+    name: { fr: "Régulateur", en: "Regulator" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    extra_casts: { resource: telefrag, per_stack: 1, cap: 1 }
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 950/951 : ce sort retire « {{spell,24510,1::Téléfrag}} » (3622). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 1160 : lance aussi « Régulateur », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "L'effet 290 est modélisé : lancer ce sort sur une cible Téléfrag donne droit à un second lancer dans le tour. La condition est lue AVANT la consommation, donc le sort gagne bien le lancer que le Téléfrag qu'il consomme lui accorde."
+      - "Consomme le Téléfrag de la cible (effet 951 sur l'état 3622). L'effet 290, qui augmente d'un le nombre de lancers du sort pour le tour si la cible est Téléfrag, n'est pas modélisé : le vocabulaire ne sait pas encore exprimer une limite de lancers qui bouge en cours de tour."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: consume
+        resource: telefrag
+
+  - id: sables_du_temps
+    dofusdb_id: 13292
+    name: { fr: "Sables du Temps", en: "Sands of Time" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Sables du Temps (cible) » (6137) ; retire « Sables du Temps (cible) » (6137). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 2160 : le sort REBONDIT sur une autre entite, « Sables du Temps » sur « a,A » : Feu 33-36. Le rebond frappe l'entite la plus proche AUTRE que celle visee : sur une cible unique il n'a rien a toucher et n'ajoute rien, le chiffre affiche est donc exact. C'est le reglage « Ennemis touches » qui le fait compter, un rebond valant une cible de plus."
+      - "Effets 1160/2160 : lance aussi « Sables du Temps », « Téléfrag », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Téléporte à la position précédente (effet 1100) : génération conditionnelle, comme Gelure. Le rebond sur l'entité la plus proche est du placement, non simulé."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: telefrag
+        ap_bonus: { amount: 2, once_per_spell_per_turn: true }
+        budget: telefrag_per_turn
+        at_cap: skip
+        requires: { kind: target_has, resource: position_precedente }

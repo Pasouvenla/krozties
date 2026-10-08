@@ -1,0 +1,108 @@
+{
+ "v": 1,
+ "src": "dofusbook",
+ "id": 2,
+ "short": "XXXXX",
+ "class": 12,
+ "level": 200,
+ "items": [
+  18590,
+  17103,
+  32234,
+  24035,
+  17104,
+  17105,
+  18591,
+  32236,
+  32235,
+  13673,
+  0,
+  7043,
+  6980,
+  739,
+  7754,
+  694,
+  8698
+ ],
+ "carac": {
+  "scroll_vi": 100,
+  "scroll_sa": 100,
+  "scroll_fo": 100,
+  "scroll_in": 100,
+  "scroll_ch": 100,
+  "scroll_ag": 100,
+  "base_vi": 0,
+  "base_sa": 0,
+  "base_fo": 0,
+  "base_in": 0,
+  "base_ch": 266,
+  "base_ag": 265
+ },
+ "fm": {
+  "a1": {
+   "dc": 8
+  },
+  "a2": {
+   "pa": 1
+  },
+  "am": {
+   "cc": 2
+  },
+  "ar": {
+   "dc": 8
+  },
+  "bo": {
+   "dc": 8
+  },
+  "br": {
+   "dc": 8
+  },
+  "ca": {
+   "pm": 1
+  },
+  "ce": {
+   "cc": 2
+  },
+  "ch": {
+   "dd": 1
+  },
+  "d1": {},
+  "d2": {},
+  "d3": {
+   "deg": 10
+  },
+  "d4": {},
+  "d5": {
+   "deg": 5
+  },
+  "d6": {
+   "deg": 20
+  },
+  "fa": {},
+  "mo": {}
+ },
+ "fmGlobal": {},
+ "boosts": [
+  {
+   "name": "Harmonie de Pandala",
+   "stat": "dmg",
+   "percent": 20,
+   "class_id": null,
+   "effect_id": "18888-1-1-1600-0"
+  },
+  {
+   "name": "Rêve Nébuleux",
+   "stat": "deg",
+   "percent": 20,
+   "class_id": null,
+   "effect_id": "5454-1-1-1630-0"
+  },
+  {
+   "name": "Bleu Turquoise",
+   "stat": "deg",
+   "percent": 10,
+   "class_id": null,
+   "effect_id": "5952-1-1-1630-0"
+  }
+ ]
+}

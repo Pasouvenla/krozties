@@ -1,0 +1,1012 @@
+# Sadida.
+#
+# Ce que la donnée du jeu ne dit pas est écrit en `open_questions` plutôt que
+# deviné : un sort dont la mécanique manque rend ses dégâts justes et son
+# mécanisme déclaré absent.
+
+schema_version: 1
+game_version: "3.6.12"
+class: sadida
+name: { fr: "Sadida", en: "Sadida" }
+
+# Les trois poisons du Sadida : chacun est un état posé sur la cible qui
+# frappe tout seul, et non une frappe au lancer. Leurs sorts n'ont aucune
+# ligne immédiate, chaque fourchette étant rangée sous un unique groupe
+# « Début de tour » ou « Fin de tour » avec sa durée : un poison de durée N
+# tombe N fois. Aucun des trois ne peut critiquer (`can_crit: false`).
+resources:
+  - id: vent_empoisonne
+    dofusdb_source: 13529
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            # Ce sort ne peut pas critiquer (`can_crit: false`), et
+            # sa seule ligne publiée est non critique : le moteur
+            # exige une valeur ici, c'est la même.
+            critical: [13, 15]
+            normal: [13, 15]
+
+  - id: seve_paralysante
+    dofusdb_source: 13533
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: fire
+            # Ce sort ne peut pas critiquer (`can_crit: false`), et
+            # sa seule ligne publiée est non critique : le moteur
+            # exige une valeur ici, c'est la même.
+            critical: [15, 18]
+            normal: [15, 18]
+        note: |
+          Duree 3, la plus longue des trois. L'infobulle dit « fin de tour de la
+          cible », ce qui pour une recherche par tours tombe au meme endroit que
+          le debut du notre : c'est le raisonnement deja tenu sur la Sentence du
+          Iop et la Fleche Tyrannique du Cra.
+
+  - id: miasmes
+    dofusdb_source: 13562
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          - element: air
+            # Ce sort ne peut pas critiquer (`can_crit: false`), et
+            # sa seule ligne publiée est non critique : le moteur
+            # exige une valeur ici, c'est la même.
+            critical: [12, 14]
+            normal: [12, 14]
+
+  - id: arbres_feuillus
+    scope: caster
+    max: 6
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Arbres feuillus plantés"
+    note: |
+      Combien d'Arbres feuillus vous avez plantés : la Force de la Nature monte
+      de 10 dégâts de base par arbre, six au plus (40-45 nu, puis 50-55 à un
+      arbre, jusqu'à 100-105 à six). Le calcul ne suit ni leur pose ni leur durée
+      de vie : il prend le nombre que vous déclarez.
+
+  - id: ennemis_infectes
+    scope: caster
+    max: 5
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Ennemis Infectés"
+    note: |
+      Combien d'ennemis portent l'Infection : l'Inoculation monte de 5 dégâts de
+      base par ennemi Infecté, cinq au plus (39-43 nu, puis 44-48 à un ennemi,
+      jusqu'à 64-68 à cinq). L'Infection n'est pas suivie : elle se pose par
+      d'autres sorts, sur des cibles que le calcul ne distingue pas.
+
+  - id: poupee_morte
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    declared_by_player: true
+    player_label: "Une de vos Poupées meurt pendant la Malédiction"
+    note: |
+      La Malédiction Vaudou frappe encore la cible à la mort d'une Poupée du
+      lanceur : cochez si une de vos Poupées meurt pendant la Malédiction.
+
+  - id: malediction_vaudou
+    # Sans `dofusdb_source` : ses chiffres sont la SECONDE ligne Eau de son
+    # sort, que l'appariement par position confondrait avec la premiere. Le
+    # controle des magnitudes le rattache au sort de meme identifiant.
+    scope: target
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    while_present:
+      - trigger: turn_start
+        lines:
+          # Sous-sort 29638, grade 5 : 14-16, sans critique, comme le sort.
+          - element: water
+            critical: [14, 16]
+            normal: [14, 16]
+    note: |
+      L'etat Vaudou : 14-16 Eau a la cible a la mort d'une Poupee du lanceur.
+      Pose seulement si le joueur declare qu'une Poupee meurt pendant la
+      Malediction, et compte une fois, au debut du tour qui suit le lancer.
+
+spells:
+  - id: tremblement
+    dofusdb_id: 13514
+    name: { fr: "Tremblement", en: "Earthquake" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      En zone autour du lanceur, d'un Arbre Feuillu ou d'une Poupée :
+      • Occasionne des dommages Terre aux ennemis.
+      • Attire les entités vers le centre de la zone.
+      • Dévoile les invisibles.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: la_folle_transmutee
+    dofusdb_id: 13515
+    name: { fr: "La Folle Transmutée", en: "Transmuted Madoll" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Poupée maîtrisable qui peut Infecter et appliquer un poison Air de début de tour.
+      
+      La Poupée est remplacée par un Arbre 3 tours après son invocation.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: ronce
+    dofusdb_id: 13516
+    name: { fr: "Ronce", en: "Bramble" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Infecte la cible et occasionne des dommages Terre.
+      
+      Sur un Arbre Feuillu : applique les effets sur les ennemis dans un cercle de taille 2.
+      
+      Sur un ennemi : applique également les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Infection », « Ronce », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: chardons_ardents
+    dofusdb_id: 13517
+    name: { fr: "Chardons Ardents", en: "Ardent Thistles" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Applique l'état Chardons Ardents sur l'ennemi ciblé :
+      • Applique un poison Feu de fin de tour sur la cible pour chaque PM qu'elle utilise (cumulable 3 fois).
+      
+      Sur un ennemi : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 950/951 : ce sort applique « {{spell,29967,1::Chardons Ardents}} » (5399). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Chardons Ardents », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Seul poison de la classe à rester écrit en frappe immédiate : il s'applique « pour chaque PM que la cible utilise, cumulable 3 fois », donc de zéro à trois fois selon ce que l'adversaire fait de son tour, durée 1. Le compter une fois est le milieu entre rien, si la cible ne bouge pas, et trois fois 8 si elle dépense tout : un décalage d'un tour, jamais une erreur de magnitude."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: herbes_folles
+    dofusdb_id: 13518
+    name: { fr: "Herbes Folles", en: "Wild Grass" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM aux ennemis en zone.
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: arbre
+    dofusdb_id: 13519
+    name: { fr: "Arbre", en: "Tree" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Plante un Arbre.
+      Un Arbre devient Feuillu après 1 tour.
+      
+      Il ne peut y avoir que 6 Arbres par équipe. Le septième Arbre planté entraîne la mort du premier.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+    lines: []
+    effects: []
+
+  - id: la_surpuissante_transmutee
+    dofusdb_id: 13520
+    name: { fr: "La Surpuissante Transmutée", en: "Transmuted Ultra-Powerful" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Poupée maîtrisable qui peut occasionner des dommages Terre, retirer ou donner des PM.
+      Elle peut également invoquer une autre Poupée maîtrisable qui peut voler ou donner de la Portée.
+      
+      La Poupée est remplacée par un Arbre 3 tours après son invocation.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: ronce_insolente
+    dofusdb_id: 13521
+    name: { fr: "Ronce Insolente", en: "Insolent Bramble" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Réduit la durée des effets sur la cible et occasionne des dommages Terre aux ennemis.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "La réduction de durée des effets n'est pas modélisée : aucun buff ennemi n'est simulé, et les états posés ici vivent leur durée déclarée."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: la_sacrifiee_transmutee
+    dofusdb_id: 13522
+    name: { fr: "La Sacrifiée Transmutée", en: "Transmuted Sacrificial Doll" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Poupée maîtrisable qui peut se sacrifier pour Infecter et occasionner des dommages Eau en zone.
+      Sa Vitalité et ses dommages finaux augmentent au fil des tours.
+      
+      La Poupée est remplacée par un Arbre 3 tours après son invocation.
+    assumptions:
+      - "Effet 1160 : lance aussi « Préparation Poupesque », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: la_gonflable_transmutee
+    dofusdb_id: 13523
+    name: { fr: "La Gonflable Transmutée", en: "Transmuted Inflatable" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Poupée maîtrisable qui peut soigner, occasionner des dommages Feu et repousser.
+      
+      La Poupée est remplacée par un Arbre 3 tours après son invocation.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: foret_hantee
+    dofusdb_id: 13524
+    name: { fr: "Forêt Hantée", en: "Haunted Forest" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre aux ennemis et leur applique l'état Forêt Hantée en zone :
+      • Infecte la cible si elle attaque un Arbre du lanceur.
+      
+      La zone s'étend dans un carré de taille 1 autour des Arbres Feuillus et les effets ne sont appliqués qu'une seule fois par lancer.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effet 1160 : lance aussi « Forêt Hantée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: ronce_apaisante
+    dofusdb_id: 13525
+    name: { fr: "Ronce Apaisante", en: "Soothing Bramble" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne les alliés ou retire des PM aux ennemis.
+      
+      Sur un Arbre Feuillu : applique les effets dans un cercle de taille 2.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 3002, soins dans le meilleur element : ce calculateur ne mesure que les degats."
+      - "Effets 950/951 : ce sort applique « Enraciné » (6). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Infection », « Ronce Apaisante », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: la_bloqueuse_transmutee
+    dofusdb_id: 13526
+    name: { fr: "La Bloqueuse Transmutée", en: "Transmuted Block" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Poupée maîtrisable qui peut échanger de position si elle est maîtrisée et bloquer les ennemis.
+      Elle peut également augmenter ses PM et se rendre Intaclable.
+      
+      La Poupée est remplacée par un Arbre 3 tours après son invocation.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: ronces_agressives
+    dofusdb_id: 13527
+    name: { fr: "Ronces Agressives", en: "Aggressive Bramble" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole des PM et occasionne des dommages Terre.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 406 : il retire l'etat que le sort a pose. Sans mecanique modelisee derriere, il n'a rien a retirer."
+      - "Effet 77, vol de PM : un PM retire ne change aucun degat porte."
+      - "Effets 1160/2960 : lance aussi « Infection », « Ronces Agressives », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: larme_de_sadida
+    dofusdb_id: 13528
+    name: { fr: "Larme de Sadida", en: "Sadida's Tear" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés ou occasionne des dommages Eau aux ennemis.
+      
+      Sur un Arbre : applique les effets dans un cercle de taille 2 et transforme l'Arbre en Arbre Feuillu.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 792/1160/2960 : lance aussi « Feuillage », « Infection », « Larme de Sadida », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: vent_empoisonne
+    dofusdb_id: 13529
+    name: { fr: "Vent Empoisonné", en: "Poisoned Wind" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Infecte la cible et lui applique un poison Air de début de tour.
+    assumptions:
+      - "Effet 3793, sans description officielle : c'est le poison, écrit en état posé sur la cible qui frappe au début de chacun de nos deux tours suivants."
+      - "Le sort ne frappe pas au lancer : son poison tombe deux fois."
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : lance aussi « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      - effect: gain
+        resource: vent_empoisonne
+
+  - id: puissance_sylvestre
+    dofusdb_id: 13530
+    name: { fr: "Puissance Sylvestre", en: "Sylvan Power" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre Feuillu par un Arbre Feuillu contrôlable qui peut :
+      • Infecter et pousser une cible.
+      • Soigner les alliés et réduire les soins reçus par les ennemis en zone.
+      • Réduire la durée des effets sur une cible.
+      
+      L'Arbre contrôlable est remplacé par un Arbre Feuillu 2 tours après son invocation.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 2796 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: sacrifice_vaudou
+    dofusdb_id: 13531
+    name: { fr: "Sacrifice Vaudou", en: "Voodoo Sacrifice" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Eau.
+      Les dommages sont plus importants sur les invocations.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+      
+      Sur une Poupée :
+      • Sacrifie la Poupée pour soigner les alliés, appliquer les effets sur les ennemis et les Infecter en zone.
+      • Réinitialise son temps de relance.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Infection », « Sacrifice Vaudou », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+      - "Ce sort porte deux fourchettes Eau : 36-41 sur une invocation, 30-34 sur une cible ordinaire. C'est la seconde qui est comptée ici, la cible décrite plus haut n'étant pas une invocation."
+    effects:
+      - effect: damage
+
+  - id: don_naturel
+    dofusdb_id: 13532
+    name: { fr: "Don Naturel", en: "Natural Gift" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sacrifie un Arbre Feuillu ou une Poupée pour partager les dommages entre les alliés et les soigner en zone.
+      Le partage de dommages n'affecte pas les invocations statiques.
+    assumptions:
+      - "Effet 3002, soins dans le meilleur element : ce calculateur ne mesure que les degats."
+      - "Effet 1160 : lance aussi « Don Naturel », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1061 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: seve_paralysante
+    dofusdb_id: 13533
+    name: { fr: "Sève Paralysante", en: "Paralysing Sap" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Infecte, retire de l'Esquive PM et applique un poison Feu de fin de tour sur la cible.
+    assumptions:
+      - "Effet 163, -N Esquive PM : l'esquive decide si un retrait de PM aboutit, elle ne change aucun degat porte."
+      - "Effet 3793, sans description officielle : c'est le poison, écrit en état posé sur la cible qui frappe au début de chacun de nos TROIS tours suivants. C'est le plus long des trois poisons de la classe."
+      - "Le sort ne frappe pas au lancer : son poison tombe trois fois."
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : lance aussi « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects:
+      - effect: gain
+        resource: seve_paralysante
+
+  - id: arbre_de_vie
+    dofusdb_id: 13534
+    name: { fr: "Arbre de Vie", en: "Tree of Life" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Plante un Arbre de Vie.
+      L'Arbre de Vie redevient Feuillu 2 tours après son invocation.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+    lines: []
+    effects: []
+
+  - id: mandragore
+    dofusdb_id: 13559
+    name: { fr: "Mandragore", en: "Mandrake" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et applique l'état Mandragore sur l'ennemi ciblé :
+      • Infecte la cible si elle subit des dommages de poison ou d'invocation.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effets 1160/2960 : lance aussi « Infection », « Mandragore », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: arbre_feuillu
+    dofusdb_id: 13560
+    name: { fr: "Arbre Feuillu", en: "Leafy Tree" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Plante un Arbre Feuillu.
+      Tous les Arbres invoqués par le lanceur se transforment immédiatement en Arbres Feuillus.
+      
+      Il ne peut y avoir que 6 Arbres par équipe. Le septième Arbre planté entraîne la mort du premier.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+    lines: []
+    effects: []
+
+  - id: la_bloqueuse
+    dofusdb_id: 13561
+    name: { fr: "La Bloqueuse", en: "The Block" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre par une Poupée maîtrisable qui peut échanger de position si elle est maîtrisée et bloquer les ennemis.
+      Elle peut également augmenter ses PM et se rendre Intaclable.
+      
+      À sa mort, la Poupée redevient un Arbre.
+      Si elle a été invoquée à partir d'un Arbre Feuillu, l'Arbre à sa mort redevient Feuillu.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: miasmes
+    dofusdb_id: 13562
+    name: { fr: "Miasmes", en: "Miasmas" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Infecte et applique un poison Air de fin de tour sur les ennemis en zone.
+      La zone s'étend autour des Arbres Feuillus et des Poupées.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Le poison est écrit en état posé sur la cible, qui frappe au début de chacun de nos deux tours suivants."
+      - "Le sort ne frappe pas au lancer : son poison tombe deux fois."
+    lines: []
+    effects:
+      - effect: gain
+        resource: miasmes
+
+  - id: montee_de_seve
+    dofusdb_id: 13563
+    name: { fr: "Montée de Sève", en: "Rise of Sap" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau aux ennemis et soigne les alliés (hors lanceur) selon les dommages occasionnés en zone.
+      
+      Sur des Arbres : les transforme également en Arbres Feuillus.
+    assumptions:
+      - "Effet 2973, « soin : N % des dommages occasionnes » aux allies hors lanceur : des points de vie rendus, pas des degats portes."
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+      - "Effets 792/1160 : lance aussi « Feuillage », « Montée de Sève », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: la_folle
+    dofusdb_id: 13564
+    name: { fr: "La Folle", en: "Madoll" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre par une Poupée maîtrisable qui peut Infecter et appliquer un poison Air de début de tour.
+      
+      À sa mort, la Poupée redevient un Arbre.
+      Si elle a été invoquée à partir d'un Arbre Feuillu, l'Arbre à sa mort redevient Feuillu.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: rempotage
+    dofusdb_id: 13565
+    name: { fr: "Rempotage", en: "Repotting" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Soigne une invocation Sadida, la téléporte sur la première case disponible entre le lanceur et elle et plante un Arbre sur la case ciblée.
+    assumptions:
+      - "Effet 1017 : lance aussi « Rempotage », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: influence_vegetale
+    dofusdb_id: 13566
+    name: { fr: "Influence Végétale", en: "Vegetal Influence" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 3
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre Feuillu par un Arbre Feuillu contrôlable qui peut :
+      • Infecter et attirer une cible.
+      • Appliquer un bouclier sur les alliés et retirer des PM aux ennemis en zone.
+      • Planter des Ronces Indéplaçables.
+      
+      L'Arbre contrôlable est remplacé par un Arbre Feuillu 2 tours après son invocation.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    open_questions:
+      - "Effet 2796 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: la_sacrifiee
+    dofusdb_id: 13567
+    name: { fr: "La Sacrifiée", en: "Sacrificial Doll" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre par une Poupée maîtrisable qui peut se sacrifier pour Infecter et occasionner des dommages Eau en zone.
+      Sa Vitalité et ses dommages finaux augmentent au fil des tours.
+      
+      À sa mort, la Poupée redevient un Arbre.
+      Si elle a été invoquée à partir d'un Arbre Feuillu, l'Arbre à sa mort redevient Feuillu.
+    assumptions:
+      - "Effet 1160 : lance aussi « Préparation Poupesque », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: feu_de_brousse
+    dofusdb_id: 13568
+    name: { fr: "Feu de Brousse", en: "Bush Fire" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM aux ennemis et applique l'état Feu de Brousse sur les Arbres et les ennemis en zone :
+      • À la fin du tour de la cible, occasionne des dommages Feu aux ennemis en zone autour d'elle.
+      • Peut occasionner des dommages aux Arbres.
+    assumptions:
+      - "Les deux fourchettes Feu sont deux moments : 32-35 au lancer, et 17-19 « a la fin du tour de la cible, aux ennemis EN ZONE » via l'etat Feu de Brousse. La seconde frappe autour, donc elle demande d'autres ennemis, et sur une cible unique elle ne touche personne de plus."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 950/951 : ce sort applique « {{spell,29966,2::Feu de Brousse}} » (5614). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: inoculation
+    dofusdb_id: 13569
+    name: { fr: "Inoculation", en: "Inoculation" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Augmente les dommages du sort pour chaque ennemi Infecté et occasionne des dommages Air.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+      
+      Consomme toutes les Infections autour de la cible.
+    assumptions:
+      - "Effets 950 et 951 : le sort « consomme toutes les Infections autour de la cible ». Il RETIRE l'etat au lieu de le poser, ce qui ne change rien ici : l'Infection ne sert qu'a propager, et sur une cible unique il n'y a personne a qui propager."
+      - "Effets 1160/2960 : lance aussi « Infection », « Inoculation », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+        base_bonus: [{ kind: per_resource, resource: ennemis_infectes, amount: 5 }]
+    effects:
+      - effect: damage
+
+  - id: force_de_la_nature
+    dofusdb_id: 13570
+    name: { fr: "Force de la Nature", en: "Force of Nature" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Terre.
+      Les dommages du sort sont augmentés pour chaque Arbre Feuillu du lanceur planté.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: earth
+        base_bonus: [{ kind: per_resource, resource: arbres_feuillus, amount: 10 }]
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: fleau
+    dofusdb_id: 13571
+    name: { fr: "Fléau", en: "Bane" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Vole de la vie dans l'élément Eau.
+      
+      Sur une Poupée : applique les effets sur les ennemis dans un carré de taille 1.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Fléau », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: altruisme_vegetal
+    dofusdb_id: 13572
+    name: { fr: "Altruisme Végétal", en: "Vegetal Altruism" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Sacrifie un Arbre Feuillu ou une Poupée pour augmenter la Vitalité des Poupées et soigner le lanceur.
+    assumptions:
+      - "Effet 1160 : lance aussi « Altruisme Végétal », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    effects: []
+
+  - id: la_gonflable
+    dofusdb_id: 13573
+    name: { fr: "La Gonflable", en: "Inflatable Doll" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre par une Poupée maîtrisable qui peut soigner, occasionner des dommages Feu et repousser.
+      
+      À sa mort, la Poupée redevient un Arbre.
+      Si elle a été invoquée à partir d'un Arbre Feuillu, l'Arbre à sa mort redevient Feuillu.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: buisson_ardent
+    dofusdb_id: 13574
+    name: { fr: "Buisson Ardent", en: "Burning Bush" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et retire des PM.
+      
+      Sur un Arbre Feuillu : applique les effets sur les ennemis dans un cercle de taille 2.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Buisson Ardent », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: contagion
+    dofusdb_id: 13575
+    name: { fr: "Contagion", en: "Contagion" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 2
+    casts_per_target: 1
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air et retire des PM. 
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés en propageant l'Infection en zone autour de la cible.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effets 1160/2960 : lance aussi « Contagion », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: malediction_vaudou
+    dofusdb_id: 13576
+    name: { fr: "Malédiction Vaudou", en: "Voodoo Curse" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 2
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Occasionne des dommages Eau et applique l'état Vaudou sur l'ennemi ciblé :
+      • Occasionne des dommages Eau à la cible à la mort d'une Poupée du lanceur.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    assumptions:
+      - "Le coup de l'état Vaudou, 14-16 Eau, part à la mort d'une Poupée du lanceur : compté si le joueur déclare qu'une Poupée meurt pendant la Malédiction, une fois par lancer, au début du tour suivant."
+      - "Effets 950/951 : ce sort applique « {{spell,29969,1::Vaudou}} » (5398). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Infection », « Malédiction Vaudou », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    effects:
+      - effect: damage
+      - effect: gain
+        resource: malediction_vaudou
+        requires: { kind: caster_has, resource: poupee_morte }
+
+  - id: cigue
+    dofusdb_id: 13577
+    name: { fr: "Cigüe", en: "Hemlock" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 3
+    casts_per_target: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Air.
+      
+      Sur un Arbre Feuillu : applique les effets et maintient l'Infection sur les ennemis dans un cercle de taille 2.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés et maintient l'Infection sur la cible.
+    assumptions:
+      - "Effets 950 et 951, etat « Infecte » (263) : il ne change AUCUN degat. Ce qu'il fait est propager, « sur un ennemi Infecte, applique les effets sur TOUS les ennemis Infectes », formule qui revient mot pour mot sur neuf sorts de la classe. C'est une mecanique multi-cibles, et sur une cible unique elle n'a personne a qui propager."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 1160/2960 : lance aussi « Cigüe », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: air
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: la_surpuissante
+    dofusdb_id: 13578
+    name: { fr: "La Surpuissante", en: "The Ultra-Powerful" }
+    ap_cost: { base: 2 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Remplace un Arbre par une Poupée maîtrisable qui peut occasionner des dommages Terre, retirer ou donner des PM.
+      Elle peut également invoquer une autre Poupée maîtrisable qui peut voler ou donner de la Portée.
+      
+      À sa mort, la Poupée redevient un Arbre.
+      Si elle a été invoquée à partir d'un Arbre Feuillu, l'Arbre à sa mort redevient Feuillu.
+    assumptions:
+      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
+    lines: []
+    effects: []
+
+  - id: harmonie
+    dofusdb_id: 13579
+    name: { fr: "Harmonie", en: "Harmony" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 4
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Enracine le lanceur et partage les dommages entre tous ses Arbres et lui.
+    assumptions:
+      - "Effets 950/951 : ce sort applique « Enraciné » (6) ; applique « Harmonie » (5425) ; retire « Harmonie » (5425). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 792 : lance aussi « Harmonie », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines: []
+    open_questions:
+      - "Effet 1061 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+    effects: []
+
+  - id: fetiches_calcines
+    dofusdb_id: 14393
+    name: { fr: "Fétiches Calcinés", en: "Charred Charms" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 2
+    crit: { base_rate: unknown }
+    note: |
+      Occasionne des dommages Feu et applique l'état Fétiches Calcinés sur l'ennemi ciblé :
+      • Une partie des dommages subis par les Arbres du lanceur est renvoyée à la cible.
+      
+      Sur un ennemi Infecté : applique les effets sur tous les ennemis Infectés.
+    assumptions:
+      - "Effet 1223, « dommages : 30 % des dommages finaux SUBIS » : une partie de ce que les Arbres du lanceur encaissent est renvoyee a la cible. Ca suppose de savoir ce que l'adversaire inflige aux Arbres pendant son tour, ce que ce calculateur ne simule pas."
+      - "Effets 950/951 : ce sort applique « {{spell,29970,1::Fétiches Calcinés}} » (5437). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 1160/2960 : lance aussi « Fétiches Calcinés », « Infection », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+    lines:
+      - element: fire
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage
+
+  - id: mangrove
+    dofusdb_id: 14396
+    name: { fr: "Mangrove", en: "Mangrove" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    crit: { base_rate: unknown }
+    note: |
+      Soigne les alliés, occasionne des dommages Eau et retire des PM aux ennemis en zone.
+      La zone s'étend autour des Arbres et les effets sont appliqués qu'une seule fois par lancer.
+      
+      Transforme également tous les Arbres en Arbres Feuillus.
+    assumptions:
+      - "Effets 950 et 951, etats « Feuillu » (256) et ceux des Poupees : ils etendent la ZONE, « sur un Arbre Feuillu, applique les effets dans un cercle de taille 2 », « la zone s'etend autour des Arbres Feuillus et des Poupees ». Ils ne changent pas ce qu'une cible prend, mais combien de cibles sont prises."
+      - "Effet 1160 : le sous-sort porte la MEME fourchette que la ligne propre et cible les Arbres ou les Poupees du lanceur. C'est la zone etendue que le texte du sort decrit, pas une frappe de plus sur la meme cible : « applique les effets dans un cercle de taille 2 »."
+      - "Effets 792/1160 : lance aussi « Feuillage », « Mangrove », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Les soins de ce sort ne sont pas modélisés : ce calculateur maximise les dégâts infligés, pas les points de vie."
+    lines:
+      - element: water
+        critical: unknown
+        normal: unknown
+    effects:
+      - effect: damage

@@ -1,0 +1,2955 @@
+{
+ "source": "dofusbook.net /api/spells/class",
+ "breed": 9,
+ "sorts": [
+  {
+   "id": 32426,
+   "n": "Flèche de Recul",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       25,
+       28,
+       0
+      ],
+      [
+       "da",
+       1,
+       30,
+       34,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32449,
+   "n": "Flèche Éclatante",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "vf",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "vf",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32435,
+   "n": "Flèche Glacée",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       21,
+       24,
+       0
+      ],
+      [
+       "de",
+       1,
+       25,
+       29,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "de",
+       0,
+       29,
+       32,
+       0
+      ],
+      [
+       "de",
+       1,
+       33,
+       37,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32708,
+   "n": "Flèche Harcelante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi - Début de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       17,
+       19,
+       2
+      ],
+      [
+       "da",
+       1,
+       20,
+       23,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32443,
+   "n": "Flèche de Barrage",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       24,
+       27,
+       0
+      ],
+      [
+       "df",
+       1,
+       29,
+       32,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       1,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32459,
+   "n": "Carreaux Destructeurs",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       38,
+       42,
+       0
+      ],
+      [
+       "dt",
+       1,
+       46,
+       50,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       3,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32455,
+   "n": "Flèche Vagabonde",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       27,
+       30,
+       0
+      ],
+      [
+       "dt",
+       1,
+       32,
+       36,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32531,
+   "n": "Flèche Évasive",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "de",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32464,
+   "n": "Pas Chassé",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 32467,
+   "n": "Balise Tactique",
+   "cu": 5,
+   "g": []
+  },
+  {
+   "id": 32465,
+   "n": "Tirs Éloignés",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 32471,
+   "n": "Tir Perçant",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 32444,
+   "n": "Flèche Détonante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       14,
+       17,
+       0
+      ],
+      [
+       "df",
+       1,
+       18,
+       21,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       14,
+       17,
+       0
+      ],
+      [
+       "df",
+       1,
+       18,
+       21,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32439,
+   "n": "Flèche Ralentissante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       32,
+       34,
+       0
+      ],
+      [
+       "de",
+       1,
+       38,
+       41,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32453,
+   "n": "Flèche d'Abolition",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi - Lanceur sans Flèche d'Abolition I - Lanceur sans Flèche d'Abolition II",
+     0,
+     [
+      [
+       "vt",
+       0,
+       9,
+       11,
+       0
+      ],
+      [
+       "vt",
+       1,
+       12,
+       14,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Lanceur sous Flèche d'Abolition I",
+     0,
+     [
+      [
+       "vt",
+       0,
+       9,
+       11,
+       0
+      ],
+      [
+       "vt",
+       1,
+       12,
+       14,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Lanceur sous Flèche d'Abolition II",
+     0,
+     [
+      [
+       "vt",
+       0,
+       9,
+       11,
+       0
+      ],
+      [
+       "vt",
+       1,
+       12,
+       14,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi / Ennemis + Invocateur - Lanceur sans Flèche d'Abolition I - Lanceur sans Flèche d'Abolition II",
+     0,
+     [
+      [
+       "vt",
+       0,
+       18,
+       22,
+       0
+      ],
+      [
+       "vt",
+       1,
+       23,
+       27,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi / Ennemis + Invocateur - Lanceur sous Flèche d'Abolition I",
+     0,
+     [
+      [
+       "vt",
+       0,
+       18,
+       22,
+       0
+      ],
+      [
+       "vt",
+       1,
+       23,
+       27,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi / Ennemis + Invocateur - Lanceur sous Flèche d'Abolition II",
+     0,
+     [
+      [
+       "vt",
+       0,
+       18,
+       22,
+       0
+      ],
+      [
+       "vt",
+       1,
+       23,
+       27,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32433,
+   "n": "Flèche Persécutrice",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "va",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Dans 1 tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "da",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32427,
+   "n": "Flèche Cinglante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       15,
+       18,
+       0
+      ],
+      [
+       "da",
+       1,
+       19,
+       23,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32458,
+   "n": "Flèche Assaillante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       3,
+       0,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       23,
+       26,
+       0
+      ],
+      [
+       "dt",
+       1,
+       28,
+       31,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32436,
+   "n": "Flèche d'Immobilisation",
+   "cu": 4,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       11,
+       13,
+       0
+      ],
+      [
+       "de",
+       1,
+       14,
+       16,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "de",
+       0,
+       13,
+       15,
+       0
+      ],
+      [
+       "de",
+       1,
+       16,
+       18,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "de",
+       0,
+       15,
+       17,
+       0
+      ],
+      [
+       "de",
+       1,
+       18,
+       20,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "de",
+       0,
+       17,
+       19,
+       0
+      ],
+      [
+       "de",
+       1,
+       20,
+       22,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "de",
+       0,
+       19,
+       21,
+       0
+      ],
+      [
+       "de",
+       1,
+       22,
+       24,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32448,
+   "n": "Flèche Tyrannique",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       28,
+       32,
+       0
+      ],
+      [
+       "df",
+       1,
+       34,
+       38,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - Fin de tour",
+     0,
+     [
+      [
+       "df",
+       0,
+       20,
+       22,
+       2
+      ],
+      [
+       "df",
+       1,
+       24,
+       26,
+       2
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       28,
+       32,
+       0
+      ],
+      [
+       "df",
+       1,
+       34,
+       38,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32466,
+   "n": "Tirs Puissants",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 32618,
+   "n": "Flèches Amoureuses",
+   "cu": 1,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       8,
+       0,
+       0
+      ],
+      [
+       "ppv",
+       1,
+       10,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32428,
+   "n": "Flèche de Dispersion",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       21,
+       24,
+       0
+      ],
+      [
+       "da",
+       1,
+       25,
+       29,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       1,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32447,
+   "n": "Flèches Enflammées",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "df",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       2,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32445,
+   "n": "Flèche Explosive",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       30,
+       34,
+       0
+      ],
+      [
+       "df",
+       1,
+       36,
+       41,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32457,
+   "n": "Flèche Massacrante",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       25,
+       29,
+       0
+      ],
+      [
+       "dt",
+       1,
+       30,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "dt",
+       0,
+       37,
+       41,
+       0
+      ],
+      [
+       "dt",
+       1,
+       42,
+       47,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "dt",
+       0,
+       49,
+       53,
+       0
+      ],
+      [
+       "dt",
+       1,
+       54,
+       59,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "dt",
+       0,
+       61,
+       65,
+       0
+      ],
+      [
+       "dt",
+       1,
+       66,
+       71,
+       0
+      ]
+     ]
+    ],
+    [
+     "5 ennemis dans la zone d'effet",
+     0,
+     [
+      [
+       "dt",
+       0,
+       73,
+       77,
+       0
+      ],
+      [
+       "dt",
+       1,
+       78,
+       83,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32437,
+   "n": "Œil de Taupe",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       19,
+       22,
+       0
+      ],
+      [
+       "ve",
+       1,
+       23,
+       26,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32431,
+   "n": "Pluie de Flèches",
+   "cu": 1,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "da",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "da",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32454,
+   "n": "Œil pour Œil",
+   "cu": 4,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "vt",
+       0,
+       27,
+       30,
+       0
+      ],
+      [
+       "vt",
+       1,
+       32,
+       36,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "vt",
+       0,
+       33,
+       36,
+       0
+      ],
+      [
+       "vt",
+       1,
+       38,
+       42,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "vt",
+       0,
+       39,
+       42,
+       0
+      ],
+      [
+       "vt",
+       1,
+       44,
+       48,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "vt",
+       0,
+       45,
+       48,
+       0
+      ],
+      [
+       "vt",
+       1,
+       50,
+       54,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "vt",
+       0,
+       51,
+       54,
+       0
+      ],
+      [
+       "vt",
+       1,
+       56,
+       60,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32441,
+   "n": "Flèche Paralysante",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       30,
+       34,
+       0
+      ],
+      [
+       "de",
+       1,
+       36,
+       41,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32474,
+   "n": "Balise de Survie",
+   "cu": null,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       7,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32472,
+   "n": "Représailles",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 32470,
+   "n": "Tir de Repli",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 32473,
+   "n": "Vendetta",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dme",
+       0,
+       16,
+       18,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32456,
+   "n": "Flèche Punitive",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       30,
+       34,
+       0
+      ],
+      [
+       "dt",
+       1,
+       36,
+       41,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge  - Dans 1 tours",
+     0,
+     [
+      [
+       "dt",
+       0,
+       54,
+       58,
+       0
+      ],
+      [
+       "dt",
+       1,
+       60,
+       65,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges  - Dans 2 tours",
+     0,
+     [
+      [
+       "dt",
+       0,
+       86,
+       90,
+       0
+      ],
+      [
+       "dt",
+       1,
+       92,
+       97,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32460,
+   "n": "Flèche du Jugement",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi - Aucun PM restant",
+     1,
+     [
+      [
+       "dt",
+       0,
+       25,
+       27,
+       0
+      ],
+      [
+       "dt",
+       1,
+       30,
+       32,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi - 100% des PM restants",
+     1,
+     [
+      [
+       "dt",
+       0,
+       25,
+       27,
+       0
+      ],
+      [
+       "dt",
+       1,
+       30,
+       32,
+       0
+      ],
+      [
+       "dt",
+       0,
+       36,
+       40,
+       0
+      ],
+      [
+       "dt",
+       1,
+       43,
+       48,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32438,
+   "n": "Flèche d'Expiation",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       35,
+       37,
+       0
+      ],
+      [
+       "de",
+       1,
+       42,
+       44,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge  - Dans 2 tours",
+     0,
+     [
+      [
+       "de",
+       0,
+       71,
+       73,
+       0
+      ],
+      [
+       "de",
+       1,
+       78,
+       80,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges  - Dans 4 tours",
+     0,
+     [
+      [
+       "de",
+       0,
+       107,
+       109,
+       0
+      ],
+      [
+       "de",
+       1,
+       114,
+       116,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32442,
+   "n": "Flèche de Rédemption",
+   "cu": 6,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "ve",
+       0,
+       32,
+       35,
+       0
+      ],
+      [
+       "ve",
+       1,
+       37,
+       41,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "ve",
+       0,
+       38,
+       41,
+       0
+      ],
+      [
+       "ve",
+       1,
+       43,
+       47,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "ve",
+       0,
+       44,
+       47,
+       0
+      ],
+      [
+       "ve",
+       1,
+       49,
+       53,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "ve",
+       0,
+       50,
+       53,
+       0
+      ],
+      [
+       "ve",
+       1,
+       55,
+       59,
+       0
+      ]
+     ]
+    ],
+    [
+     "5 charges",
+     0,
+     [
+      [
+       "ve",
+       0,
+       56,
+       59,
+       0
+      ],
+      [
+       "ve",
+       1,
+       61,
+       65,
+       0
+      ]
+     ]
+    ],
+    [
+     "6 charges",
+     0,
+     [
+      [
+       "ve",
+       0,
+       62,
+       65,
+       0
+      ],
+      [
+       "ve",
+       1,
+       67,
+       71,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32429,
+   "n": "Flèche Perforante",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       38,
+       42,
+       0
+      ],
+      [
+       "da",
+       1,
+       46,
+       50,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi / Ennemis + Invocateur",
+     0,
+     [
+      [
+       "da",
+       0,
+       44,
+       48,
+       0
+      ],
+      [
+       "da",
+       1,
+       53,
+       58,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       3,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32432,
+   "n": "Flèche Boomerang",
+   "cu": 1,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "da",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "da",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "va",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32446,
+   "n": "Flèche Dévorante",
+   "cu": 3,
+   "g": [
+    [
+     "Tous sauf lanceur",
+     0,
+     [
+      [
+       "vf",
+       0,
+       11,
+       13,
+       0
+      ],
+      [
+       "vf",
+       1,
+       14,
+       16,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sans Flèche Dévorante I - Cible sans Flèche Dévorante II - Cible sans Flèche Dévorante III",
+     0,
+     [
+      [
+       "vf",
+       0,
+       11,
+       13,
+       0
+      ],
+      [
+       "vf",
+       1,
+       14,
+       16,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante I",
+     0,
+     [
+      [
+       "vf",
+       0,
+       23,
+       27,
+       0
+      ],
+      [
+       "vf",
+       1,
+       28,
+       32,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante II",
+     0,
+     [
+      [
+       "vf",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "vf",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante III",
+     0,
+     [
+      [
+       "vf",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "vf",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sans Flèche Dévorante I - Cible sans Flèche Dévorante II - Cible sans Flèche Dévorante III - Dans 3 tours",
+     0,
+     [
+      [
+       "df",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "df",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante I",
+     0,
+     [
+      [
+       "df",
+       0,
+       34,
+       38,
+       0
+      ],
+      [
+       "df",
+       1,
+       41,
+       46,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante I - Dans 3 tours",
+     0,
+     [
+      [
+       "df",
+       0,
+       52,
+       56,
+       0
+      ],
+      [
+       "df",
+       1,
+       62,
+       67,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante II",
+     0,
+     [
+      [
+       "df",
+       0,
+       52,
+       56,
+       0
+      ],
+      [
+       "df",
+       1,
+       62,
+       67,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante II - Dans 3 tours",
+     0,
+     [
+      [
+       "df",
+       0,
+       70,
+       74,
+       0
+      ],
+      [
+       "df",
+       1,
+       84,
+       89,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante III - Dans 3 tours",
+     0,
+     [
+      [
+       "df",
+       0,
+       70,
+       74,
+       0
+      ],
+      [
+       "df",
+       1,
+       84,
+       89,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Cible sous Flèche Dévorante III",
+     0,
+     [
+      [
+       "df",
+       0,
+       70,
+       74,
+       0
+      ],
+      [
+       "df",
+       1,
+       84,
+       89,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32450,
+   "n": "Flèche Fulminante",
+   "cu": 4,
+   "g": [
+    [
+     "Allié / Ennemi / autour du lanceur / son invocation",
+     0,
+     [
+      [
+       "df",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "df",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "1 charge",
+     0,
+     [
+      [
+       "df",
+       0,
+       41,
+       44,
+       0
+      ],
+      [
+       "df",
+       1,
+       46,
+       50,
+       0
+      ]
+     ]
+    ],
+    [
+     "2 charges",
+     0,
+     [
+      [
+       "df",
+       0,
+       56,
+       59,
+       0
+      ],
+      [
+       "df",
+       1,
+       61,
+       65,
+       0
+      ]
+     ]
+    ],
+    [
+     "3 charges",
+     0,
+     [
+      [
+       "df",
+       0,
+       71,
+       74,
+       0
+      ],
+      [
+       "df",
+       1,
+       76,
+       80,
+       0
+      ]
+     ]
+    ],
+    [
+     "4 charges",
+     0,
+     [
+      [
+       "df",
+       0,
+       86,
+       89,
+       0
+      ],
+      [
+       "df",
+       1,
+       91,
+       95,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 32469,
+   "n": "Acuité Absolue",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 32475,
+   "n": "Sentinelle",
+   "cu": 10,
+   "g": []
+  },
+  {
+   "id": 368,
+   "n": "Libération",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "pou",
+       0,
+       4,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24029,
+   "n": "Attraction",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 370,
+   "n": "Invocation de l'Arakne",
+   "cu": null,
+   "g": [
+    [
+     "Coude boule - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       11,
+       15,
+       0
+      ],
+      [
+       "dt",
+       1,
+       16,
+       20,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24027,
+   "n": "Invocation de l'Arakne Majeure",
+   "cu": null,
+   "g": [
+    [
+     "Frapperie - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       20,
+       0
+      ],
+      [
+       "dt",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 18646,
+   "n": "Maîtrise des Invocations",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 22312,
+   "n": "Liberté des Invocations",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 367,
+   "n": "Cawotte Savouweuse",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       4,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24022,
+   "n": "Cawotte Chawnue",
+   "cu": 1,
+   "g": []
+  },
+  {
+   "id": 369,
+   "n": "Foudroiement de Grunob",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "df",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24017,
+   "n": "Leçon de Grunob",
+   "cu": 1,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "df",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "df",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 373,
+   "n": "Invocation de Chaferfu",
+   "cu": null,
+   "g": [
+    [
+     "Embrochée - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       25,
+       0
+      ],
+      [
+       "dt",
+       1,
+       21,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24028,
+   "n": "Invocation de Chaferfu Lancier",
+   "cu": null,
+   "g": [
+    [
+     "Coup du Chafer - Allié / Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       23,
+       0
+      ],
+      [
+       "dt",
+       1,
+       35,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 3506,
+   "n": "Maîtrise d'Arme",
+   "cu": null,
+   "g": []
+  },
+  {
+   "id": 24030,
+   "n": "Maladresse d'Arme",
+   "cu": 3,
+   "g": []
+  },
+  {
+   "id": 24006,
+   "n": "Flamèche",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dpe",
+       0,
+       8,
+       10,
+       0
+      ],
+      [
+       "dpe",
+       1,
+       11,
+       13,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 350,
+   "n": "Flamiche",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dme",
+       0,
+       8,
+       10,
+       0
+      ],
+      [
+       "dme",
+       1,
+       11,
+       13,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24015,
+   "n": "Kannibulle",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "de",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24016,
+   "n": "Ebilition",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "de",
+       0,
+       22,
+       25,
+       0
+      ],
+      [
+       "de",
+       1,
+       26,
+       30,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24011,
+   "n": "Mantiscroc",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       22,
+       24,
+       0
+      ],
+      [
+       "dt",
+       1,
+       26,
+       29,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24013,
+   "n": "Dard Moklès",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "dt",
+       0,
+       24,
+       27,
+       0
+      ],
+      [
+       "dt",
+       1,
+       29,
+       32,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 366,
+   "n": "Marteau de Moon",
+   "cu": 2,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       21,
+       23,
+       0
+      ],
+      [
+       "da",
+       1,
+       25,
+       28,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24010,
+   "n": "Marteau de Darkli Moon",
+   "cu": 4,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "da",
+       0,
+       19,
+       22,
+       0
+      ],
+      [
+       "da",
+       1,
+       23,
+       26,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 364,
+   "n": "Boomerang Perfide",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vt",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vt",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vf",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vf",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "va",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 24007,
+   "n": "Boomerang de Diamantine",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "vt",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vt",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "vf",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "vf",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "ve",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "ve",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ],
+    [
+     "Ennemi",
+     0,
+     [
+      [
+       "va",
+       0,
+       26,
+       29,
+       0
+      ],
+      [
+       "va",
+       1,
+       31,
+       35,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 6149,
+   "n": "Le Singe et la Lune",
+   "cu": null,
+   "g": [
+    [
+     "Lanceur",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       10,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 11352,
+   "n": "Appétit de Crocobur",
+   "cu": 1,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "vme",
+       0,
+       15,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 12505,
+   "n": "Toxicité du Scorbute",
+   "cu": null,
+   "g": [
+    [
+     "Allié / Ennemi",
+     0,
+     [
+      [
+       "dme",
+       0,
+       8,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 15975,
+   "n": "Nuée Pestilentielle",
+   "cu": null,
+   "g": [
+    [
+     "Tous sauf lanceur - Début de tour",
+     0,
+     [
+      [
+       "dme",
+       0,
+       18,
+       0,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 18629,
+   "n": "Noir Ébène",
+   "cu": null,
+   "g": [
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "de",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "df",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "da",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "dt",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ],
+    [
+     "Ennemi - Début de tour",
+     0,
+     [
+      [
+       "dn",
+       0,
+       16,
+       0,
+       2
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 28516,
+   "n": "Garde Champêtre",
+   "cu": null,
+   "g": [
+    [
+     "Lanceur - Cible sans Dofus Sylvestre - Fin de tour",
+     0,
+     [
+      [
+       "ppv",
+       0,
+       8,
+       0,
+       63
+      ]
+     ]
+    ]
+   ]
+  },
+  {
+   "id": 31607,
+   "n": "Éclosion Explosive",
+   "cu": 10,
+   "g": [
+    [
+     "Ennemi - Lanceur sans Éclosion II",
+     0,
+     [
+      [
+       "dme",
+       0,
+       10,
+       0,
+       0
+      ]
+     ]
+    ]
+   ]
+  }
+ ]
+}

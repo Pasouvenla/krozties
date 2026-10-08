@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krozties</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="atelier">
+
+  <nav id="rail" aria-label="Outils">
+    <div class="marque">Krozties <small id="hote"></small></div>
+
+    <div class="groupe">Personnage</div>
+    <button type="button" data-outil="equipement">Équipement</button>
+
+    <div class="groupe">Combat</div>
+    <button type="button" data-outil="rotation" data-exige-build>Rotation</button>
+    <button type="button" data-outil="kroztools">KrozTools</button>
+
+    <div class="groupe">Jeu</div>
+    <button type="button" data-outil="beta">Bêta en cours</button>
+
+    <div class="pousse"></div>
+    <p class="note" id="noteRail"></p>
+  </nav>
+
+  <header id="entete">
+    <span class="titre" id="identite"><span class="vide">Aucun équipement chargé</span></span>
+    <button type="button" class="action discret" id="changerEquipement" hidden>Changer</button>
+  </header>
+
+  <main id="contenu" aria-live="polite"></main>
+
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

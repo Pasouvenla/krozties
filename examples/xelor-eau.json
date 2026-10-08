@@ -1,0 +1,22 @@
+{
+  "class": 5,
+  "level": 200,
+  "items": [34330, 31761, 32234, 24035, 31762, 17575, 34332, 32236, 34331,
+            13673, 0, 8698, 7043, 6980, 739, 7754, 7115],
+  "invested": { "chance": 398 },
+  "forgemagic": {
+    "a1": { "pa": 1 }, "a2": { "cc": 5 }, "am": { "cc": 8 }, "ar": { "cc": 6 },
+    "bo": { "cc": 6 }, "br": { "dc": 8 }, "ca": { "cc": 7 }, "ce": { "cc": 6 },
+    "ch": { "cc": 6 }
+  },
+  "boosts": [
+    { "name": "Rêve Nébuleux", "stat": "deg", "percent": 20 },
+    { "name": "Bleu Turquoise", "stat": "deg", "percent": 10 },
+    { "name": "Pourpre Profond", "stat": "deg", "percent": 5 }
+  ],
+  "odd_turns_only": ["Rêve Nébuleux"],
+  "deck": ["gelure", "ralentissement", "compte_goutte", "permutation",
+           "petrification", "clepsydre", "glas"],
+  "budgets": { "telefrag_per_turn": 3 },
+  "horizon": 7
+}

@@ -1,0 +1,67 @@
+# Les sorts communs à toutes les classes qui invoquent : l'Arakne et le
+# Chaferfu, et leurs variantes (coût, relance, délai initial, portée).
+#
+# Ils n'ont ni ligne ni effet ici : l'application leur greffe l'invocation,
+# comme aux sorts d'invocation des classes, d'après le relevé
+# `data/snapshots/invocations.json`. Chacun invoque un monstre à 80 % et
+# l'autre de sa paire à 20 % (effets 181 à `random` 80 et 20).
+#
+# Les Cawottes n'y sont pas : elles n'attaquent pas.
+
+schema_version: 1
+game_version: "3.6.12"
+class: communs
+name: { fr: "Sorts communs", en: "Common spells" }
+resources: []
+spells:
+  - id: invocation_de_l_arakne
+    dofusdb_id: 370
+    name: { fr: "Invocation de l'Arakne", en: "Summon Arachnee" }
+    ap_cost: { base: 3 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Arakne (80 %) ou une Arakne Majeure (20 %).
+    lines: []
+    effects: []
+
+  - id: invocation_de_l_arakne_majeure
+    dofusdb_id: 24027
+    name: { fr: "Invocation de l'Arakne Majeure", en: "Summon Major Arachnee" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 6
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque une Arakne Majeure (80 %) ou une Arakne (20 %).
+    lines: []
+    effects: []
+
+  - id: invocation_de_chaferfu
+    dofusdb_id: 373
+    name: { fr: "Invocation de Chaferfu", en: "Summon Chafer" }
+    ap_cost: { base: 4 }
+    casts_per_turn: 1
+    cooldown_turns: 5
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Chaferfu (80 %) ou un Chaferfu Lancier (20 %).
+    lines: []
+    effects: []
+
+  - id: invocation_de_chaferfu_lancier
+    dofusdb_id: 24028
+    name: { fr: "Invocation de Chaferfu Lancier", en: "Summon Chafer Lancer" }
+    ap_cost: { base: 5 }
+    casts_per_turn: 1
+    cooldown_turns: 6
+    initial_cooldown: 1
+    crit: { base_rate: 0, can_crit: false }
+    note: |
+      Invoque un Chaferfu Lancier (80 %) ou un Chaferfu (20 %).
+    lines: []
+    effects: []

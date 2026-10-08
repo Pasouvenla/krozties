@@ -1,0 +1,2656 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimiseur de rotation Dofus</title>
+<style>
+  :root {
+    --encre: #1b1d21; --doux: #5c6169; --trait: #d8dbe0; --fond: #ffffff;
+    --panneau: #f7f8fa; --accent: #2f5d8a; --alerte: #8a4b2f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--fond); color: var(--encre);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 86rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  h2 { font-size: 1rem; margin: 2rem 0 .75rem; text-transform: uppercase;
+       letter-spacing: .06em; color: var(--doux); font-weight: 600; }
+  p.intro { color: var(--doux); margin: 0 0 1.5rem; }
+  fieldset { border: 1px solid var(--trait); border-radius: 6px; padding: 1rem; margin: 0 0 1rem; }
+  legend { padding: 0 .4rem; font-weight: 600; font-size: .85rem;
+           text-transform: uppercase; letter-spacing: .05em; color: var(--doux); }
+  label { display: block; margin-bottom: .35rem; font-weight: 500; }
+  textarea, input[type=number], select {
+    width: 100%; font: inherit; padding: .5rem .6rem;
+    border: 1px solid var(--trait); border-radius: 4px; background: var(--fond); color: inherit;
+  }
+  textarea { min-height: 5.5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  button {
+    font: inherit; font-weight: 600; padding: .55rem 1.1rem; border-radius: 4px;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.secondaire { background: var(--fond); color: var(--accent); }
+  button[disabled] { opacity: .5; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  /* Aligné en haut : un texte d'aide sous un champ ne décale pas ses voisins. */
+  .grille { display: grid; gap: .75rem 1.25rem;
+            grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+            align-items: start; }
+  /* Le champ reste colle a son libelle, l'aide passe dessous. */
+  .grille > div > .etat { margin-top: .35rem; }
+  /* La grille de placement. Le jeu affiche ses cases en losanges ; le graphe
+     est le meme une fois tourne de 45 degres, et un carre se clique mieux. */
+  /* Le damier est en losanges, comme en jeu : la conversion est dans `versEcran`. */
+  /* Le damier prend la place qu'on lui donne : c'est l'objet qu'on vient
+     regarder, et le brider a 34 rem le laissait minuscule sur un large ecran. */
+  .plateau { width: 100%; max-width: 46rem; }
+  .plateau svg { display: block; width: 100%; height: auto; overflow: visible; }
+  /*
+   * L'ordre de ces règles compte (même spécificité) : l'alternance du damier
+   * passe avant la zone, l'ennemi et le lanceur.
+   */
+  .case { fill: var(--fond); stroke: var(--trait); stroke-width: 1; cursor: pointer; }
+  /* L'alternance claire-sombre du sol, comme en combat. Purement decorative, et
+     assez faible pour ne pas concurrencer le coloriage des zones : c'est la
+     zone qu'on vient lire, pas le carrelage. */
+  .case.sombre { fill: #f1f2f4; }
+  .case:hover { fill: var(--panneau); }
+  .case.zone { fill: #dce8f4; }
+  .case.zone.sombre { fill: #d2e1f0; }
+  .case.lanceur { fill: var(--accent); }
+  .case.ennemi { fill: #f6dccd; }
+  .case.ennemi.zone { fill: #efc8ad; }
+  .case:focus { outline: none; stroke: var(--accent); stroke-width: 2.5; }
+  .visee-trait { fill: none; stroke: var(--alerte); stroke-width: 2.5;
+                 pointer-events: none; }
+  .jeton { pointer-events: none; font-size: 11px; font-weight: 700;
+           text-anchor: middle; dominant-baseline: central; }
+  .jeton.lanceur { fill: #fff; }
+  .jeton.ennemi { fill: var(--alerte); }
+  /* L'etiquette de degats, posee au-dessus de la cible comme le jeu affiche ses
+     nombres. Fond clair et texte colore plutot que l'inverse : sur une carte
+     deja coloree, un pave sombre attire l'oeil avant la zone elle-meme. */
+  .degats-fond { fill: #fff; stroke: var(--trait); stroke-width: 1; }
+  .degats-texte { font-size: 11px; font-weight: 700; text-anchor: middle;
+                  dominant-baseline: central; font-variant-numeric: tabular-nums; }
+  .degats-tige { stroke: var(--trait); stroke-width: 1; }
+  table.mini { border-collapse: collapse; width: max-content; max-width: 100%;
+               font-size: .9rem; }
+  table.mini th, table.mini td { text-align: left; padding: .2rem .9rem .2rem 0; }
+  table.mini thead th { font-size: .75rem; text-transform: uppercase;
+                        letter-spacing: .04em; color: var(--doux); font-weight: 600; }
+  /* Le reseau de pieges. Meme damier que le placement, d'autres jetons. */
+  /*
+   * Chaque zone de déclenchement est cernée par son contour réel, à la couleur de
+   * l'élément du piège.
+   */
+  .zone-contour { fill: none; stroke-width: 2; stroke-linecap: round;
+                  stroke-linejoin: round; pointer-events: none; opacity: .75; }
+  .zone-fond { pointer-events: none; opacity: .16; }
+  .piege-groupe.survole .zone-contour { stroke-width: 3.5; opacity: 1; }
+  .piege-groupe.survole .zone-fond { opacity: .34; }
+  /* L'icône ne paraît qu'au survol ; le numéro de pose reste. */
+  .piege-icone { pointer-events: none; opacity: 0; transition: opacity .12s; }
+  .piege-groupe.survole .piege-icone { opacity: 1; }
+  .piege-rang { pointer-events: none; font-size: 9px; font-weight: 700;
+                text-anchor: middle; dominant-baseline: central; fill: #fff; }
+  .piege-pastille { pointer-events: none; fill: var(--encre); }
+  .case.piege { fill: #cbb79b; }
+  .case.entree { fill: #cfe3d2; }
+  .trajet { fill: none; stroke: var(--alerte); stroke-width: 2.5;
+            stroke-linejoin: round; stroke-linecap: round; pointer-events: none;
+            stroke-dasharray: 6 4; }
+  .trajet-pas { fill: var(--alerte); pointer-events: none; }
+  .palette { display: grid; gap: .3rem; margin: .6rem 0 0;
+             grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+  .palette button { all: unset; cursor: pointer; border: 1px solid var(--trait);
+                    border-radius: 4px; padding: .3rem .5rem; font-size: .82rem;
+                    display: flex; gap: .4rem; align-items: baseline; }
+  .palette button:hover { background: var(--panneau); }
+  .palette button[aria-pressed=true] { background: var(--accent); color: #fff;
+                                       border-color: var(--accent); }
+  .palette .cout { color: var(--doux); font-size: .75rem; }
+  .palette img, .pile img { width: 22px; height: 22px; border-radius: 4px;
+                            flex: 0 0 22px; }
+  .pile .avec-icone { display: flex; gap: .4rem; align-items: center; }
+  .palette button[aria-pressed=true] .cout { color: #dce8f4; }
+  /* Le damier et la pile d'actions cote a cote, la pile se lisant de haut en
+     bas. Demande : c'est l'ORDRE qui se lit, et une liste sous le
+     damier obligeait a defiler entre le geste et son effet. */
+  .reseau-vue { display: grid; gap: 1rem; align-items: start;
+                grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 46rem) {
+    .reseau-vue { grid-template-columns: minmax(0, 1fr) 16rem; }
+  }
+  .pile { border: 1px solid var(--trait); border-radius: 6px; overflow: hidden; }
+  .pile h4 { margin: 0; padding: .4rem .6rem; font-size: .75rem;
+             text-transform: uppercase; letter-spacing: .05em; color: var(--doux);
+             background: var(--panneau); border-bottom: 1px solid var(--trait);
+             font-weight: 600; }
+  .pile ol { list-style: none; margin: 0; padding: 0; max-height: 26rem;
+             overflow: auto; counter-reset: pas; }
+  .pile li { display: grid; grid-template-columns: 1.4rem 1fr; gap: .4rem;
+             padding: .3rem .6rem; font-size: .82rem; line-height: 1.35;
+             border-bottom: 1px solid var(--trait); }
+  .pile li:last-child { border-bottom: 0; }
+  .pile li::before { counter-increment: pas; content: counter(pas);
+                     color: var(--doux); font-variant-numeric: tabular-nums;
+                     font-size: .72rem; padding-top: .1rem; }
+  .pile li.courante { background: #e6eef6; }
+  .pile li.pale { opacity: .4; }
+  .pile .quoi { font-weight: 600; }
+  .pile .degats { color: var(--alerte); font-variant-numeric: tabular-nums; }
+  .pile .fin { background: #eef4ee; }
+  .pile .detail { color: var(--doux); font-size: .76rem; }
+  /* L'arrivee, le chiffre qu'on veut voir sans avoir a derouler. */
+  .arrivee { margin: .5rem 0 0; padding: .45rem .6rem; border-radius: 4px;
+             background: #eef4ee; border: 1px solid #cfe3d2; font-size: .88rem; }
+  .arrivee strong { font-variant-numeric: tabular-nums; }
+  .arrivee.manque { background: #fff8e6; border-color: #e8c96a; color: #6b4e00; }
+  .case.arrivee-case { fill: #9fc9a8; }
+  .outils { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .6rem 0; }
+  .outils label { display: flex; gap: .3rem; align-items: center; font-weight: 400; margin: 0; }
+  .pleine-largeur { grid-column: 1 / -1; }
+  /*
+   * Les réglages à gauche, un panneau collant à droite qui reste en vue pendant
+   * qu'on règle.
+   */
+  .atelier { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); }
+  .panneau { border: 1px solid var(--trait); border-radius: 6px;
+             background: var(--panneau); padding: .9rem 1rem; }
+  .panneau h3 { margin: 0 0 .5rem; font-size: .8rem; text-transform: uppercase;
+                letter-spacing: .05em; color: var(--doux); font-weight: 600; }
+  .panneau .chiffre { font-size: 1.6rem; font-weight: 600; letter-spacing: -.02em;
+                      line-height: 1.15; }
+  .panneau .sous { color: var(--doux); font-size: .9rem; }
+  .panneau button { width: 100%; }
+  /* Perime : le chiffre reste lisible, mais il ne se donne plus pour le
+     resultat des reglages courants. L'estomper suffit ; le cacher ferait
+     perdre le point de comparaison, qui est justement ce qu'on regarde. */
+  .panneau.perime #panneauResultat { opacity: .5; }
+  .panneau dl { display: grid; gap: .15rem .8rem; grid-template-columns: 1fr auto;
+                margin: .7rem 0 0; font-size: .9rem; }
+  .panneau dt { color: var(--doux); }
+  .panneau dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  @media (min-width: 60rem) {
+    .atelier { grid-template-columns: minmax(0, 1fr) 21rem; align-items: start; }
+    /* `top` laisse la place a rien de fixe : la page n'a pas d'en-tete collant,
+       une marge d'aeration suffit. */
+    .panneau { position: sticky; top: 1rem; }
+  }
+  /*
+   * En colonne unique, le panneau devient une barre collée en bas : l'action et
+   * le total.
+   */
+  @media (max-width: 59.99rem) {
+    .panneau { position: sticky; bottom: 0; z-index: 5; border-radius: 0;
+               border-left: 0; border-right: 0; margin: 0 -1.25rem;
+               display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .9rem; }
+    .panneau button { width: auto; flex: 1 1 12rem; }
+    .panneau h3, .panneau dl, .panneau .sous { display: none; }
+    .panneau .chiffre { font-size: 1.15rem; }
+    .panneau #panneauResultat { display: flex; align-items: baseline; gap: .5rem;
+                                flex-wrap: wrap; }
+    .panneau .etat { margin: 0 !important; }
+  }
+  /* Une aide qu'on déplie. */
+  details.pourquoi { margin: .35rem 0 0; }
+  /* Le triangle du navigateur reste ; `inline-flex` lui donne son espacement. */
+  details.pourquoi > summary { cursor: pointer; display: inline-flex;
+    font-size: .78rem; color: var(--accent); list-style: none;
+    border: 1px solid var(--trait); border-radius: 999px; padding: .05rem .55rem; }
+  /* ⚠️ DEUX REGLES POUR UN SEUL TRIANGLE. `list-style: none` ne suffit pas sur
+     un summary : Chrome garde son marqueur, et la pastille s'affichait
+     « •Pourquoi ». Il faut vider `::marker` ET masquer le marqueur WebKit. */
+  details.pourquoi > summary::-webkit-details-marker { display: none; }
+  details.pourquoi > summary::marker { content: ''; }
+  details.pourquoi > summary:hover { background: var(--panneau); }
+  details.pourquoi[open] > summary { margin-bottom: .3rem; }
+  /* Deux modes pour la meme question, dont un seul s'affiche. Les deux cote a
+     cote, l'un grise, etaient la signature d'un ajout et non d'un choix. */
+  .segments { display: inline-flex; border: 1px solid var(--trait);
+              border-radius: 4px; overflow: hidden; margin: 0 0 .7rem; }
+  .segments label { margin: 0; padding: .35rem .8rem; cursor: pointer;
+                    font-weight: 500; font-size: .9rem; background: var(--fond); }
+  .segments label + label { border-left: 1px solid var(--trait); }
+  .segments input { position: absolute; opacity: 0; pointer-events: none; }
+  .segments input:checked + span { }
+  .segments label:has(input:checked) { background: var(--accent); color: #fff; }
+  .segments label:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .indisponible { margin: .8rem 0 0; padding: .7rem .9rem; border-radius: .4rem;
+    background: #fff8e6; border: 1px solid #e8c96a; color: #6b4e00; line-height: 1.45; }
+  fieldset.inactif { opacity: .45; }
+  fieldset.inactif legend { opacity: .7; }
+  .sorts { display: grid; gap: .3rem .9rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .sorts label { display: flex; gap: .45rem; align-items: center; font-weight: 400; margin: 0;
+                 padding: .2rem .3rem; border-radius: 4px; }
+  .sorts label:hover { background: var(--panneau); }
+  .sorts label img, .sorts label .vide { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 4px; }
+  .sorts label .vide { background: var(--panneau); }
+  .sorts label.conflit { background: #fbeee8; outline: 1px solid var(--alerte); }
+  .variante { font-size: .72rem; color: var(--doux); }
+  .sorts input { margin: 0; }
+  .sorts .cout { color: var(--doux); font-size: .85em; }
+  .fiche { background: var(--panneau); border: 1px solid var(--trait); border-radius: 6px; padding: .9rem 1rem; }
+  .fiche dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .5rem 1rem; margin: 0; }
+  .fiche dt { color: var(--doux); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  .fiche dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .tour { border: 1px solid var(--trait); border-radius: 6px; margin-bottom: .6rem; overflow: hidden; }
+  .tour > header { display: flex; justify-content: space-between; gap: 1rem;
+                   background: var(--panneau); padding: .5rem .85rem; border-bottom: 1px solid var(--trait); }
+  .tour h3 { margin: 0; font-size: .95rem; }
+  .tour ol { margin: 0; padding: .5rem .85rem .7rem 2.2rem; }
+  .tour li { padding: .12rem 0; }
+  .notes, .ouverture { color: var(--doux); font-size: .88em; }
+  .alerte { color: var(--alerte); font-weight: 600; }
+  /* Ne jamais porter une information par la COULEUR SEULE : un lecteur
+     daltonien ou un ecran en niveaux de gris doit voir l'alerte aussi. */
+  .alerte::before { content: "⚠ "; }
+  /* Cibles tactiles : 44 px est le minimum, les boutons tombaient a 43. */
+  button { min-height: 44px; }
+  /* La barre d'action suit le defilement : le bouton de calcul se trouvait a
+     4 700 pixels du haut de page, sous quatre etapes toutes depliees. */
+  /* ⚠️ `display: flex` sur un <summary> SUPPRIME le triangle du navigateur :
+     le bloc se repliait sans que rien ne dise qu'il etait repliable. On pose
+     donc un chevron explicite, qui a l'avantage de dire aussi l'ETAT. */
+  summary { cursor: pointer; padding: .35rem 0; min-height: 44px;
+            display: flex; align-items: center; gap: .5rem; font-weight: 600;
+            list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "\25B8"; color: var(--accent); font-size: .9em;
+                    transition: transform .12s ease; }
+  details[open] > summary::before { content: "\25BE"; }
+  #blocResistances[open] > summary { margin-bottom: .4rem; }
+  /* Un <details> qui doit se lire comme les quatre etapes qui l'entourent. */
+  details.commeFieldset { border: 1px solid var(--trait); border-radius: 6px;
+                          padding: .4rem 1rem; margin: 0 0 1rem; }
+  details.commeFieldset > summary { font-size: .85rem; text-transform: uppercase;
+                                    letter-spacing: .05em; color: var(--doux); }
+  details.commeFieldset[open] { padding-bottom: 1rem; }
+  .nombre { font-variant-numeric: tabular-nums; }
+  .avertissements { margin: .5rem 0 0; padding-left: 1.1rem; color: var(--doux); font-size: .9em; }
+  .barre { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+  .etat { color: var(--doux); }
+  code { background: var(--panneau); padding: .1rem .3rem; border-radius: 3px; font-size: .9em; }
+  table.resistances { border-collapse: collapse; width: 100%; max-width: 30rem; }
+  table.resistances th, table.resistances td { text-align: left; padding: .25rem .5rem .25rem 0; }
+  table.resistances thead th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em;
+                               color: var(--doux); font-weight: 600; border-bottom: 1px solid var(--trait); }
+  table.resistances input { width: 6.5rem; }
+  table.resistances td:first-child { font-weight: 500; }
+
+  /* Frise continue facon Gantt : une seule bande, un palier par tour, chaque
+     sort large a proportion de son coût en PA, ce qui rend le budget lisible
+     d'un coup d'oeil et montre les PA non dépensés comme un trou. */
+  /* Infobulle de sort. `position: fixed` et non `absolute` : un bloc de la
+     frise vit dans un conteneur a `overflow-x: auto`, qui rognerait une
+     infobulle positionnee dans son flux. */
+  .infobulle { position: fixed; z-index: 50; max-width: 22rem; pointer-events: none;
+               background: var(--fond); border: 1px solid var(--trait); border-radius: 6px;
+               box-shadow: 0 4px 16px rgba(0,0,0,.13); padding: .55rem .7rem;
+               font-size: .78rem; line-height: 1.45; }
+  .infobulle[hidden] { display: none; }
+  .infobulle h4 { margin: 0 0 .15rem; font-size: .85rem; }
+  .infobulle dl { display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem;
+                  margin: .35rem 0 0; }
+  .infobulle dt { color: var(--doux); }
+  .infobulle dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .infobulle .ventilation { grid-column: 2; margin: .05rem 0 .2rem; padding-left: .5rem;
+                            border-left: 2px solid var(--trait); font-size: .92em;
+                            color: var(--doux); }
+  .infobulle .ligne1 { color: var(--doux); }
+  .infobulle .description { margin: .4rem 0 0; padding-top: .35rem;
+                            border-top: 1px solid var(--trait); }
+  .infobulle .contraintes { margin-top: .2rem; color: var(--alerte); font-size: .74rem; }
+  .infobulle .critique { margin: .35rem 0 0; padding-top: .3rem;
+                         border-top: 1px solid var(--trait); font-size: .74rem;
+                         color: var(--doux); line-height: 1.4; }
+  .infobulle .critique strong { color: var(--encre); }
+  .infobulle .decision { margin: .35rem 0 0; padding-top: .3rem;
+                         border-top: 1px solid var(--trait); font-size: .74rem;
+                         color: var(--doux); line-height: 1.4; }
+  .infobulle .calcul { color: var(--doux); font-size: .72rem; }
+  .infobulle .question { margin: .4rem 0 0; padding-top: .35rem;
+                         border-top: 1px solid var(--trait); color: var(--doux);
+                         font-size: .72rem; }
+  /* Graphique des dégâts par tour. Deux couleurs de la palette catégorielle
+     validée (bleu slot 1, orange slot 2) : contraste vérifié sur fond blanc,
+     séparation en vision daltonienne ΔE 24,7 bien au-dessus du seuil de 8. */
+  .graphique { margin: 1rem 0 0; }
+  .graphique figcaption { font-size: .8rem; color: var(--doux); margin-bottom: .35rem; }
+  .graphique svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .g-grille { stroke: var(--trait); stroke-width: 1; }
+  .g-axe { fill: var(--doux); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .g-barre { cursor: default; }
+  .g-boucle { fill: #2a78d6; }
+  .g-ouverture { fill: #eb6834; }
+  .g-moyenne { stroke: var(--encre); stroke-width: 2; stroke-dasharray: 5 4;
+               stroke-linecap: round; }
+  .g-moyenne-texte { fill: var(--encre); font-size: 10px; font-weight: 600;
+                     font-variant-numeric: tabular-nums; }
+  .aide { font-size: .75rem; color: var(--doux); margin: .25rem 0 0; }
+  /* Courbe des dégâts selon le nombre d'ennemis. Une ligne et non des
+     colonnes : le nombre de cibles est une grandeur continue du point de vue
+     du lecteur, et c'est la PENTE qui l'intéresse, pas chaque valeur. */
+  .g-courbe { fill: none; stroke: #2a78d6; stroke-width: 2.5;
+              stroke-linejoin: round; stroke-linecap: round; }
+  .g-point { fill: #2a78d6; }
+  .g-point-actif { fill: #eb6834; stroke: var(--fond); stroke-width: 2; }
+  .g-lineaire { fill: none; stroke: var(--doux); stroke-width: 1.5;
+                stroke-dasharray: 4 4; }
+  /* Le texte ne porte jamais la couleur de la donnée : la colonne en dessous
+     suffit à dire de quelle série il parle. */
+  .g-repere { fill: var(--doux); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .g-legende { display: flex; gap: 1rem; font-size: .78rem; color: var(--doux);
+               margin-top: .3rem; flex-wrap: wrap; }
+  .g-legende span { display: inline-flex; align-items: center; gap: .35rem; }
+  .g-puce { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  /* Répartition par sort : des barres horizontales triées, une seule teinte. */
+  .repart { margin: 1rem 0 0; }
+  .repart figcaption { font-size: .8rem; color: var(--doux); margin-bottom: .5rem; }
+  .repart ol { list-style: none; margin: 0; padding: 0; display: grid;
+               grid-template-columns: minmax(6rem, auto) 1fr auto; gap: .3rem .7rem;
+               align-items: center; }
+  .repart .nom { display: flex; align-items: center; gap: .4rem; font-size: .8rem; }
+  .repart .nom img { width: 20px; height: 20px; }
+  .repart .piste { background: var(--panneau); border-radius: 3px; height: 14px; }
+  .repart .part { background: #2a78d6; height: 100%; border-radius: 0 3px 3px 0;
+                  min-width: 2px; }
+  .repart .valeur { font-size: .78rem; color: var(--doux);
+                    font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .repart .zero { color: var(--doux); font-style: italic; }
+  .frises { display: flex; flex-direction: column; gap: .5rem; }
+  .palier { border: 1px solid var(--trait); border-radius: 6px; background: var(--fond);
+            overflow: hidden; }
+  .palier > header { display: flex; align-items: baseline; gap: .5rem; white-space: nowrap;
+                     padding: .4rem .7rem; background: var(--panneau);
+                     border-bottom: 1px solid var(--trait); }
+  .palier > header b { font-size: .9rem; }
+  .palier > header span { color: var(--doux); font-size: .8rem; }
+  .palier > header .budget { margin-left: auto; }
+  /*
+   * Chaque tour défile pour lui-même, sans en-tête collant qui recouvrirait le
+   * tour précédent.
+   */
+  .lancers { display: flex; flex-wrap: nowrap; align-items: stretch;
+             padding: .5rem .6rem; gap: .25rem; overflow-x: auto; }
+  .bloc { display: flex; flex-direction: column; align-items: center; gap: .18rem;
+          padding: .3rem; border: 1px solid var(--trait); border-radius: 5px;
+          background: var(--fond); min-width: 0; min-height: 8.5rem;
+          justify-content: flex-start; }
+  .bloc img { width: 34px; height: 34px; display: block; image-rendering: auto; }
+  .bloc .sansicone { width: 34px; height: 34px; border-radius: 4px; background: var(--panneau);
+                     display: grid; place-items: center; font-size: .7rem; color: var(--doux); }
+  .bloc .nom { font-size: .7rem; line-height: 1.15; text-align: center; width: 100%;
+               min-height: 2.3em; overflow: hidden; display: -webkit-box;
+               -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  /* La ligne de dégâts d'un état déclenché par ce lancer. Distincte de celle du
+     sort lui-même : additionner les deux crédite le sort qui consomme l'état
+     des dégâts de celui qui l'a posé. */
+  .bloc .procs { display: flex; flex-direction: column; gap: .05rem; width: 100%;
+                 font-size: .64rem; color: var(--doux); text-align: center;
+                 font-variant-numeric: tabular-nums; }
+  .bloc .procs em { font-style: normal; display: block; overflow: hidden;
+                    text-overflow: ellipsis; white-space: nowrap; }
+  .bloc .badges { margin-top: .1rem; }
+  .bloc .restant { margin-top: auto; padding-top: .25rem; width: 100%; text-align: center;
+                   font-size: .68rem;
+                   font-variant-numeric: tabular-nums; color: var(--doux);
+                   border-top: 1px solid var(--trait); }
+  /* Le récapitulatif des conflits de variantes peut être long : il doit
+     s'enrouler comme du texte, pas étirer sa rangée. */
+  #compteurSorts { flex: 1 1 100%; min-width: 0; }
+  .bloc .pa { font-size: .68rem; color: var(--doux); font-variant-numeric: tabular-nums; }
+  .bloc .deg { font-size: .72rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bloc.evenement { border-style: dashed; background: var(--panneau); }
+  .bloc.reste { border-style: dashed; border-color: var(--alerte); color: var(--alerte);
+                justify-content: center; font-size: .72rem; font-weight: 600; }
+  .badges { display: flex; flex-direction: column; gap: .12rem; align-items: center; width: 100%; }
+  .badge { font-size: .62rem; padding: 0 .25rem; border-radius: 3px; max-width: 100%;
+           background: var(--panneau); color: var(--doux);
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  a.marquepage { display: inline-block; padding: .55rem 1rem; border: 2px dashed var(--accent);
+                 border-radius: 6px; color: var(--accent); text-decoration: none; font-weight: 700;
+                 background: var(--panneau); cursor: grab; }
+  a.marquepage:active { cursor: grabbing; }
+  ol.etapes { margin: .2rem 0 1rem; padding-left: 1.4rem; }
+  ol.etapes li { padding: .18rem 0; }
+  kbd { font: inherit; font-size: .85em; border: 1px solid var(--trait); border-bottom-width: 2px;
+        border-radius: 3px; padding: .05rem .35rem; background: var(--panneau); }
+  details { margin-top: 1rem; }
+  summary { cursor: pointer; color: var(--doux); font-size: .9rem; }
+  summary:hover { color: var(--accent); }
+  .rangee { display: flex; gap: .5rem; align-items: flex-start; }
+  .rangee input { flex: 1; }
+  input[type=url] { width: 100%; font: inherit; padding: .5rem .6rem;
+                    border: 1px solid var(--trait); border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Optimiseur de rotation Dofus</h1>
+  <p class="intro">Prototype local. Les données de jeu sont lues sur disque, rien n'est envoyé nulle part.</p>
+
+  <div id="fiche"></div>
+
+  <form id="formulaire">
+   <div class="atelier">
+    <div class="reglages">
+    <!-- Repliee des qu'un build est charge : cette etape ne sert qu'une fois
+         dans la vie, et elle occupait 564 des 4723 pixels de la page a chaque
+         visite. Repliee et non CACHEE, pour qu'on puisse y revenir. -->
+    <details id="etape1" class="commeFieldset" open>
+      <summary>Étape 1 · installer le bouton, une seule fois</summary>
+      <p style="margin-top:0">
+        Faites glisser ce bouton dans votre barre de favoris :
+      </p>
+      <p><a class="marquepage" id="marquepage" href="MARQUEPAGE" draggable="true">Importer depuis DofusBook</a></p>
+      <p class="etat" style="margin-bottom:0">
+        Barre de favoris masquée ? <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>B</kbd> l'affiche.
+        Un clic sur ce bouton depuis cette page ne sert à rien : il doit être cliqué
+        depuis DofusBook.
+      </p>
+    </details>
+
+    <fieldset>
+      <legend>Étape 2 · importer votre équipement</legend>
+      <!-- Le mode d'emploi de l'import ne sert que jusqu'au premier build
+           charge. Replie ensuite, comme l'etape 1 : il pesait le quart de la
+           page a chaque visite suivante. Ce qui reste visible est l'ETAT de
+           l'import et la fiche du build, c'est-a-dire le resultat. -->
+      <details id="commentImporter" open>
+        <summary>Comment importer</summary>
+        <ol class="etapes">
+          <li>Ouvrez votre équipement sur DofusBook.</li>
+          <li>Cliquez le favori que vous venez d'installer.</li>
+          <li>Cette page se rouvre avec votre build déjà chargé.</li>
+        </ol>
+        <label for="lien">Vous avez un lien sous la main ? Collez-le, j'ouvre la bonne page.</label>
+        <div class="rangee">
+          <input type="url" id="lien" placeholder="https://d-bk.net/fr/d/XXXXX" spellcheck="false">
+          <button type="button" id="ouvrirDofusbook" class="secondaire">Ouvrir</button>
+        </div>
+      </details>
+
+      <p class="etat" id="etatImport" role="status" aria-live="polite" style="margin:.6rem 0 0"></p>
+      <details>
+        <summary>Import manuel, si le favori ne peut pas être installé</summary>
+        <p class="etat" style="margin:.5rem 0 .3rem">
+          Ouvrez <code>votre-lien/api/stuffs/dofus/public/&lt;numéro&gt;</code> dans un onglet,
+          copiez tout, et collez ici. Ou collez le code produit par le favori.
+        </p>
+        <textarea id="charge" spellcheck="false" aria-label="Code d'import ou JSON DofusBook"></textarea>
+        <button type="button" id="charger" class="secondaire">Charger</button>
+      </details>
+    </fieldset>
+
+    <!-- ⚠️ DEPLIANT ET NON FIELDSET : la liste des sorts pesait 1 806 des
+         3 987 px de la page, et elle ne se lit qu'une fois par build. Repliee
+         apres le premier calcul, elle garde son compte dans son resume, ce qui
+         est la seule chose qu'on relit. Repliee et non cachee. -->
+    <details id="etape3" class="commeFieldset" open>
+      <summary>Étape 3 · choisir les sorts <span class="etat" id="resumeSorts"></span></summary>
+      <p style="margin:.4rem 0 .5rem">
+        Cochez ce que votre personnage <strong>possède</strong>, pas ce qui vous
+        paraît bon. C'est le solveur qui décide lequel lancer et quand.
+      </p>
+      <details class="pourquoi">
+        <summary>Pourquoi</summary>
+      <p class="etat" style="margin:0 0 .6rem">
+        Sont cochés par défaut les sorts de l'orientation de votre build, et
+        tous les utilitaires. Décocher revient à dire « je ne l'ai pas » : la
+        rotation proposée sera alors la meilleure <em>sans</em> lui, ce qui peut
+        être moins bon sans que rien ne le signale. Recocher est à une case.
+        DofusBook ne mémorise aucune sélection, elle ne peut donc pas être
+        importée.
+      </p>
+      <p class="etat" style="margin:0 0 .6rem">
+        <strong>Le nombre de sorts est ce qui coûte le plus cher</strong>, bien
+        plus que le nombre de tours : la recherche à l'intérieur d'un tour
+        grandit à chaque sort ajouté. Au-delà d'une douzaine, le calcul devient
+        impraticable, et le compteur ci-dessous vous le dit avant que vous ne
+        lanciez.
+      </p>
+      </details>
+      <div class="barre" style="margin:.6rem 0 .8rem">
+        <button type="button" class="secondaire" id="toutCocher">Tout cocher</button>
+        <button type="button" class="secondaire" id="toutDecocher">Tout décocher</button>
+        <button type="button" class="secondaire" id="limiterOrientation">Limiter à l'orientation</button>
+        <span class="etat" id="compteurSorts" role="status" aria-live="polite"></span>
+      </div>
+      <div class="sorts" id="sorts"></div>
+    </details>
+
+    <fieldset id="etape4">
+      <legend>Étape 4 · décrire la cible et calculer</legend>
+      <div class="grille" style="margin-bottom:1rem">
+        <div>
+          <label for="horizon">Nombre de tours</label>
+          <input type="number" id="horizon" value="7" min="1" max="15">
+        </div>
+        <div>
+          <label for="pmDepenses">PM dépensés dans le tour</label>
+          <input type="number" id="pmDepenses" value="0" min="0" max="12">
+          <details class="pourquoi"><summary>Pourquoi</summary>
+          <p class="aide">Ce que vous comptez dépenser à vous déplacer. Quatre
+            sorts le lisent : la Tourbière de l'Enutrof gagne 5 dégâts par PM
+            utilisé, le Zénith du Iop frappe une seconde fois au prorata des PM
+            qu'il vous RESTE. Le calculateur ne déplace personne, c'est vous qui
+            le déclarez.</p>
+          </details>
+        </div>
+
+        <!-- Une seule question, deux façons d'y répondre, une seule visible.
+             Le régime déclaré reste par défaut : il ne demande rien et suffit
+             au duel. -->
+        <div class="pleine-largeur">
+          <label style="font-weight:600;margin-bottom:.45rem">Où sont les ennemis</label>
+          <div class="segments" role="radiogroup" aria-label="Mode de description des ennemis">
+            <label><input type="radio" name="modeCible" value="declare" checked>
+              <span>Les déclarer</span></label>
+            <label><input type="radio" name="modeCible" value="pose">
+              <span>Les poser sur une grille</span></label>
+          </div>
+
+          <div id="modeDeclare">
+            <div class="grille">
+              <div>
+                <label for="cibles">Ennemis touchés</label>
+                <input type="number" id="cibles" value="1" min="1" max="10">
+              </div>
+              <div>
+                <label for="etalement">Cases entre deux ennemis</label>
+                <input type="number" id="etalement" value="0" min="0" max="4">
+              </div>
+            </div>
+            <details class="pourquoi"><summary>Pourquoi ces deux chiffres</summary>
+            <p class="aide">Vos ennemis sont-ils collés ou étalés ? Le jeu retire
+              des dégâts par case d'éloignement de l'impact, et sans placement le
+              calculateur ne sait pas où chacun se tient. À zéro, tout le monde
+              est sur l'impact et vous lisez un PLAFOND. À un, le deuxième ennemi
+              est une case plus loin, le troisième deux, et ainsi de suite.
+              <br>Le réglage ne touche que les sorts qui PERDENT avec la distance :
+              sur les 261 lignes de zone du jeu, 212 sont dégressives et 49 ne le
+              sont pas. Le Forgelance en a plus de non dégressives que de
+              dégressives, et ses textes le disent. Les sorts concernés par votre
+              rotation sont nommés sous le résultat.</p>
+            </details>
+          </div>
+
+          <div id="modePose" hidden>
+            <p class="aide" style="margin:0 0 .6rem">
+              Cliquez pour poser, recliquez pour retirer. L'éloignement de chacun
+              est alors MESURÉ au lieu d'être déduit d'un écart moyen, et une
+              zone ne frappe que ceux qu'elle couvre vraiment.
+              <details class="pourquoi" style="display:inline-block;margin-left:.3rem">
+                <summary>Le repère</summary>
+                <span class="aide">Le jeu dessine ses cases en losanges. Ce carré
+                est le même damier tourné de 45 degrés : deux cases voisines à
+                l'écran le sont ici aussi, et la distance reste celle du jeu.</span>
+              </details>
+            </p>
+            <div class="outils">
+              <strong style="font-size:.85rem">Clic :</strong>
+              <label><input type="radio" name="outilGrille" value="ennemi" checked style="width:auto"> ennemi</label>
+              <label><input type="radio" name="outilGrille" value="lanceur" style="width:auto"> lanceur</label>
+              <label><input type="radio" name="outilGrille" value="visee" style="width:auto"> case visée</label>
+              <button type="button" class="secondaire" id="grilleVider">Vider les ennemis</button>
+            </div>
+            <div class="plateau" id="plateau"></div>
+            <p class="aide" id="grilleEtat"></p>
+            <div id="apercuBloc" hidden style="margin-top:.6rem">
+              <label for="sortApercu">Voir la zone d'un sort</label>
+              <select id="sortApercu" style="max-width:22rem"></select>
+              <div id="apercuDetail"></div>
+            </div>
+          </div>
+        </div>
+        <!-- ⚠️ CE BLOC N'APPARAÎT QUE POUR UNE CLASSE QUI POSE DES PIÈGES, et
+             la page ne sait pas d'avance lesquelles : c'est le catalogue rendu
+             par le serveur qui le dit. Une liste en dur ici vieillirait au
+             premier rééquilibrage. -->
+        <div class="pleine-largeur" id="reseauBloc" hidden>
+          <label style="font-weight:600;margin-bottom:.45rem">Réseau de pièges</label>
+          <p class="aide" style="margin:0 0 .5rem">
+            Choisissez un piège, cliquez une case pour le poser, recliquez pour
+            le retirer. Puis cliquez la case par laquelle l'ennemi entre : la
+            chaîne se déroule, étape par étape.
+            <details class="pourquoi" style="display:inline-block;margin-left:.3rem">
+              <summary>Les règles suivies</summary>
+              <span class="aide">Un piège déclenché DISPARAÎT, ce qui borne la
+              chaîne. Les pièges partent dans l'ordre de POSE, et un groupe
+              rencontré en chemin passe avant le reste du précédent. Une cible
+              poussée déclenche ce qu'elle traverse, et les dégâts se lisent sur
+              la case qui a déclenché.
+              Ce qui n'est pas calculé : les dommages d'une poussée bloquée.</span>
+            </details>
+          </p>
+          <div class="palette" id="palettePieges"></div>
+          <div class="outils" style="margin-top:.6rem">
+            <label><input type="radio" name="outilReseau" value="piege" checked style="width:auto"> poser un piège</label>
+            <label><input type="radio" name="outilReseau" value="entree" style="width:auto"> case d'entrée</label>
+            <label><input type="radio" name="outilReseau" value="mur" style="width:auto"> obstacle</label>
+            <label><input type="radio" name="outilReseau" value="lanceur" style="width:auto"> le Sram</label>
+            <button type="button" class="secondaire" id="reseauVider">Tout retirer</button>
+          </div>
+          <div class="reseau-vue">
+            <div>
+              <div class="plateau" id="plateauReseau"></div>
+              <p class="aide" id="reseauEtat"></p>
+              <p id="arrivee" class="arrivee"></p>
+            </div>
+            <div id="traceBloc" hidden>
+              <div class="pile">
+                <h4>Empilement des actions</h4>
+                <ol id="traceListe"></ol>
+              </div>
+              <div class="outils" style="margin-top:.5rem">
+                <button type="button" class="secondaire" id="tracePrecedent">◀</button>
+                <button type="button" class="secondaire" id="traceSuivant">▶</button>
+                <button type="button" class="secondaire" id="traceTout">Tout</button>
+              </div>
+              <p class="etat" id="traceResume" style="margin:.3rem 0 0"></p>
+            </div>
+          </div>
+        </div>
+        <!-- Les compteurs propres à la classe, DÉCOUVERTS dans son fichier de
+             règles : la page n'en connaît aucun d'avance. -->
+        <div id="etatsDeclares" hidden></div>
+        <div>
+          <label for="portee">Où vous combattez</label>
+          <select id="portee">
+            <option value="ranged" selected>À distance (2 cases ou plus)</option>
+            <option value="melee">Au contact</option>
+          </select>
+        </div>
+      </div>
+      <p class="etat" id="notePortee" style="margin:0 0 1rem" hidden></p>
+
+      <details id="blocResistances">
+        <summary>Résistances de la cible <span class="etat" id="resumeResistances">aucune, cible nue</span></summary>
+        <p class="etat" style="margin:0 0 .5rem">
+          Résistances de la cible. Elles se lisent sur la fiche du monstre et
+          diffèrent par élément : la fixe se soustrait à <em>chaque ligne de dégâts</em>,
+          ce qui pénalise surtout les sorts multi-éléments.
+        </p>
+        <table class="resistances" id="tableResistances">
+          <thead>
+            <tr><th scope="col">Élément</th><th scope="col">Résistance %</th><th scope="col">Résistance fixe</th></tr>
+          </thead>
+          <tbody id="lignesResistance"></tbody>
+        </table>
+        <p style="margin:.5rem 0 .9rem">
+          <button type="button" class="secondaire" id="memeResistance">Appliquer la première partout</button>
+        </p>
+
+        <div class="grille">
+          <div>
+            <label for="resCrit">Résistance critique (fixe)</label>
+            <input type="number" id="resCrit" value="0" min="0" max="500">
+          </div>
+          <div>
+            <label for="resSorts">Résistance aux sorts (%)</label>
+            <input type="number" id="resSorts" value="0" min="-100" max="100">
+          </div>
+          <div>
+            <label for="resMelee">Résistance mêlée (%)</label>
+            <input type="number" id="resMelee" value="0" min="-100" max="100">
+          </div>
+          <div>
+            <label for="resDistance">Résistance distance (%)</label>
+            <input type="number" id="resDistance" value="0" min="-100" max="100">
+          </div>
+        </div>
+        <p class="etat" style="margin:.5rem 0 0">
+          La résistance critique se retranche du bonus de dommages critiques sur
+          <em>chaque ligne</em>, donc elle coûte d'autant plus cher que le build en
+          dépend. Les trois pourcentages, eux, sont multiplicatifs : ils
+          s'appliquent au même étage que vos propres pourcentages de dommages, et
+          une seule fois chacun.
+          Non modélisée faute d'être utile ici : la résistance aux dommages de
+          poussée, puisque la poussée n'est pas simulée.
+        </p>
+        <p class="etat" style="margin:.5rem 0 0">
+          <strong>La cible est supposée au-dessus de 50 % de vie pendant tout le
+          combat.</strong> Les sorts qui frappent plus fort sous ce seuil, comme
+          l'Attaque Mortelle du Sram, sont comptés à leur valeur haute de vie.
+          Rien ne dit à quel tour une cible passe sous la moitié, et les compter
+          à leur valeur d'exécution gonflerait toutes les rotations.
+        </p>
+        <p class="etat" style="margin:.5rem 0 0">
+          <strong>Le vol de PA est supposé échouer.</strong> La cible y résiste
+          dès le haut niveau et plus personne ne joue de build retrait de PA :
+          un sort comme le Ralentissement du Xélor est donc compté pour ses seuls
+          dégâts. Compter le PA rendu faisait lancer ce sort deux fois par tour
+          pour financer le reste du tour, et annonçait 3 522 dégâts par tour là
+          où la rotation jouable en fait 3 168.
+        </p>
+      </details>
+
+      <details id="hypotheses" hidden>
+        <summary>Hypothèses de jeu propres à la classe</summary>
+        <div id="zoneBudgets" class="grille" style="margin-top:.6rem"></div>
+      </details>
+
+    </fieldset>
+    </div><!-- .reglages -->
+
+    <!-- ⚠️ LE PANNEAU NE PORTE QUE LA LECTURE COURTE : le total, le rythme, la
+         boucle. Le detail complet (frises, graphiques, avertissements, tableaux)
+         reste en pleine largeur sous l'atelier, parce qu'une frise de sept tours
+         dans une colonne de dix-neuf rem serait illisible. Le panneau est ce
+         qu'on garde a l'oeil en reglant ; le detail est ce qu'on lit une fois
+         qu'on a regle. -->
+    <aside class="panneau" id="panneau">
+      <button type="submit" id="calculer" disabled>Calculer la rotation</button>
+      <p class="etat" id="etat" role="status" aria-live="polite"
+         style="margin:.5rem 0 0"></p>
+      <div id="panneauResultat"></div>
+      <p class="etat" id="panneauVide" style="margin:.7rem 0 0">
+        Importez un équipement, choisissez des sorts, puis calculez. Le résultat
+        s'affiche ici et y reste pendant que vous ajustez.
+      </p>
+    </aside>
+   </div><!-- .atelier -->
+  </form>
+
+  <div id="resultat" aria-live="polite"></div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let build = null, classes = null, resolu = null, erreurCatalogue = null;
+
+  const echapper = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nb = (v, d = 0) => Number(v).toLocaleString('fr-FR',
+    { minimumFractionDigits: d, maximumFractionDigits: d });
+  const FR = { Fire: 'Feu', Earth: 'Terre', Air: 'Air', Water: 'Eau' };
+
+  // ---------------------------------------------------------------- grille
+  //
+  // Le placement des ennemis : la page produit des coordonnées, le moteur dessine
+  // les zones et mesure les éloignements.
+  const RAYON_PLATEAU = 6;
+  // Le même plafond que le serveur, qui le porte sous le nom `MAX_ENNEMIS`.
+  const MAX_ENNEMIS = 10;
+  const placement = {
+    lanceur: [-4, 0],
+    visee: [0, 0],
+    ennemis: [[0, 0]],
+  };
+  const memeCase = (a, b) => a[0] === b[0] && a[1] === b[1];
+  const modeCible = () =>
+    (document.querySelector('input[name=modeCible]:checked') || {}).value || 'declare';
+  // Le refus vit hors du texte d'état, que le redessin d'un aperçu plus ancien
+  // effacerait.
+  let refusGrille = '';
+
+  const placementEnvoye = () =>
+    (modeCible() === 'pose' && placement.ennemis.length)
+      ? { lanceur: placement.lanceur, visee: placement.visee, ennemis: placement.ennemis }
+      : null;
+
+  // Le repère du jeu vers l'écran : une rotation de 45 degrés aplatie de moitié.
+  // Le serveur raisonne toujours en (x, y) ; ce module ne fait que dessiner.
+  const LARGEUR_CASE = 42;
+  const HAUTEUR_CASE = 21;
+  const MARGE_HAUT = 64;   // de quoi loger trois étiquettes empilées au bord
+  const versEcran = (x, y) => [
+    (x - y) * LARGEUR_CASE / 2,
+    (x + y) * HAUTEUR_CASE / 2,
+  ];
+
+  // Les couleurs d'élément du jeu. Lisibles sur fond blanc : ce sont des textes
+  // et non des aplats, donc le contraste se mesure sur la police.
+  const COULEUR_ELEMENT = {
+    Fire: '#c0392b', Feu: '#c0392b',
+    Earth: '#8a5a2b', Terre: '#8a5a2b',
+    Air: '#2e7d4f',
+    Water: '#2a6fb0', Eau: '#2a6fb0',
+    Neutral: '#5c6169', Neutre: '#5c6169',
+  };
+
+  const losange = (x, y) => {
+    const [cx, cy] = versEcran(x, y);
+    const w = LARGEUR_CASE / 2, h = HAUTEUR_CASE / 2;
+    return [[cx, cy - h], [cx + w, cy], [cx, cy + h], [cx - w, cy]]
+      .map((p) => p.join(',')).join(' ');
+  };
+
+  const dessinerPlateau = () => {
+    const plateau = $('plateau');
+    if (!plateau) return;
+    const R = RAYON_PLATEAU;
+    const largeur = (2 * R + 1) * LARGEUR_CASE;
+    const hauteur = (2 * R + 1) * HAUTEUR_CASE + MARGE_HAUT;
+    const zone = sortAffiche();
+    const dansZone = (x, y) => !!(zone && (zone.cases || []).some((c) => c[0] === x && c[1] === y));
+
+    let cases = '';
+    let jetons = '';
+    // L'ordre de dessin EST la profondeur : une case dessinée après recouvre la
+    // précédente. On parcourt donc du fond vers l'avant, comme le jeu.
+    for (let y = -R; y <= R; y += 1) {
+      for (let x = -R; x <= R; x += 1) {
+        const classes = ['case'];
+        // Une case sur deux, comme le sol d'un combat. `(x + y)` change de
+        // parité entre deux cases voisines, ce qui est exactement le damier.
+        if (((x + y) % 2 + 2) % 2 === 1) classes.push('sombre');
+        if (dansZone(x, y)) classes.push('zone');
+        const estLanceur = memeCase([x, y], placement.lanceur);
+        const estEnnemi = placement.ennemis.some((e) => memeCase(e, [x, y]));
+        if (estLanceur) classes.push('lanceur');
+        if (estEnnemi) classes.push('ennemi');
+        const d = Math.abs(x - placement.visee[0]) + Math.abs(y - placement.visee[1]);
+        cases += '<polygon class="' + classes.join(' ') + '" points="' + losange(x, y)
+          + '" tabindex="0" role="button" data-x="' + x + '" data-y="' + y + '">'
+          + '<title>' + (estLanceur ? 'Vous · ' : estEnnemi ? 'Ennemi · ' : '')
+          + (d === 0 ? 'case visée'
+            : d + ' case' + (d > 1 ? 's' : '') + ' de la visée') + '</title></polygon>';
+        const [cx, cy] = versEcran(x, y);
+        if (estLanceur) jetons += '<text class="jeton lanceur" x="' + cx + '" y="' + cy + '">V</text>';
+        else if (estEnnemi) {
+          // ⚠️ NUMÉROTÉS, ET PAS TOUS « × ». Le tableau des dégâts dit lequel
+          // prend quoi ; sans numéro il fallait le retrouver par ses
+          // coordonnées, que plus rien n'affiche et qui n'apprenaient rien.
+          const rang = placement.ennemis.findIndex((e) => memeCase(e, [x, y])) + 1;
+          jetons += '<text class="jeton ennemi" x="' + cx + '" y="' + cy + '">'
+            + rang + '</text>';
+        }
+      }
+    }
+
+    // La case visée par-dessus tout le reste : c'est le repère du tir, et un
+    // liseré recouvert par la case voisine ne se voit plus.
+    const [vx, vy] = versEcran(placement.visee[0], placement.visee[1]);
+    const trait = '<polygon class="visee-trait" points="'
+      + losange(placement.visee[0], placement.visee[1]) + '"/>';
+
+    // Les dégâts au-dessus de chaque cible touchée, sans chevauchement : ni bulle
+    // contre bulle, ni bulle contre trait, ni trait contre trait, ni bulle sur une
+    // case occupée.
+    let etiquettes = '';
+    let masquees = 0;
+    if (zone && !zone.refus) {
+      const couleur = COULEUR_ELEMENT[zone.element] || 'var(--encre)';
+      const HAUT_ETIQ = 16;
+
+      const chevauchentRects = (a, b) =>
+        a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2;
+      // Segment contre rectangle, par découpage de Liang-Barsky : le paramètre
+      // du segment est borné par chaque côté de la boîte, et il reste un
+      // intervalle non vide si et seulement s'ils se coupent.
+      const segmentCoupeRect = (s, r) => {
+        let t0 = 0, t1 = 1;
+        const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
+        const bornes = [[-dx, s.x1 - r.x1], [dx, r.x2 - s.x1],
+                        [-dy, s.y1 - r.y1], [dy, r.y2 - s.y1]];
+        for (const [p, q] of bornes) {
+          if (p === 0) { if (q < 0) return false; continue; }
+          const t = q / p;
+          if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+          else { if (t < t0) return false; if (t < t1) t1 = t; }
+        }
+        return t0 <= t1;
+      };
+      const sens = (a, b, c) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+      const segmentsSeCoupent = (u, v) => {
+        const a = { x: u.x1, y: u.y1 }, b = { x: u.x2, y: u.y2 };
+        const c = { x: v.x1, y: v.y1 }, d = { x: v.x2, y: v.y2 };
+        return sens(a, b, c) !== sens(a, b, d) && sens(c, d, a) !== sens(c, d, b);
+      };
+
+      // Les jetons déjà sur la carte : une bulle ne doit pas les couvrir.
+      const jetonsOccupes = [...placement.ennemis, placement.lanceur].map((c) => {
+        const [jx, jy] = versEcran(c[0], c[1]);
+        return { x1: jx - 8, y1: jy - 7, x2: jx + 8, y2: jy + 7 };
+      });
+
+      const posees = [];
+      (zone.touches || [])
+        .filter((t) => t.normal)
+        // Du fond vers l'avant : une étiquette du fond qui monte ne gêne
+        // personne, une étiquette de devant qui monte traverse la carte.
+        .sort((a, b) => (a.case[0] + a.case[1]) - (b.case[0] + b.case[1]))
+        .forEach((t) => {
+          const [ex, ey] = versEcran(t.case[0], t.case[1]);
+          // Un seul nombre sur la carte, le milieu de la fourchette ; la fourchette est
+          // dans le tableau.
+          const texte = nb(Math.round((t.normal[0] + t.normal[1]) / 2));
+          const l = texte.length * 6.6 + 12;
+          const ancre = { x: ex, y: ey - 3 };
+          const idealY = ey - HAUTEUR_CASE / 2 - 13;
+
+          // Les places candidates, de la plus naturelle à la plus décalée, de préférence
+          // vers le haut.
+          const candidates = [];
+          for (let ky = 0; ky <= 10; ky += 1) {
+            for (const kx of [0, 1, -1, 2, -2, 3, -3, 4, -4]) {
+              const cx = ex + kx * (l / 2 + 9);
+              const cy = idealY - ky * HAUT_ETIQ;
+              candidates.push({ cx, cy, cout: Math.hypot(cx - ex, (cy - idealY) * 1.3) });
+            }
+          }
+          candidates.sort((a, b) => a.cout - b.cout);
+
+          const place = candidates.find(({ cx, cy }) => {
+            const bulle = { x1: cx - l / 2, y1: cy - 8, x2: cx + l / 2, y2: cy + 8 };
+            const trait = { x1: ancre.x, y1: ancre.y, x2: cx, y2: cy + 8 };
+            if (jetonsOccupes.some((j) => chevauchentRects(bulle, j))) return false;
+            return posees.every((p) =>
+              !chevauchentRects(bulle, p.bulle)
+              && !segmentCoupeRect(p.trait, bulle)
+              && !segmentCoupeRect(trait, p.bulle)
+              && !segmentsSeCoupent(trait, p.trait));
+          });
+
+          // Pas de place libre : l'étiquette ne se dessine pas ; le tableau porte tout et
+          // la légende dit combien manquent.
+          if (!place) { masquees += 1; return; }
+
+          const { cx, cy } = place;
+          const bulle = { x1: cx - l / 2, y1: cy - 8, x2: cx + l / 2, y2: cy + 8 };
+          const trait = { x1: ancre.x, y1: ancre.y, x2: cx, y2: cy + 8 };
+          posees.push({ bulle, trait });
+          etiquettes += '<line class="degats-tige" x1="' + trait.x1 + '" y1="' + trait.y1
+            + '" x2="' + trait.x2 + '" y2="' + trait.y2 + '"/>'
+            + '<rect class="degats-fond" x="' + bulle.x1 + '" y="' + bulle.y1
+            + '" width="' + l + '" height="16" rx="8"/>'
+            + '<text class="degats-texte" x="' + cx + '" y="' + cy + '" fill="'
+            + couleur + '">' + echapper(texte) + '</text>';
+        });
+    }
+
+    plateau.innerHTML = '<svg viewBox="' + (-largeur / 2 - 2) + ' '
+      + (-hauteur / 2 - MARGE_HAUT / 2) + ' ' + (largeur + 4) + ' ' + (hauteur + 4)
+      + '" role="group" aria-label="Damier de placement">'
+      + cases + trait + jetons + etiquettes + '</svg>';
+
+    plateau.querySelectorAll('polygon.case').forEach((el) => {
+      const x = Number(el.dataset.x), y = Number(el.dataset.y);
+      el.addEventListener('click', () => poserSurGrille(x, y));
+      // Le damier se pilote aussi au clavier : sans ça, poser des ennemis
+      // n'aurait été possible qu'à la souris, et le mode déclaré serait devenu
+      // le seul chemin accessible.
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); poserSurGrille(x, y); }
+      });
+    });
+
+    const distances = placement.ennemis
+      .map((e) => Math.abs(e[0] - placement.visee[0]) + Math.abs(e[1] - placement.visee[1]))
+      .sort((a, b) => a - b);
+    const libelleDistance = (d) => (d === 0 ? 'sur la visée'
+      : d + ' case' + (d > 1 ? 's' : ''));
+    $('grilleEtat').textContent = placement.ennemis.length
+      ? placement.ennemis.length + ' ennemi' + (placement.ennemis.length > 1 ? 's' : '')
+        + ' : ' + distances.map(libelleDistance).join(', ')
+        + '. Chacun ne sera compté que si la zone du sort le couvre vraiment.'
+      : 'Aucun ennemi posé : le placement est ignoré et les deux réglages '
+        + 'déclarés reprennent la main.';
+    // Ce que les nombres sur la carte disent, et ce qu'ils taisent.
+    if (zone && !zone.refus && (zone.touches || []).some((t) => t.normal)) {
+      $('grilleEtat').textContent += ' Les nombres sur la carte sont la moyenne '
+        + 'de la fourchette, au palier de base.'
+        + (masquees
+            ? ' ' + masquees + ' étiquette' + (masquees > 1 ? 's sont masquées' : ' est masquée')
+              + ' faute de place : le tableau ci-dessous les porte toutes.'
+            : '');
+    }
+    $('grilleEtat').textContent += refusGrille;
+    // Un sort mono-cible ne couvre que la case visée : sans ennemi dessus, les
+    // sorts sans zone tombent à zéro.
+    if (placement.ennemis.length
+        && !placement.ennemis.some((e) => memeCase(e, placement.visee))) {
+      $('grilleEtat').textContent += ' Attention : personne ne se tient sur la '
+        + 'case visée, or un sort sans zone ne frappe qu\'elle. Ces sorts-là '
+        + 'ne toucheront rien.';
+    }
+  };
+
+  const poserSurGrille = (x, y) => {
+    const outil = (document.querySelector('input[name=outilGrille]:checked') || {}).value;
+    if (outil === 'lanceur') placement.lanceur = [x, y];
+    else if (outil === 'visee') placement.visee = [x, y];
+    else {
+      const i = placement.ennemis.findIndex((e) => memeCase(e, [x, y]));
+      if (i >= 0) placement.ennemis.splice(i, 1);
+      else if (placement.ennemis.length >= MAX_ENNEMIS) {
+        // Refusé et DIT. Un clic qui ne fait rien sans un mot laisse croire que
+        // le damier est cassé.
+        refusGrille = ' ⚠️ ' + MAX_ENNEMIS + ' ennemis au plus : retirez-en un, '
+          + 'en cliquant dessus, avant d\'en poser un autre.';
+        dessinerPlateau();
+        return;
+      } else { refusGrille = ''; placement.ennemis.push([x, y]); }
+    }
+    dessinerPlateau();
+    refletDeclare();
+    rafraichirApercu();
+    marquerPerime();
+  };
+
+
+  // ------------------------------------------------------------- réseau
+  //
+  // Le réseau de pièges, sur le même damier. Aucune règle de jeu ici : la page
+  // pose des coordonnées et affiche la réponse du serveur. Le réseau a son propre
+  // lanceur.
+  const reseau = { poses: [], entree: null, obstacles: [], choisi: null, lanceur: [0, 0] };
+  let catalogue = [];
+  let reponseReseau = null;
+  let etapeCourante = -1;   // -1 : toute la trace
+  let reseauEnCours = 0;
+
+  const outilReseau = () =>
+    (document.querySelector('input[name=outilReseau]:checked') || {}).value || 'piege';
+
+  const corpsReseau = (avecEntree) => ({
+    ...build,
+    lanceur: reseau.lanceur,
+    poses: reseau.poses.map((p) => ({ sort: p.sort, case: p.case })),
+    obstacles: reseau.obstacles,
+    entree: avecEntree ? reseau.entree : null,
+  });
+
+  const interrogerReseau = async () => {
+    if (!build) return;
+    const jeton = ++reseauEnCours;
+    try {
+      const r = await fetch('/api/reseau', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpsReseau(!!reseau.entree)),
+      });
+      if (jeton !== reseauEnCours) return;
+      if (!r.ok) { $('reseauBloc').hidden = true; return; }
+      reponseReseau = await r.json();
+    } catch (e) {
+      if (jeton === reseauEnCours) $('reseauBloc').hidden = true;
+      return;
+    }
+    catalogue = reponseReseau.catalogue || [];
+    // Une classe sans piège ne voit pas ce bloc du tout.
+    $('reseauBloc').hidden = catalogue.length === 0;
+    if (!catalogue.length) return;
+    if (!reseau.choisi) reseau.choisi = catalogue[0].sort;
+    dessinerPalette();
+    etapeCourante = -1;
+    dessinerReseau();
+    dessinerTrace();
+  };
+
+  const dessinerPalette = () => {
+    $('palettePieges').innerHTML = catalogue.map((c) => {
+      return '<button type="button" data-sort="' + echapper(c.sort) + '" aria-pressed="'
+        + (c.sort === reseau.choisi) + '">'
+        + (c.dofusdb_id ? '<img src="/icons/' + c.dofusdb_id
+            + '.png" alt="" decoding="async" loading="lazy">' : '')
+        + '<span>' + echapper(c.nom) + '</span>'
+        + '<span class="cout">' + c.pa + ' PA · ' + nb(c.degats[0]) + '-' + nb(c.degats[1])
+        + (c.declenchement === 1 ? ' · 1 case' : ' · ' + c.declenchement + ' cases')
+        + (c.deplacement ? ' · ' + c.deplacement.sens + ' ' + c.deplacement.cases : '')
+        + '</span></button>';
+    }).join('');
+    $('palettePieges').querySelectorAll('button').forEach((b) => {
+      b.addEventListener('click', () => {
+        reseau.choisi = b.dataset.sort;
+        dessinerPalette();
+      });
+    });
+  };
+
+  const poseSur = (x, y) => reseau.poses.findIndex((p) => p.case[0] === x && p.case[1] === y);
+
+  const cliquerReseau = (x, y) => {
+    const outil = outilReseau();
+    if (outil === 'lanceur') {
+      reseau.lanceur = [x, y];
+    } else if (outil === 'entree') {
+      reseau.entree = (reseau.entree && memeCase(reseau.entree, [x, y])) ? null : [x, y];
+    } else if (outil === 'mur') {
+      const i = reseau.obstacles.findIndex((c) => memeCase(c, [x, y]));
+      if (i >= 0) reseau.obstacles.splice(i, 1);
+      else reseau.obstacles.push([x, y]);
+    } else {
+      const i = poseSur(x, y);
+      if (i >= 0) reseau.poses.splice(i, 1);
+      else if (reseau.choisi) reseau.poses.push({ sort: reseau.choisi, case: [x, y] });
+    }
+    interrogerReseau();
+  };
+
+  /// Où la cible finit, à l'étape affichée. `null` tant qu'aucune entrée n'est
+  /// posée : sans elle il n'y a pas de chaîne, donc pas d'arrivée.
+  let arriveeCourante = null;
+
+  const calculerArrivee = () => {
+    const ch = reponseReseau && reponseReseau.chaine;
+    if (!ch || !reseau.entree) { arriveeCourante = null; return; }
+    const jusqu = etapeCourante < 0 ? ch.etapes.length : etapeCourante + 1;
+    let ou = reseau.entree;
+    ch.etapes.slice(0, jusqu).forEach((e) => {
+      if (e.quoi === 'deplace' && e.fait > 0) ou = e.vers;
+      if (e.quoi === 'fin') ou = e.case;
+    });
+    arriveeCourante = ou;
+  };
+
+  const dessinerArrivee = () => {
+    const bloc = $('arrivee');
+    if (!reseau.poses.length) { bloc.hidden = true; return; }
+    bloc.hidden = false;
+    if (!reseau.entree) {
+      // ⚠️ DIT, ET PAS SEULEMENT ABSENT. Sans case d'entrée il n'y a pas de
+      // chaîne à dérouler, et un damier muet se lit comme un damier cassé.
+      bloc.className = 'arrivee manque';
+      bloc.innerHTML = '<strong>Indiquez la case d\'entrée</strong> de l\'ennemi '
+        + '(l\'outil « case d\'entrée » ci-dessus, puis un clic sur le damier) : '
+        + 'sans elle, rien ne se déclenche et la case d\'arrivée ne peut pas se calculer.';
+      return;
+    }
+    bloc.className = 'arrivee';
+    const ch = reponseReseau && reponseReseau.chaine;
+    const bouge = arriveeCourante && !memeCase(arriveeCourante, reseau.entree);
+    // Le damier dit où, ce bandeau dit combien. L'écart est la distance nette entre
+    // le départ et l'arrivée, pas la longueur du trajet.
+    const ecart = bouge
+      ? Math.abs(arriveeCourante[0] - reseau.entree[0])
+        + Math.abs(arriveeCourante[1] - reseau.entree[1])
+      : 0;
+    bloc.innerHTML = (bouge
+        ? 'La cible finit <strong>à ' + ecart + ' case' + (ecart > 1 ? 's' : '')
+          + '</strong> de son entrée'
+        : 'La cible <strong>ne bouge pas</strong>')
+      + (ch ? ' · <strong>' + nb(ch.total[0]) + ' à ' + nb(ch.total[1]) + '</strong> dégâts'
+            + (etapeCourante >= 0 ? ' <span class="etat">(à l\'étape affichée)</span>' : '')
+          : '');
+  };
+
+  /// Le contour d'un ensemble de cases : les arêtes qu'aucune autre case de
+  /// l'ensemble ne partage. C'est ce qui distingue deux zones qui se recouvrent.
+  const contourZone = (cases) => {
+    const dans = new Set(cases.map((c) => c[0] + ',' + c[1]));
+    const w = LARGEUR_CASE / 2, h = HAUTEUR_CASE / 2;
+    let d = '';
+    cases.forEach(([x, y]) => {
+      const [cx, cy] = versEcran(x, y);
+      // Les quatre voisines du jeu, et l'arête de l'écran qui leur fait face.
+      const aretes = [
+        [[x + 1, y], [cx + w, cy], [cx, cy + h]],
+        [[x, y + 1], [cx, cy + h], [cx - w, cy]],
+        [[x - 1, y], [cx - w, cy], [cx, cy - h]],
+        [[x, y - 1], [cx, cy - h], [cx + w, cy]],
+      ];
+      aretes.forEach(([voisine, a, b]) => {
+        if (dans.has(voisine[0] + ',' + voisine[1])) return;
+        d += 'M ' + a.join(',') + ' L ' + b.join(',') + ' ';
+      });
+    });
+    return d;
+  };
+
+  const COULEUR_PIEGE = (elements) => {
+    const e = (elements && elements[0]) || 'Neutral';
+    return COULEUR_ELEMENT[e] || 'var(--doux)';
+  };
+
+  const dessinerReseau = () => {
+    const plateau = $('plateauReseau');
+    if (!plateau) return;
+    calculerArrivee();
+    const R = RAYON_PLATEAU;
+    const largeur = (2 * R + 1) * LARGEUR_CASE;
+    const hauteur = (2 * R + 1) * HAUTEUR_CASE + MARGE_HAUT;
+    const poses = (reponseReseau && reponseReseau.poses) || [];
+    const decl = new Set();
+    poses.forEach((p) => (p.declenchement || []).forEach((c) => decl.add(c[0] + ',' + c[1])));
+
+    let cases = '';
+    let jetons = '';
+    for (let y = -R; y <= R; y += 1) {
+      for (let x = -R; x <= R; x += 1) {
+        const cl = ['case'];
+        if (((x + y) % 2 + 2) % 2 === 1) cl.push('sombre');
+
+        if (reseau.entree && memeCase(reseau.entree, [x, y])) cl.push('entree');
+        // ⚠️ L'ARRIVÉE SE VOIT SUR LE DAMIER, pas seulement dans la trace.
+        // C'est le chiffre qu'on veut sans dérouler : où la cible finit.
+        if (arriveeCourante && memeCase(arriveeCourante, [x, y])) cl.push('arrivee-case');
+        if (reseau.obstacles.some((c) => memeCase(c, [x, y]))) cl.push('lanceur');
+        const estSram = memeCase(reseau.lanceur, [x, y]);
+        if (estSram) cl.push('lanceur');
+        const i = poses.findIndex((p) => p.case[0] === x && p.case[1] === y);
+        if (i >= 0) cl.push('piege');
+        cases += '<polygon class="' + cl.join(' ') + '" points="' + losange(x, y)
+          + '" tabindex="0" role="button" data-x="' + x + '" data-y="' + y + '">'
+          // ⚠️ PLUS DE COORDONNÉES DANS CE QUE LIT LE JOUEUR. Elles ne lui
+          // apprennent rien : il regarde le damier, pas un repère. Elles
+          // restent dans `data-x` et `data-y`, où le code en a besoin.
+          + '<title>' + (i >= 0 ? echapper(poses[i].nom) + ', posé en ' + (i + 1) + (i === 0 ? 'er' : 'e')
+              : estSram ? 'vous'
+              : reseau.entree && memeCase(reseau.entree, [x, y]) ? 'entrée de l\'ennemi'
+              : reseau.obstacles.some((c) => memeCase(c, [x, y])) ? 'obstacle'
+              : decl.has(x + ',' + y) ? 'déclenche un piège' : 'case libre')
+          + '</title></polygon>';
+        const [cx, cy] = versEcran(x, y);
+        if (estSram)
+          jetons += '<text class="jeton lanceur" x="' + cx + '" y="' + cy + '">S</text>';
+        else if (reseau.entree && memeCase(reseau.entree, [x, y]))
+          jetons += '<text class="jeton ennemi" x="' + cx + '" y="' + cy + '">×</text>';
+      }
+    }
+
+    // Un groupe par piège : son fond, son contour, son icône et sa pastille.
+    // Groupés pour que le survol les révèle ensemble.
+    const groupes = poses.map((p, i) => {
+      if (!p.declenchement || !p.declenchement.length) return '';
+      const couleur = COULEUR_PIEGE(p.elements);
+      const [cx, cy] = versEcran(p.case[0], p.case[1]);
+      const fond = p.declenchement
+        .map((c) => '<polygon class="zone-fond" fill="' + couleur + '" points="'
+          + losange(c[0], c[1]) + '"/>').join('');
+      return '<g class="piege-groupe" data-piege="' + i + '">'
+        + fond
+        + '<path class="zone-contour" stroke="' + couleur + '" d="'
+        + contourZone(p.declenchement) + '"/>'
+        + (p.dofusdb_id
+            ? '<image class="piege-icone" href="/icons/' + p.dofusdb_id + '.png" x="'
+              + (cx - 14) + '" y="' + (cy - 30) + '" width="28" height="28"/>'
+            : '')
+        + '<circle class="piege-pastille" cx="' + cx + '" cy="' + cy + '" r="7"/>'
+        + '<text class="piege-rang" x="' + cx + '" y="' + cy + '">' + (i + 1) + '</text>'
+        + '</g>';
+    }).join('');
+
+    // Le trajet de la cible, jusqu'à l'étape affichée.
+    let trajet = '';
+    const ch = reponseReseau && reponseReseau.chaine;
+    if (ch && reseau.entree) {
+      const points = [reseau.entree];
+      const jusqu = etapeCourante < 0 ? ch.etapes.length : etapeCourante + 1;
+      ch.etapes.slice(0, jusqu).forEach((e) => {
+        if (e.quoi === 'deplace' && e.fait > 0) points.push(e.vers);
+      });
+      if (points.length > 1) {
+        const d = points.map((c) => versEcran(c[0], c[1]).join(',')).join(' L ');
+        trajet = '<path class="trajet" d="M ' + d + '"/>'
+          + points.map((c) => {
+              const [px, py] = versEcran(c[0], c[1]);
+              return '<circle class="trajet-pas" cx="' + px + '" cy="' + py + '" r="3"/>';
+            }).join('');
+      }
+    }
+
+    plateau.innerHTML = '<svg viewBox="' + (-largeur / 2 - 2) + ' '
+      + (-hauteur / 2 - MARGE_HAUT / 2) + ' ' + (largeur + 4) + ' ' + (hauteur + 4)
+      + '" role="group" aria-label="Damier du réseau de pièges">'
+      + cases + groupes + trajet + jetons + '</svg>';
+    // Le survol se pilote depuis les cases : les groupes dessinés par-dessus ne
+    // reçoivent pas la souris, pour laisser passer les clics de pose.
+    const survoler = (i) => {
+      plateau.querySelectorAll('.piege-groupe').forEach((g) => {
+        g.classList.toggle('survole', Number(g.dataset.piege) === i);
+      });
+    };
+    plateau.querySelectorAll('polygon.case').forEach((el) => {
+      const x = Number(el.dataset.x), y = Number(el.dataset.y);
+      el.addEventListener('click', () => cliquerReseau(x, y));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cliquerReseau(x, y); }
+      });
+      // Survoler N'IMPORTE QUELLE case d'une zone révèle son piège, pas
+      // seulement le centre : c'est la zone qu'on interroge du regard.
+      const dedans = poses.findIndex((p) =>
+        (p.declenchement || []).some((c) => c[0] === x && c[1] === y));
+      el.addEventListener('mouseenter', () => survoler(dedans));
+      el.addEventListener('focus', () => survoler(dedans));
+      el.addEventListener('mouseleave', () => survoler(-1));
+      el.addEventListener('blur', () => survoler(-1));
+    });
+    dessinerArrivee();
+
+    const refuses = poses.filter((p) => p.refus);
+    $('reseauEtat').innerHTML = poses.length
+      ? poses.length + ' piège' + (poses.length > 1 ? 's' : '') + ' posé'
+        + (poses.length > 1 ? 's' : '') + ', ' + (reponseReseau.pa_total || 0) + ' PA'
+        + (refuses.length
+            ? ' · <span class="alerte">' + refuses.length + ' refusé'
+              + (refuses.length > 1 ? 's' : '') + ' : '
+              + refuses.map((p) => echapper(p.nom) + ', ' + echapper(p.refus)).join(' ; ')
+              + '</span>'
+            : '')
+        + (reseau.entree ? '' : ' · posez la case d\'entrée pour dérouler la chaîne')
+      : 'Aucun piège posé.';
+  };
+
+  const dessinerTrace = () => {
+    const ch = reponseReseau && reponseReseau.chaine;
+    $('traceBloc').hidden = !ch;
+    if (!ch) return;
+    const jusqu = etapeCourante < 0 ? ch.etapes.length : etapeCourante + 1;
+    // ⚠️ UNE ACTION PAR LIGNE, DE HAUT EN BAS. C'est l'empilement qu'on veut
+    // lire : le déclenchement, puis ce qu'il coûte, puis où il envoie. Les
+    // trois sur une même ligne cacheraient l'ordre, qui est tout le sujet.
+    $('traceListe').innerHTML = ch.etapes.map((e, i) => {
+      // ⚠️ AUCUNE COORDONNÉE ICI NON PLUS. « 3, 0 → 5, 0 » n'apprend rien à
+      // qui regarde le damier juste à côté ; « poussée de 2 cases » lui dit ce
+      // qui s'est passé. Le trajet, lui, se voit sur la carte.
+      const icone = (nom) => {
+        const c = catalogue.find((x) => x.nom === nom);
+        return c && c.dofusdb_id
+          ? '<img src="/icons/' + c.dofusdb_id + '.png" alt="" decoding="async" loading="lazy">'
+          : '';
+      };
+      let t = '';
+      if (e.quoi === 'declenche') {
+        // Un piège qui figure dans l'empilement s'est déclenché ; un piège qui ne part
+        // pas n'y figure pas.
+        t = '<span class="avec-icone">' + icone(e.nom)
+          + '<span class="quoi">' + echapper(e.nom) + '</span></span>';
+      } else if (e.quoi === 'degats') {
+        t = '<span class="degats">− ' + nb(e.degats[0]) + ' à ' + nb(e.degats[1]) + '</span>'
+          + '<br><span class="detail">dégâts</span>';
+      } else if (e.quoi === 'deplace') {
+        const verbe = e.sens === 'attire' ? 'Attirée' : 'Poussée';
+        t = '<span class="quoi">' + verbe + ' de ' + e.fait + ' case'
+          + (e.fait > 1 ? 's' : '') + '</span>'
+          + (e.bloquee
+              ? '<br><span class="alerte detail">bloquée, ' + e.voulu
+                + ' case' + (e.voulu > 1 ? 's' : '') + ' voulue'
+                + (e.voulu > 1 ? 's' : '') + '</span>'
+              : '');
+      } else if (e.quoi === 'fin') {
+        t = '<span class="quoi">La cible s\'arrête</span>';
+      } else {
+        t = '<span class="alerte">trace coupée</span>';
+      }
+      const cl = [e.quoi === 'fin' ? 'fin' : ''];
+      if (i === etapeCourante) cl.push('courante');
+      else if (i >= jusqu) cl.push('pale');
+      return '<li class="' + cl.join(' ') + '">' + t + '</li>';
+    }).join('');
+    $('traceResume').textContent = etapeCourante >= 0
+      ? 'Étape ' + (etapeCourante + 1) + ' sur ' + ch.etapes.length
+      : ch.etapes.length + ' étapes';
+  };
+
+  const allerA = (n) => {
+    const ch = reponseReseau && reponseReseau.chaine;
+    if (!ch) return;
+    etapeCourante = Math.max(-1, Math.min(n, ch.etapes.length - 1));
+    dessinerReseau();
+    dessinerTrace();
+  };
+
+  // Un chiffre affiché dit s'il correspond encore aux réglages : la recherche de
+  // rotation ne suit pas chaque frappe. L'aperçu de zone, instantané, se
+  // recalcule.
+  let dernierResultat = null;
+
+  const marquerAJour = () => {
+    $('panneau').classList.remove('perime');
+    $('calculer').textContent = dernierResultat ? 'Recalculer' : 'Calculer la rotation';
+    const p = $('panneauResultat').querySelector('.perimeAvis');
+    if (p) p.remove();
+  };
+
+  const marquerPerime = () => {
+    if (!dernierResultat || $('panneauResultat').querySelector('.perimeAvis')) return;
+    $('panneau').classList.add('perime');
+    $('calculer').textContent = 'Recalculer';
+    const avis = document.createElement('p');
+    avis.className = 'alerte perimeAvis';
+    avis.style.margin = '.6rem 0 0';
+    avis.style.fontSize = '.85rem';
+    avis.textContent = 'Réglages modifiés depuis ce calcul.';
+    $('panneauResultat').appendChild(avis);
+  };
+
+  // L'aperçu d'une zone : la page colorie ce que le serveur répond, sans géométrie
+  // à elle.
+  let apercu = null;
+  let apercuEnCours = 0;
+
+  const rafraichirApercu = async () => {
+    const bloc = $('apercuBloc');
+    const deck = [...document.querySelectorAll('input[name=sort]:checked')].map((i) => i.value);
+    if (!build || !placementEnvoye() || !deck.length) {
+      bloc.hidden = true;
+      apercu = null;
+      dessinerPlateau();
+      return;
+    }
+    const jeton = ++apercuEnCours;
+    try {
+      const r = await fetch('/api/zone', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...build, deck, placement: placementEnvoye() }),
+      });
+      if (jeton !== apercuEnCours) return;
+      if (!r.ok) { bloc.hidden = true; apercu = null; return; }
+      apercu = (await r.json()).sorts || [];
+    } catch (e) {
+      if (jeton !== apercuEnCours) return;
+      bloc.hidden = true; apercu = null; return;
+    }
+    const choisi = $('sortApercu').value;
+    $('sortApercu').innerHTML = apercu.map((s) =>
+      '<option value="' + echapper(s.sort) + '">' + echapper(s.nom) + '</option>').join('');
+    if (apercu.some((s) => s.sort === choisi)) $('sortApercu').value = choisi;
+    bloc.hidden = false;
+    dessinerPlateau();
+    detailApercu();
+  };
+
+  const sortAffiche = () =>
+    (apercu || []).find((s) => s.sort === $('sortApercu').value) || null;
+
+  const detailApercu = () => {
+    const s = sortAffiche();
+    if (!s) { $('apercuDetail').textContent = ''; return; }
+    if (s.refus) {
+      $('apercuDetail').innerHTML = '<p class="alerte" style="margin:.5rem 0 0">'
+        + 'La forme de cette zone n\'est pas dessinée : son nombre de cases est '
+        + 'mesuré en jeu, pas son dessin. Ce sort suit le nombre d\'ennemis '
+        + 'déclaré.</p>';
+      return;
+    }
+    if (!s.touches.length) {
+      $('apercuDetail').innerHTML = '<p class="aide" style="margin:.5rem 0 0">'
+        + 'Sa zone (' + s.cases.length + ' case' + (s.cases.length > 1 ? 's' : '')
+        + ') ne couvre aucun de vos ennemis.</p>';
+      return;
+    }
+    $('apercuDetail').innerHTML = '<table class="mini" style="margin:.5rem 0 0">'
+      + '<thead><tr><th>Ennemi</th><th>Éloignement</th><th>Taux</th>'
+      + '<th>Dégâts</th></tr></thead><tbody>'
+      + s.touches.map((t) => '<tr><td>n° ' + ((t.indice || 0) + 1) + '</td>'
+        + '<td>' + (t.eloignement === 0 ? 'sur l\'impact'
+          : t.eloignement + ' case' + (t.eloignement > 1 ? 's' : '')) + '</td>'
+        + '<td>' + t.taux + ' %</td>'
+        + '<td>' + (t.normal ? nb(t.normal[0]) + ' à ' + nb(t.normal[1]) : '?')
+        + '</td></tr>').join('')
+      + '</tbody></table>'
+      + '<p class="aide" style="margin:.4rem 0 0">Au palier de base, sans charge '
+      + 'accumulée ni coup critique. La zone couvre ' + s.cases.length + ' case'
+      + (s.cases.length > 1 ? 's' : '')
+      + (s.plafond ? ' et frappe au plus ' + s.plafond + ' cible'
+          + (s.plafond > 1 ? 's' : '') : '')
+      // Une zone d'UNE case n'a pas d'éloignement interne : lui annoncer une
+      // perte par case est du bruit, et du bruit qui fait douter du reste.
+      + (s.cases.length < 2 ? '.'
+          : s.degressive ? ', en perdant 10 % par case d\'éloignement.'
+          : ', sans perte avec la distance.') + '</p>';
+  };
+
+  // Tient le champ compté au nombre d'ennemis posés, pour que le repli sur le mode
+  // déclaré ne fasse pas bondir le chiffre.
+  const refletDeclare = () => {
+    if (placementEnvoye()) $('cibles').value = placement.ennemis.length;
+  };
+
+
+  // Le favori est servi déjà rempli par le serveur, et autonome : une page en
+  // https ne peut pas charger un script depuis http://127.0.0.1.
+
+  const CODE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const decoderLienCourt = (lien) => {
+    const m = String(lien).match(/d-bk\.net\/[a-z]{2}\/d\/([0-9A-Za-z]+)/)
+      || String(lien).match(/equipement\/(\d+)/);
+    if (!m) return null;
+    if (/^\d+$/.test(m[1]) && m[1].length > 6) return Number(m[1]);
+    return [...m[1]].reduce((v, c) => v * 62 + CODE62.indexOf(c), 0);
+  };
+
+  $('ouvrirDofusbook').addEventListener('click', () => {
+    const id = decoderLienCourt($('lien').value);
+    if (!id) {
+      $('etatImport').innerHTML = '<span class="alerte">Lien non reconnu. '
+        + 'Attendu : https://d-bk.net/fr/d/XXXXX</span>';
+      return;
+    }
+    $('etatImport').textContent = "Équipement n° " + id
+      + " ouvert dans un autre onglet. Cliquez-y le favori pour revenir ici.";
+    window.open('https://www.dofusbook.net/desktop/fr/equipement/' + id + '-db/objets', '_blank');
+  });
+
+  const SLOTS = ['ch','am','a1','a2','ce','bo','ca','br','ar','fa','mo','d1','d2','d3','d4','d5','d6'];
+
+  function decoder(texte) {
+    const brut = texte.trim().replace(/^#?b=/, '');
+    // Soit le code compact du favori, soit la reponse brute de DofusBook collee
+    // depuis un onglet, pour qui ne peut pas installer de favori.
+    if (brut.startsWith('{')) {
+      const j = JSON.parse(brut);
+      const s = j.stuff;
+      // `stuffItem` porte les identifiants internes de DofusBook, que la table `items`
+      // de la même réponse traduit : la charge part brute, table comprise, comme le
+      // favori l'envoie.
+      return {
+        v: 2, src: 'dofusbook',
+        stuff: {
+          id: s.id, short_url: s.short_url, name: s.name,
+          character_class: s.character_class, character_level: s.character_level,
+          stuffItem: s.stuffItem, stuffCarac: s.stuffCarac,
+        },
+        items_table: (j.items_table || j.items || []).map((i) => ({ id: i.id, official: i.official })),
+        fmItems: j.fmItems, fmGlobal: j.fmGlobal, boosts: j.boosts || [],
+      };
+    }
+    return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(brut)))));
+  }
+
+  // Un deck se choisit par orientation : chaque sort de plus multiplie la
+  // recherche à l'intérieur d'un tour.
+  function preselection(sorts, dominants) {
+    return sorts.filter((s) =>
+      s.elements.length === 0 || s.elements.some((e) => dominants.includes(FR[e] || e)));
+  }
+
+  function afficherSorts() {
+    const classe = classes && resolu && classes.find((c) => c.id === resolu.class);
+    const zone = $('sorts');
+    if (!classe) {
+      // Deux causes, deux messages. Un catalogue qui n'a pas chargé ne dit RIEN
+      // sur la classe importée : la confondre avec une classe non modélisée
+      // fait chercher un manque de modélisation là où il y a une panne.
+      const message = erreurCatalogue
+        ? 'Le catalogue des sorts n\'a pas pu être chargé, aucune classe n\'est donc '
+          + 'disponible. Ceci ne dit rien de cette classe-ci. ' + erreurCatalogue
+        : (resolu && resolu.class_message) || "Cette classe n'est pas encore modélisée.";
+      zone.innerHTML = '<p class="indisponible">' + echapper(message) + '</p>';
+      $('calculer').disabled = true;
+      rendreEtatsDeclares(null);
+      return;
+    }
+    rendreEtatsDeclares(classe);
+    const dominants = (resolu && resolu.dominant) || [];
+    // Tout est disponible par défaut : la case dit ce que le joueur possède, le
+    // solveur tranche.
+    window.__orientation = new Set(preselection(classe.spells, dominants).map((s) => s.id));
+
+    // Deux sorts d'un même groupe sont les deux variantes d'un même
+    // emplacement : un personnage porte l'une ou l'autre, jamais les deux.
+    window.__variantes = {};
+    classe.spells.forEach((s) => {
+      if (s.variant_group == null) return;
+      (window.__variantes[s.variant_group] = window.__variantes[s.variant_group] || []).push(s);
+    });
+    const jumeau = (s) => {
+      if (s.variant_group == null) return null;
+      const groupe = window.__variantes[s.variant_group] || [];
+      return groupe.find((autre) => autre.id !== s.id) || null;
+    };
+
+    const parElement = {};
+    classe.spells.forEach((s) => {
+      const cle = s.elements.length ? (FR[s.elements[0]] || s.elements[0]) : 'Sans élément';
+      (parElement[cle] = parElement[cle] || []).push(s);
+    });
+
+    zone.innerHTML = Object.entries(parElement).map(([cle, liste]) =>
+      '<div><p class="etat" style="margin:.2rem 0 .3rem;font-weight:600">' + echapper(cle)
+      + (dominants.includes(cle) ? ' · orientation du build' : '') + '</p>'
+      + liste.map((s) => {
+          const q = s.open_questions.length
+            ? ' <span class="alerte" title="' + echapper(s.open_questions.join(' ')) + '">?</span>' : '';
+          const hors = !window.__orientation.has(s.id);
+          const autre = jumeau(s);
+          const icone = s.dofusdb_id
+            ? '<img src="/icons/' + s.dofusdb_id + '.png" alt="" decoding="async" '
+              + 'onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),'
+              + '{className:\'vide\'}))">'
+            : '<div class="vide"></div>';
+          return '<label data-sort="' + echapper(s.id) + '"'
+            + (s.variant_group != null ? ' data-groupe="' + s.variant_group + '"' : '') + '>'
+            // Cochés à la construction : les sorts de l'orientation du build seulement ;
+            // « Tout cocher » est juste au-dessus.
+            + '<input type="checkbox" name="sort" value="' + echapper(s.id) + '"'
+            + (hors ? '' : ' checked') + '>'
+            + icone
+            + '<span><span>' + echapper(s.name) + '</span>'
+            + '<span class="cout"> ' + s.ap + ' PA</span>' + q
+            + (hors ? '<span class="cout"> · hors orientation</span>' : '')
+            + (autre ? '<br><span class="variante">variante de ' + echapper(autre.name) + '</span>' : '')
+            + '</span></label>';
+        }).join('') + '</div>').join('');
+
+    // Une classe partiellement modélisée le dit, après le remplissage de la liste.
+    // Deux chiffres : « présent » (dégâts importés) et « complet » (le reste du sort
+    // compris).
+    const cv = classe.coverage;
+    if (cv && !cv.complete) {
+      const morceaux = [];
+      if (cv.missing.length) {
+        const apercu = cv.missing.slice(0, 6).join(', ');
+        const reste = cv.missing.length > 6 ? ', et ' + (cv.missing.length - 6) + ' autres' : '';
+        morceaux.push('<strong>' + (cv.damaging - cv.modelled) + ' sorts offensifs manquent</strong> '
+          + 'à l\'appel : ' + echapper(apercu) + echapper(reste) + '. La rotation sera la '
+          + 'meilleure parmi ceux qui restent, pas parmi tous.');
+      }
+      if (cv.partial && cv.partial.length) {
+        const pires = cv.partial.slice(0, 5)
+          .map((x) => x.name + ' (' + x.gaps + ')').join(', ');
+        morceaux.push('<strong>' + cv.fully_modelled + ' sorts sur ' + cv.damaging
+          + ' sont entièrement modélisés</strong> (' + cv.percent_complete + ' %). Pour les '
+          + cv.partial.length + ' autres, les dégâts sont justes mais ce que le sort fait '
+          + 'en plus n\'est pas encore décrit, donc le solveur en juge mal la valeur. '
+          + 'Les plus incomplets, avec leur nombre de points non tranchés : '
+          + echapper(pires) + '.');
+      }
+      if (morceaux.length) {
+        zone.insertAdjacentHTML('afterbegin',
+          '<p class="indisponible" style="grid-column:1/-1">'
+          + echapper(classe.label) + ' · ' + morceaux.join('<br><br>') + '</p>');
+      }
+    }
+
+    // Une hypothèse de jeu n'est pas un réglage : elle dit ce que le terrain
+    // permet, ce qu'un solveur sans terrain ne peut pas déduire. Repliée par
+    // défaut, avec sa raison, et jamais présentée comme une question sur la cible.
+    $('hypotheses').hidden = classe.budgets.length === 0;
+    $('zoneBudgets').innerHTML = classe.budgets.map((b) =>
+      '<div><label for="budget-' + echapper(b.id) + '">' + echapper(b.name) + '</label>'
+      + '<input type="number" id="budget-' + echapper(b.id) + '" data-budget="' + echapper(b.id)
+      + '" value="' + b.default + '" min="0" max="' + b.max + '">'
+      + '<p class="etat" style="margin:.3rem 0 0;font-size:.82rem">' + echapper(b.note) + '</p></div>'
+    ).join('');
+
+    zone.addEventListener('change', compter);
+    compter();
+    $('calculer').disabled = false;
+  }
+
+  function compter() {
+    const coches = [...document.querySelectorAll('input[name=sort]:checked')];
+    const n = coches.length;
+
+    // Deux variantes d'un même emplacement ne peuvent pas coexister sur un
+    // personnage : la rotation proposée serait injouable.
+    const parGroupe = {};
+    coches.forEach((i) => {
+      const groupe = i.closest('label').dataset.groupe;
+      if (groupe) (parGroupe[groupe] = parGroupe[groupe] || []).push(i.closest('label'));
+    });
+    document.querySelectorAll('#sorts label').forEach((l) => l.classList.remove('conflit'));
+    const conflits = [];
+    Object.values(parGroupe).forEach((labels) => {
+      if (labels.length > 1) {
+        labels.forEach((l) => l.classList.add('conflit'));
+        conflits.push(labels.map((l) => l.querySelector('span span').textContent).join(' et '));
+      }
+    });
+
+    // Au-delà de trente-deux sorts, le moteur refuse (ses masques de sorts sont des
+    // `u32`) : la page refuse avant le calcul.
+    const MAX_SORTS = 32;
+    const trop = Math.max(0, n - MAX_SORTS);
+    let cout;
+    if (trop) cout = '<span class="alerte">' + trop + ' sort' + (trop > 1 ? 's' : '')
+      + ' de trop : le calculateur en prend ' + MAX_SORTS + ' au plus</span>';
+    else if (n >= 16) cout = '<span class="alerte">calcul hors de portée</span>';
+    else if (n >= 13) cout = '<span class="alerte">calcul très long, plusieurs minutes</span>';
+    else if (n >= 11) cout = '<span class="alerte">calcul long, de l\'ordre de la minute</span>';
+    else if (n >= 9) cout = '<span class="etat">calcul de quelques secondes</span>';
+    else cout = '<span class="etat">calcul immédiat</span>';
+
+    const alerte = conflits.length
+      ? '<br><span class="alerte">' + conflits.length + ' emplacement'
+        + (conflits.length > 1 ? 's portent' : ' porte') + ' deux variantes cochées ('
+        + echapper(conflits.join(' ; ')) + ') : un personnage ne peut en avoir qu\'une, '
+        + 'la rotation proposée serait injouable.</span>'
+      : '';
+
+    $('compteurSorts').innerHTML = n + ' sort' + (n > 1 ? 's' : '') + ' disponible'
+      + (n > 1 ? 's' : '') + ' · ' + cout + alerte;
+    // Le résumé porte aussi l'alerte de conflit ; refuser tôt plutôt qu'à la
+    // dernière étape.
+    if ($('calculer')) {
+      $('calculer').disabled = !build || n === 0 || trop > 0;
+    }
+    $('resumeSorts').innerHTML = '· ' + n + ' coché' + (n > 1 ? 's' : '')
+      + (trop ? ' <span class="alerte">· ' + trop + ' de trop</span>' : '')
+      + (conflits.length
+          ? ' <span class="alerte">· ' + conflits.length + ' conflit'
+            + (conflits.length > 1 ? 's' : '') + '</span>'
+          : '');
+  }
+
+  // Les compteurs que le joueur renseigne, lus dans `etats_declares` de la classe
+  // choisie : rien n'est codé en dur.
+  function rendreEtatsDeclares(classe) {
+    const zone = $('etatsDeclares');
+    const etats = (classe && classe.etats_declares) || [];
+    if (!etats.length) { zone.hidden = true; zone.innerHTML = ''; return; }
+    zone.hidden = false;
+    zone.innerHTML = etats.map((e) => {
+      // La note du fichier de regles sert d'aide : elle dit au joueur ce que le
+      // chiffre compte, et surtout ce qu'il ne compte pas.
+      const aide = (e.aide || '').split('\n\n')[0].replace(/\s+/g, ' ').trim();
+      return '<div><label for="etat-' + echapper(e.id) + '">' + echapper(e.label)
+        + '</label><input type="number" id="etat-' + echapper(e.id)
+        + '" data-etat="' + echapper(e.id) + '" value="0" min="0" max="'
+        + Number(e.max) + '">'
+        + (aide ? '<p class="aide">' + echapper(aide) + '</p>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  function etatsDeclaresSaisis() {
+    const out = {};
+    document.querySelectorAll('[data-etat]').forEach((i) => {
+      const v = Number(i.value) || 0;
+      if (v > 0) out[i.dataset.etat] = v;
+    });
+    return out;
+  }
+
+  // Un bloc replie ne doit pas CACHER ce qu'il contient : le sommaire dit ce
+  // qui est saisi, pour qu'on ne calcule pas sur une cible nue en croyant
+  // avoir renseigne ses resistances.
+  function resumerResistances() {
+    const cible = $('resumeResistances');
+    if (!cible) return;
+    const champs = Array.from(document.querySelectorAll('#blocResistances input[type=number]'));
+    const poses = champs.filter((i) => Number(i.value) !== 0).length;
+    cible.textContent = poses
+      ? poses + ' valeur' + (poses > 1 ? 's' : '') + ' saisie' + (poses > 1 ? 's' : '')
+      : 'aucune, cible nue';
+    cible.classList.toggle('alerte', false);
+  }
+  document.addEventListener('input', (e) => {
+    if (e.target.closest && e.target.closest('#blocResistances')) resumerResistances();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'toutCocher' || e.target.id === 'toutDecocher'
+        || e.target.id === 'limiterOrientation') {
+      const orientation = e.target.id === 'limiterOrientation';
+      const aucun = e.target.id === 'toutDecocher';
+      document.querySelectorAll('input[name=sort]').forEach((i) => {
+        i.checked = !aucun
+          && (!orientation || (window.__orientation && window.__orientation.has(i.value)));
+      });
+      compter();
+    }
+  });
+
+  async function charger(texte) {
+    try {
+      build = decoder(texte);
+    } catch (e) {
+      build = null;
+      $('etatImport').innerHTML = '<span class="alerte">Charge utile illisible.</span>';
+      $('calculer').disabled = true;
+      return;
+    }
+    $('etatImport').textContent = 'Résolution de l\'équipement…';
+    try {
+      const r = await fetch('/api/resolve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(build),
+      });
+      resolu = await r.json();
+      if (resolu.error) throw new Error(resolu.error);
+    } catch (e) {
+      $('etatImport').innerHTML = '<span class="alerte">' + echapper(e.message) + '</span>';
+      return;
+    }
+    // Tout vient de la réponse. Un objet que le catalogue n'a pas reconnu ne
+    // contribue aucune statistique et se signale.
+    const manquants = resolu.items_missing || 0;
+    const resolus = Math.max(0, (resolu.items_equipped || 0) - manquants);
+    $('etatImport').innerHTML = echapper((resolu.class_name || ('Classe ' + resolu.class))
+      + ', niveau ' + resolu.level
+      + ', ' + resolus + ' objet' + (resolus > 1 ? 's' : '') + '. Orientation : '
+      + (resolu.dominant.join(', ') || 'indéterminée') + '.')
+      + (manquants
+          ? '<br><span class="alerte">' + manquants + ' objet'
+            + (manquants > 1 ? 's sont absents' : ' est absent')
+            + ' du catalogue et ne compte'+ (manquants > 1 ? 'nt' : '')
+            + ' donc pour rien dans les statistiques ci-dessous.'
+            + ' (n° ' + (resolu.items_missing_ids || []).join(', ') + ')</span>'
+          : '');
+    // L'installation du favori a servi : on replie l'etape 1 et on remonte a
+    // ce qui vient d'etre importe, plutot que de laisser le lecteur au meme
+    // endroit devant une page qui a change plus bas.
+    const e1 = $('etape1');
+    if (e1) e1.open = false;
+    const e2 = $('commentImporter');
+    if (e2) e2.open = false;
+    $('fiche').innerHTML = ficheBuild(resolu);
+    majNotePortee(resolu);
+    afficherSorts();
+    // Le bloc des pièges n'apparaît que si la classe en pose, et c'est le
+    // serveur qui le dit : une liste de classes en dur ici vieillirait au
+    // premier rééquilibrage.
+    interrogerReseau();
+    majDisponibiliteClasse(resolu);
+  }
+
+  // Le refus se prononce à l'étape 2, dès l'équipement lu ; l'équipement reste
+  // affiché.
+  function majDisponibiliteClasse(b) {
+    const bloque = b.class_supported === false;
+    for (const id of ['etape3', 'etape4']) {
+      const bloc = $(id);
+      if (bloc) {
+        bloc.classList.toggle('inactif', bloque);
+        bloc.querySelectorAll('input, select, button').forEach((el) => { el.disabled = bloque; });
+      }
+    }
+    if (bloque) $('calculer').disabled = true;
+  }
+
+
+  // Le choix de position change les dégâts si le build porte du % mêlée ou
+  // distance, et, pour le Forgelance, ce qui est jouable.
+  function majNotePortee(b) {
+    const note = $('notePortee');
+    const m = b.percent_melee || 0, d = b.percent_ranged || 0;
+    if (!m && !d) {
+      note.textContent = 'Ce build ne porte ni % dommages mêlée ni % dommages '
+        + 'distance. Le réglage peut malgré tout changer la rotation : certains '
+        + 'sorts ne touchent une cible éloignée que sous condition, et le '
+        + 'solveur ne les propose alors qu\'une fois cette condition tenue.';
+    } else {
+      const bouts = [];
+      if (m) bouts.push((m > 0 ? '+' : '') + m + ' % au contact');
+      if (d) bouts.push((d > 0 ? '+' : '') + d + ' % à distance');
+      note.textContent = 'Ce build porte ' + bouts.join(' et ')
+        + '. Les sorts dont la portée impose le corps à corps ou la distance '
+        + 'ignorent ce réglage et prennent le pourcentage qui leur revient.';
+    }
+    note.hidden = false;
+  }
+
+  function ficheBuild(b) {
+    return '<div class="fiche"><dl>'
+      + '<div><dt>PA</dt><dd>' + b.ap + '</dd></div>'
+      + '<div><dt>PM</dt><dd>' + b.mp + '</dd></div>'
+      + '<div><dt>Coup critique</dt><dd>' + b.crit + ' %' + (b.crit >= 100
+          ? ' <span class="etat">(plafonné)</span>' : '') + '</dd></div>'
+      + '<div><dt>Puissance</dt><dd>' + b.power + '</dd></div>'
+      + '<div><dt>Do. critiques</dt><dd>' + b.crit_damage + '</dd></div>'
+      + [['percent_spell', 'Do. sorts'], ['percent_weapon', 'Do. armes'],
+         ['percent_melee', 'Do. mêlée'], ['percent_ranged', 'Do. distance']]
+          .filter(([k]) => b[k])
+          .map(([k, nom]) => '<div><dt>' + nom + '</dt><dd>'
+            + (b[k] > 0 ? '+' : '') + b[k] + ' %</dd></div>').join('')
+      + b.elements.filter((e) => e.characteristic > 0).map((e) =>
+          '<div><dt>' + echapper(e.name) + '</dt><dd>' + nb(e.characteristic)
+          + ' <span class="etat">/ +' + e.flat_damage + '</span></dd></div>').join('')
+      + '</dl>'
+      + (b.multipliers.length ? '<p style="margin:.7rem 0 0" class="etat">'
+          + b.multipliers.map((m) => echapper(m.name) + ' ×' + (m.percent / 100).toFixed(2)).join(' · ')
+          + '</p>' : '')
+      + (b.sets.length ? '<p style="margin:.3rem 0 0" class="etat">'
+          + b.sets.map((s) => echapper(s.name) + ' (' + s.pieces + ')').join(' · ') + '</p>' : '')
+      + ([...b.uninterpreted, ...b.assumptions].length
+          ? '<ul class="avertissements">' + [...b.uninterpreted, ...b.assumptions]
+              .map((a) => '<li>' + echapper(a) + '</li>').join('') + '</ul>' : '')
+      + '</div>';
+  }
+
+  $('charger').addEventListener('click', () => charger($('charge').value));
+
+  $('formulaire').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!build) return;
+    const deck = [...document.querySelectorAll('input[name=sort]:checked')].map((i) => i.value);
+    if (!deck.length) { $('etat').innerHTML = '<span class="alerte">Choisissez au moins un sort.</span>'; return; }
+    const budgets = {};
+    document.querySelectorAll('[data-budget]').forEach((i) => { budgets[i.dataset.budget] = Number(i.value); });
+    const resPct = ELEMENTS.map((_, i) => Number($('resPct' + i).value));
+    const resFlat = ELEMENTS.map((_, i) => Number($('resFlat' + i).value));
+
+    $('calculer').disabled = true;
+    const depart = performance.now();
+    const chrono = setInterval(() => {
+      $('etat').textContent = 'Calcul en cours, ' + ((performance.now() - depart) / 1000).toFixed(1) + ' s…';
+    }, 100);
+    try {
+      const r = await fetch('/api/solve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...build, deck, budgets,
+          // Les noms viennent du build résolu, pas de la charge.
+          odd_turns_only: ((resolu && resolu.multipliers) || [])
+            .filter((m) => /Nébuleux/i.test(m.name)).map((m) => m.name),
+          horizon: Number($('horizon').value),
+          targets: Number($('cibles').value) || 1,
+          pm_depenses: Number($('pmDepenses').value) || 0,
+          etalement: Number($('etalement').value) || 0,
+          // Présent, il l'emporte sur les deux réglages ci-dessus pour toute
+          // zone qui se dessine. Absent, rien ne change.
+          placement: placementEnvoye(),
+          etats_declares: etatsDeclaresSaisis(),
+          // Le balayage va jusqu'à un cran au-delà du réglage, avec un
+          // plancher à quatre : la courbe n'apprend rien si elle s'arrête
+          // exactement là où le joueur regarde.
+          targets_sweep: Math.max(4, Math.min(8, (Number($('cibles').value) || 1) + 1)),
+          resistance_percent: resPct,
+          resistance_flat: resFlat,
+          resistance_critical: Number($('resCrit').value),
+          reach: $('portee').value,
+          resistance_spell: Number($('resSorts').value),
+          resistance_melee: Number($('resMelee').value),
+          resistance_ranged: Number($('resDistance').value),
+        }),
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      afficher(data);
+      $('etat').textContent = 'Résolu en ' + data.rotation.seconds.toFixed(3) + ' s sur '
+        + nb(data.rotation.states) + ' états.';
+    } catch (err) {
+      $('etat').innerHTML = '<span class="alerte">' + echapper(err.message) + '</span>';
+    } finally {
+      clearInterval(chrono);
+      $('calculer').disabled = false;
+    }
+  });
+
+
+  // ---------------------------------------------------------------------
+  // Dégâts selon le nombre d'ennemis
+  // ---------------------------------------------------------------------
+  // Une courbe : chaque point est une résolution complète, et la droite pointillée
+  // est la proportionnalité pure depuis le premier point. L'écart dit quelle part
+  // des dégâts ne profite pas du nombre.
+  function graphiqueCibles(balayage, choisi) {
+    const pts = (balayage || []).filter((p) => !p.error && p.per_turn != null);
+    if (pts.length < 2) return '';
+
+    const L = 700, H = 190, marge = { h: 14, b: 30, g: 46, d: 78 };
+    const aire = { w: L - marge.g - marge.d, h: H - marge.h - marge.b };
+    const base = pts[0].per_turn;
+    const lineaire = pts.map((p) => base * p.targets);
+    const maxi = Math.max(...pts.map((p) => p.per_turn), ...lineaire);
+    const brut = maxi / 4;
+    const ordre = Math.pow(10, Math.floor(Math.log10(brut || 1)));
+    const pas = [1, 2, 2.5, 5, 10].map((m) => m * ordre).find((c) => c >= brut) || ordre * 10;
+    const haut = Math.ceil(maxi / pas) * pas || 1;
+    const y = (v) => marge.h + aire.h - (v / haut) * aire.h;
+    const x = (i) => marge.g + (pts.length === 1 ? aire.w / 2 : (i / (pts.length - 1)) * aire.w);
+
+    let grille = '', axeY = '';
+    for (let g = 0; g <= haut + 0.001; g += pas) {
+      grille += '<line class="g-grille" x1="' + marge.g + '" x2="' + (L - marge.d + 4)
+        + '" y1="' + y(g).toFixed(1) + '" y2="' + y(g).toFixed(1) + '"/>';
+      axeY += '<text class="g-axe" x="' + (marge.g - 6) + '" y="' + (y(g) + 3).toFixed(1)
+        + '" text-anchor="end">' + nb(g) + '</text>';
+    }
+
+    const trace = (vals, cls) => '<path class="' + cls + '" d="'
+      + vals.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ')
+      + '"/>';
+
+    const points = pts.map((p, i) => {
+      const actif = p.targets === choisi;
+      return '<circle class="' + (actif ? 'g-point-actif' : 'g-point') + '" cx="'
+        + x(i).toFixed(1) + '" cy="' + y(p.per_turn).toFixed(1) + '" r="' + (actif ? 5 : 3.5) + '">'
+        + '<title>' + p.targets + (p.targets > 1 ? ' ennemis' : ' ennemi') + ' · '
+        + nb(p.per_turn) + ' dégâts par tour</title></circle>';
+    }).join('');
+
+    const axeX = pts.map((p, i) => '<text class="g-axe" x="' + x(i).toFixed(1) + '" y="'
+      + (H - marge.b + 16) + '" text-anchor="middle">' + p.targets + '</text>').join('');
+
+    // L'étiquette de droite chiffre le gain, qui est la lecture utile : « à
+    // trois ennemis vous faites 2,4 fois ce que vous faites sur un ».
+    const dernier = pts[pts.length - 1];
+    const facteur = base > 0 ? dernier.per_turn / base : 0;
+    const etiquette = '<text class="g-moyenne-texte" x="' + (L - marge.d + 8) + '" y="'
+      + (y(dernier.per_turn) + 3).toFixed(1) + '">× ' + facteur.toFixed(2) + '</text>';
+
+    // Le changement de rotation se dit quand il a lieu : c'est la vraie
+    // réponse à « qu'est-ce que je joue s'ils sont trois ».
+    const memeCycle = pts.every((p) => (p.cycle || []).join('|') === (pts[0].cycle || []).join('|'));
+    const note = (memeCycle
+      ? 'La rotation ne change pas avec le nombre d\'ennemis : aucun sort de zone ne '
+        + 'prend l\'avantage sur ce deck. '
+      : 'La rotation CHANGE selon le nombre d\'ennemis : chaque point est une résolution '
+        + 'à part, pas une multiplication. ')
+      + 'Vos ennemis sont supposés serrés autour du point d\'impact : le jeu réduit les '
+      + 'dégâts de zone avec la distance, ce que ce calculateur ne simule pas.';
+
+    return '<figure class="graphique">'
+      + '<figcaption>Dégâts par tour selon le nombre d\'ennemis touchés · '
+      + 'pointillé : si TOUS vos dégâts montaient avec le nombre d\'ennemis</figcaption>'
+      + '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Dégâts par tour '
+      + 'en fonction du nombre d\'ennemis touchés">'
+      + grille + axeY + axeX
+      + trace(lineaire, 'g-lineaire') + trace(pts.map((p) => p.per_turn), 'g-courbe')
+      + points + etiquette
+      + '</svg>'
+      + '<p class="aide">' + note + '</p>'
+      + '</figure>';
+  }
+
+  // ---------------------------------------------------------------------
+  // Dégâts par tour
+  // ---------------------------------------------------------------------
+  // Des colonnes : les tours d'ouverture, joués une fois, et ceux de la boucle ; la
+  // ligne pointillée est la moyenne de la boucle. Un chiffre qui dépend du nombre
+  // d'ennemis le rappelle partout où il s'affiche.
+  function mentionCibles(n) {
+    return n > 1 ? ' sur ' + n + ' ennemis' : '';
+  }
+
+  function graphiqueDegats(st, tours, cibles) {
+    // Ouverture, puis assez de cycles pour que la répétition se voie.
+    let suite = (st.opener || []).map((t) => ({ v: t.damage, phase: 'ouverture' }));
+    if (st.cycle_length) {
+      const cycles = Math.max(2, Math.min(3, Math.ceil(8 / st.cycle_length)));
+      for (let c = 0; c < cycles; c++) {
+        st.cycle.forEach((t) => suite.push({ v: t.damage, phase: 'boucle' }));
+      }
+    } else {
+      suite = tours.map((t) => ({ v: t.damage, phase: 'boucle' }));
+    }
+    if (!suite.length) return '';
+    suite = suite.slice(0, 16);
+    suite.forEach((d, i) => { d.tour = i + 1; });
+
+    // La marge droite loge l'étiquette de moyenne : la poser sur le tracé la
+    // ferait chevaucher la dernière colonne.
+    const L = 700, H = 190, marge = { h: 14, b: 26, g: 46, d: 78 };
+    const aire = { w: L - marge.g - marge.d, h: H - marge.h - marge.b };
+    const maxi = Math.max(...suite.map((d) => d.v), st.per_turn || 0);
+    // Graduations à des nombres ronds, et peu nombreuses : viser quatre
+    // intervalles. Un pas trop fin donne une douzaine de lignes qui
+    // concurrencent les colonnes au lieu de les situer.
+    const brut = maxi / 4;
+    const ordre = Math.pow(10, Math.floor(Math.log10(brut)));
+    const pas = [1, 2, 2.5, 5, 10].map((m) => m * ordre).find((c) => c >= brut) || ordre * 10;
+    const haut = Math.ceil(maxi / pas) * pas;
+    const y = (v) => marge.h + aire.h - (v / haut) * aire.h;
+
+    const bande = aire.w / suite.length;
+    const epaisseur = Math.min(24, bande - 2); // 2px de fond entre deux colonnes
+
+    let grille = '', axeY = '';
+    for (let g = 0; g <= haut + 0.001; g += pas) {
+      grille += '<line class="g-grille" x1="' + marge.g + '" x2="' + (L - marge.d + 4)
+        + '" y1="' + y(g).toFixed(1) + '" y2="' + y(g).toFixed(1) + '"/>';
+      axeY += '<text class="g-axe" x="' + (marge.g - 6) + '" y="' + (y(g) + 3).toFixed(1)
+        + '" text-anchor="end">' + nb(g) + '</text>';
+    }
+
+    const barres = suite.map((d, i) => {
+      const x = marge.g + i * bande + (bande - epaisseur) / 2;
+      const hauteur = Math.max(2, marge.h + aire.h - y(d.v));
+      const r = Math.min(4, epaisseur / 2);
+      // Sommet arrondi, base carrée : le pied de la colonne est la ligne zéro,
+      // l'arrondir décollerait la donnée de son axe.
+      const t = y(d.v);
+      const chemin = 'M' + x + ' ' + (t + hauteur) + 'V' + (t + r)
+        + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + -r
+        + 'h' + (epaisseur - 2 * r)
+        + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r
+        + 'V' + (t + hauteur) + 'Z';
+      return '<path class="g-barre ' + (d.phase === 'boucle' ? 'g-boucle' : 'g-ouverture')
+        + '" d="' + chemin + '" data-tour="' + d.tour + '" data-phase="' + d.phase
+        + '" data-valeur="' + Math.round(d.v) + '" tabindex="0">'
+        + '<title>Tour ' + d.tour + ' · ' + nb(d.v) + ' dégâts · '
+        + (d.phase === 'boucle' ? 'boucle' : 'ouverture') + '</title></path>';
+    }).join('');
+
+    // Seuls le tour le plus fort et le plus faible sont étiquetés : ils donnent
+    // l'amplitude.
+    const fort = suite.reduce((a, b) => (b.v > a.v ? b : a));
+    const faible = suite.reduce((a, b) => (b.v < a.v ? b : a));
+    const reperes = [fort, faible]
+      .filter((d, i, tab) => tab.findIndex((e) => e.tour === d.tour) === i)
+      .map((d) => {
+        const i = suite.indexOf(d);
+        return '<text class="g-repere" x="' + (marge.g + i * bande + bande / 2).toFixed(1)
+          + '" y="' + (y(d.v) - 5).toFixed(1) + '" text-anchor="middle">'
+          + nb(d.v) + '</text>';
+      }).join('');
+
+    const axeX = suite.map((d, i) =>
+      '<text class="g-axe" x="' + (marge.g + i * bande + bande / 2).toFixed(1)
+      + '" y="' + (H - 8) + '" text-anchor="middle">' + d.tour + '</text>').join('');
+
+    const moyenne = st.per_turn
+      ? '<line class="g-moyenne" x1="' + marge.g + '" x2="' + (L - marge.d + 4)
+        + '" y1="' + y(st.per_turn).toFixed(1) + '" y2="' + y(st.per_turn).toFixed(1) + '"/>'
+        + '<text class="g-moyenne-texte" x="' + (L - marge.d + 10) + '" y="'
+        + (y(st.per_turn) + 3.5).toFixed(1) + '" text-anchor="start">'
+        + nb(st.per_turn) + ' / tour</text>'
+      : '';
+
+    const aOuverture = suite.some((d) => d.phase === 'ouverture');
+    return '<figure class="graphique">'
+      + '<figcaption>Dégâts par tour' + echapper(mentionCibles(cibles))
+      + '. Les tours de boucle se répètent ensuite à l\'identique.</figcaption>'
+      + '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Dégâts par tour : '
+      + suite.map((d) => 'tour ' + d.tour + ', ' + Math.round(d.v)).join(' ; ') + '">'
+      + grille + axeY + barres + reperes + axeX + moyenne + '</svg>'
+      + '<div class="g-legende">'
+      + (aOuverture ? '<span><i class="g-puce" style="background:#eb6834"></i>Ouverture, jouée une fois</span>' : '')
+      + '<span><i class="g-puce" style="background:#2a78d6"></i>Boucle, répétée</span>'
+      + (st.per_turn ? '<span><i class="g-puce" style="background:var(--encre);height:2px;border-radius:1px"></i>Moyenne de la boucle</span>' : '')
+      + '</div></figure>';
+  }
+
+
+  // ---------------------------------------------------------------------
+  // Répartition des dégâts par sort
+  // ---------------------------------------------------------------------
+  // Barres horizontales triées. Les procs sont rendus à leur source côté serveur :
+  // la Réfraction récolte les dégâts de l'état que pose l'Aiguille.
+  function repartitionParSort(repartition, nbTours, cibles) {
+    if (!repartition || !repartition.length) return '';
+    const maxi = Math.max(...repartition.map((r) => r.damage));
+    const lignes = repartition.map((r) => {
+      const icone = r.dofusdb_id
+        ? '<img src="/icons/' + r.dofusdb_id + '.png" alt="" decoding="async" '
+          + 'onerror="this.style.visibility=\'hidden\'">'
+        : '';
+      const largeur = maxi > 0 ? (100 * r.damage / maxi) : 0;
+      return '<li class="nom" data-sort="' + echapper(r.id) + '" tabindex="0">'
+        + icone + '<span>' + echapper(r.name) + '</span></li>'
+        + '<li class="piste"><div class="part" style="width:' + largeur.toFixed(1) + '%"></div></li>'
+        + '<li class="valeur">' + (r.damage > 0
+            ? nb(r.damage) + ' · ' + (100 * r.share).toFixed(1).replace('.', ',') + ' %'
+            : '<span class="zero">aucun dégât propre</span>')
+        + '</li>';
+    }).join('');
+    return '<figure class="repart">'
+      // « sur N tours sur M ennemis » begaie : ici c'est « et ».
+      + '<figcaption>Répartition des dégâts sur ' + nbTours + ' tours'
+      + (cibles > 1 ? ' et ' + cibles + ' ennemis' : '') + '. '
+      + 'Les dégâts d\'un état reviennent au sort qui le pose, pas à celui qui '
+      + 'le déclenche.</figcaption>'
+      + '<ol>' + lignes + '</ol></figure>';
+  }
+
+  function afficher(data) {
+    const rot = data.rotation;
+    // Tous les blocs à la même taille : un coût se lit sur l'étiquette, pas sur
+    // une largeur, et ce que suit vraiment un joueur c'est le décompte de PA
+    // après chaque lancer.
+    const LARGEUR = 92;
+
+    const frise = (tours, etiquette) => tours.map((t, i) => {
+      const depense = t.casts.reduce((s, c) => s + c.ap, 0);
+      const budget = depense + Math.max(0, t.ap_left);
+
+      const evenements = t.opening.map((o) =>
+        '<div class="bloc evenement" style="flex:0 0 ' + LARGEUR + 'px">'
+        + '<div class="sansicone">▹</div>'
+        + '<div class="nom">' + echapper(o) + '</div></div>').join('');
+
+      const blocs = t.casts.map((c) => {
+        const icone = c.dofusdb_id
+          ? '<img src="/icons/' + c.dofusdb_id + '.png" alt="" decoding="async" '
+            + 'onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),'
+            + '{className:\'sansicone\',textContent:\'?\'}))">'
+          : '<div class="sansicone">?</div>';
+        const badges = c.notes.length
+          ? '<div class="badges">' + c.notes.map((n) =>
+              '<span class="badge" title="' + echapper(n) + '">' + echapper(n) + '</span>').join('')
+            + '</div>'
+          : '';
+        const reste = c.ap_left != null ? c.ap_left : '';
+        // `data-sort` branche l'infobulle. Le `title` natif est retiré : les deux
+        // ensemble affichent deux fois la même chose, l'une par-dessus l'autre.
+        return '<div class="bloc" style="flex:0 0 ' + LARGEUR + 'px" '
+          + 'data-sort="' + echapper(c.id) + '" tabindex="0">'
+          + icone
+          + '<div class="nom">' + echapper(c.name) + '</div>'
+          + '<div class="pa">-' + c.ap + ' PA</div>'
+          // Le sort d'abord, ce qu'il déclenche ensuite, jamais additionnés :
+          // la Réfraction doit une part de ses chiffres à l'Aiguille, et une
+          // somme unique le cacherait.
+          + '<div class="deg">' + ((c.own != null ? c.own : c.damage) > 0
+              ? nb(c.own != null ? c.own : c.damage) : '·') + '</div>'
+          + ((c.procs || []).length
+              ? '<div class="procs">' + c.procs.map((p) =>
+                  '<span title="' + echapper(p.name) + ' · ' + nb(p.damage) + ' dégâts">+ '
+                  + nb(p.damage) + ' <em>' + echapper(p.name) + '</em></span>').join('')
+                + '</div>'
+              : '')
+          + badges
+          + '<div class="restant" title="PA restants après ce lancer">' + reste + ' PA</div>'
+          + '</div>';
+      }).join('');
+
+      const reste = t.ap_left > 0
+        ? '<div class="bloc reste" style="flex:0 0 ' + LARGEUR + 'px">'
+          + t.ap_left + ' PA<br>perdus</div>'
+        : '';
+
+      return '<section class="palier">'
+        + '<header><b>' + echapper(etiquette ? etiquette(t, i) : 'Tour ' + t.turn) + '</b>'
+        + '<span>' + (t.odd ? 'impair' : 'pair') + ' · ' + nb(t.damage) + ' dégâts</span>'
+        + '<span class="budget">' + depense + '/' + budget + ' PA</span></header>'
+        + '<div class="lancers">' + evenements + blocs + reste + '</div>'
+        + '</section>';
+    }).join('');
+
+    const st = rot.steady || { opener: [], cycle: [], per_turn: 0, cycle_length: 0 };
+
+    // La lecture courte reste sous les yeux pendant qu'on règle. Le deck replie sa
+    // liste au premier calcul seulement.
+    if (!dernierResultat) $('etape3').open = false;
+    dernierResultat = rot;
+    $('panneauVide').hidden = true;
+    $('panneauResultat').innerHTML = '<h3 style="margin-top:.9rem">Rotation</h3>'
+      + '<div class="chiffre">' + nb(rot.total) + '</div>'
+      + '<div class="sous">dégâts sur ' + rot.turns.length + ' tour'
+      + (rot.turns.length > 1 ? 's' : '') + '</div>'
+      + '<dl>'
+      + '<div style="display:contents"><dt>Par tour</dt><dd>' + nb(rot.per_turn) + '</dd></div>'
+      + (st.cycle_length
+          ? '<div style="display:contents"><dt>En boucle</dt><dd>'
+            + nb(st.per_turn) + ' / tour</dd></div>'
+            + '<div style="display:contents"><dt>Cycle</dt><dd>' + st.cycle_length
+            + ' tour' + (st.cycle_length > 1 ? 's' : '') + '</dd></div>'
+          : '')
+      + '<div style="display:contents"><dt>Ennemis</dt><dd>'
+      + (placementEnvoye() ? placement.ennemis.length + ' posés' : rot.targets) + '</dd></div>'
+      + (rot.ap_wasted > 0
+          ? '<div style="display:contents"><dt>PA perdus</dt><dd class="alerte">'
+            + rot.ap_wasted + '</dd></div>' : '')
+      + '</dl>'
+      + '<p class="etat" style="margin:.7rem 0 0"><a href="#resultat">Le détail plus bas</a></p>';
+    marquerAJour();
+
+    $('resultat').innerHTML = '<h2>Rotation' + echapper(mentionCibles(rot.targets)) + '</h2>'
+      + (rot.targets > 1
+          ? '<p class="etat" style="margin:0 0 .6rem">Tous les chiffres ci-dessous, frises '
+            + 'comprises, comptent ' + rot.targets + ' ennemis touchés. Remettez « Ennemis '
+            + 'touchés » à 1 pour lire le duel.</p>'
+          : '')
+      + '<div class="fiche" style="margin-bottom:.8rem"><dl>'
+      + '<div><dt>Total</dt><dd>' + nb(rot.total) + '</dd></div>'
+      + '<div><dt>Par tour</dt><dd>' + nb(rot.per_turn) + '</dd></div>'
+      + (rot.targets > 1
+          ? '<div><dt>Ennemis</dt><dd>' + rot.targets + '</dd></div>' : '')
+      + (rot.ap_wasted > 0 ? '<div><dt>PA perdus</dt><dd class="alerte">' + rot.ap_wasted + '</dd></div>' : '')
+      + '</dl></div>'
+      // La boucle d'abord : c'est ce qu'on joue ; le nombre de tours demandé n'est
+      // qu'une fenêtre d'observation.
+      + graphiqueDegats(st, rot.turns, rot.targets)
+      // Demandé : voir l'évolution des dégâts selon le nombre
+      // d'ennemis, réglable sans reprendre l'import.
+      + graphiqueCibles(rot.targets_sweep, rot.targets)
+      // Les deux lectures des mêmes dégâts se suivent : combien par tour,
+      // puis d'où ils viennent. Les séparer par les trois frises obligeait
+      // à faire défiler pour passer de l'une à l'autre.
+      + repartitionParSort(rot.repartition, rot.turns.length, rot.targets)
+      // Ordre de jeu : ce qu'on lance en premier s'affiche en premier.
+      + (st.opener && st.opener.length
+          ? '<h3 style="margin:1.2rem 0 .3rem">Ouverture · ' + st.opener.length
+            + (st.opener.length > 1 ? ' tours' : ' tour')
+            + echapper(mentionCibles(rot.targets)) + '</h3>'
+            + '<p class="etat" style="margin:0 0 .5rem">Joués une seule fois, '
+            + 'avant d\'entrer dans la boucle.</p>'
+            + '<div class="frises">'
+            + frise(st.opener, (t, i) => 'Ouverture ' + (i + 1)) + '</div>'
+          : '')
+      // Deux bornes peuvent faire renoncer : nommer la bonne, le produit états ×
+      // arêtes ou les états.
+      + (st.too_large
+          ? '<p class="indisponible" style="margin:1rem 0 0">'
+            + (st.gave_up === 'convergence'
+                ? 'La boucle n\'a pas été trouvée : la recherche n\'a pas abouti.'
+                : 'La boucle n\'a pas été cherchée : ce deck produit plus de '
+                  + (st.gave_up === 'states'
+                      ? nb(st.max_states) + ' états'
+                      : nb(st.max_edges) + ' transitions')
+                  + ' entre tours, au-delà de ce que la recherche tient en mémoire.')
+            + ' La rotation ci-dessous reste juste, c\'est seulement le régime stable '
+            + 'qui manque. Décocher quelques sorts suffit à le retrouver.</p>'
+          : '')
+      + (st.cycle_length
+          ? '<h3 style="margin:1.2rem 0 .3rem">Boucle · ' + nb(st.per_turn)
+            + ' dégâts par tour' + echapper(mentionCibles(rot.targets)) + '</h3>'
+            + '<p class="etat" style="margin:0 0 .5rem">Ces ' + st.cycle_length
+            + ' tours se répètent tant que le combat dure. C\'est le meilleur '
+            + 'rythme soutenable, calculé sans horizon fixé.</p>'
+            + '<div class="frises">'
+            + frise(st.cycle, (t, i) => 'Boucle ' + (i + 1) + '/' + st.cycle_length)
+            + '</div>'
+          : '')
+      // Un sort écarté du deck (dominé, ou seulement au contact) se dit.
+      + ((rot.ecartes && rot.ecartes.length)
+          ? '<p class="etat" style="margin:1rem 0 0"><strong>'
+            + rot.ecartes.length + ' sort' + (rot.ecartes.length > 1 ? 's' : '')
+            + ' écarté' + (rot.ecartes.length > 1 ? 's' : '') + '</strong> : '
+            + rot.ecartes.map((e) => echapper(e.sort) + ' (' + echapper(e.raison) + ')').join(', ')
+            + '</p>'
+          : '')
+      // Un total de zone repose sur une capacité que la donnée ne donne pas toujours.
+      // Le message suit le réglage et le placement : sans étalement ni placement, le
+      // total est un plafond.
+      + ((rot.zones_degressives && rot.zones_degressives.length)
+          ? (placementEnvoye()
+            ? '<p class="aide" style="margin:1rem 0 0"><strong>Dégâts de zone '
+              + 'dégressifs</strong> pour '
+              + rot.zones_degressives.map(echapper).join(', ')
+              + '. Le jeu retire 10 % par case d\'éloignement du point '
+              + 'd\'impact, jusqu\'à quatre fois. Vos ennemis étant posés, '
+              + 'chaque éloignement est MESURÉ sur la grille et non déduit '
+              + 'd\'un écart moyen.</p>'
+            : Number($('etalement').value) > 0
+              ? '<p class="aide" style="margin:1rem 0 0"><strong>Dégâts de zone '
+                + 'dégressifs</strong> pour '
+                + rot.zones_degressives.map(echapper).join(', ')
+                + '. Le jeu retire 10 % par case d\'éloignement du point '
+                + 'd\'impact, jusqu\'à quatre fois, et ce total en tient compte '
+                + 'pour l\'écart que vous avez déclaré. Les autres sorts de '
+                + 'zone de votre rotation ne perdent rien avec la distance.</p>'
+              : '<p class="alerte" style="margin:1rem 0 0"><strong>Dégâts de '
+                + 'zone dégressifs</strong> pour '
+                + rot.zones_degressives.map(echapper).join(', ')
+                + '. Le jeu retire 10 % par case d\'éloignement du point '
+                + 'd\'impact, jusqu\'à quatre fois. Vous avez laissé l\'écart '
+                + 'entre ennemis à zéro, donc chaque cible est comptée à plein '
+                + 'tarif : ce total suppose vos ennemis collés à l\'impact et '
+                + 'c\'est un PLAFOND.</p>')
+          : '')
+      // Le placement n'a pas servi sur ces sorts-là, et c'est dit. Les taire
+      // laisserait croire qu'un damier soigneusement rempli vaut pour toute la
+      // rotation.
+      + ((rot.placement_ignore && rot.placement_ignore.length)
+          ? '<p class="alerte" style="margin:1rem 0 0"><strong>Placement ignoré'
+            + '</strong> pour ' + rot.placement_ignore.map(echapper).join(', ')
+            + '. La forme de ces zones n\'est pas dessinée : leur nombre de '
+            + 'cases est mesuré en jeu, pas leur dessin. Ces sorts retombent '
+            + 'sur le nombre d\'ennemis et l\'écart déclarés, les autres '
+            + 'suivent la grille.</p>'
+          : '')
+      + ((rot.zones_sans_plafond && rot.zones_sans_plafond.length)
+          ? '<p class="alerte" style="margin:1rem 0 0"><strong>Capacité de zone '
+            + 'inconnue</strong> pour '
+            + rot.zones_sans_plafond.map(echapper).join(', ')
+            + '. Leur forme n\'est pas décodée dans les données du jeu, donc ils '
+            + 'suivent le nombre d\'ennemis que vous avez saisi sans plafond. '
+            + 'Au-delà de la taille réelle de leur zone, ce total est trop haut.</p>'
+          : '')
+      + '<h3 style="margin:1.4rem 0 .3rem">Sur ' + rot.turns.length + ' tours</h3>'
+      + '<div class="frises">' + frise(rot.turns) + '</div>'
+      + '<p class="etat" style="margin:.5rem 0 0">'
+      + 'Le chiffre sous chaque sort est le nombre de PA restants une fois le sort '
+      + 'lancé, gains compris. Un bloc en pointillé rouge est du budget non '
+      + 'dépensé en fin de tour.</p>';
+  }
+
+  // L'ordre du moteur. Le Neutre a sa ligne : il scale sur la Force comme la
+  // Terre, mais porte sa propre résistance.
+  const ELEMENTS = ['Feu', 'Terre', 'Air', 'Eau', 'Neutre'];
+  $('lignesResistance').innerHTML = ELEMENTS.map((nom, i) =>
+    '<tr><td>' + nom + '</td>'
+    + '<td><input type="number" id="resPct' + i + '" value="0" min="-100" max="100" '
+    + 'aria-label="Résistance ' + nom + ' en pourcentage"></td>'
+    + '<td><input type="number" id="resFlat' + i + '" value="0" min="0" max="500" '
+    + 'aria-label="Résistance fixe ' + nom + '"></td></tr>').join('');
+
+  $('memeResistance').addEventListener('click', () => {
+    const pct = Number($('resPct0').value), flat = Number($('resFlat0').value);
+    ELEMENTS.forEach((_, i) => { $('resPct' + i).value = pct; $('resFlat' + i).value = flat; });
+    resumerResistances();
+  });
+  resumerResistances();
+
+  // L'échec du catalogue des sorts se voit, avec le message du serveur : sinon
+  // tout build s'entend répondre que sa classe n'est pas modélisée.
+  fetch('/api/classes')
+    .then((r) => r.json().then((d) => {
+      if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+      return d;
+    }))
+    .then((d) => {
+      classes = d.classes;
+      if (location.hash.startsWith('#b=')) charger(location.hash);
+    })
+    .catch((e) => {
+      erreurCatalogue = e.message;
+      $('etatImport').innerHTML = '<span class="alerte">Le catalogue des sorts n\'a pas pu '
+        + 'être chargé, aucune classe n\'est disponible. ' + echapper(e.message)
+        + '</span><br>Si le serveur tourne depuis un moment, il est probablement antérieur '
+        + 'aux fichiers de règles : relancez-le.';
+    });
+  // ---------------------------------------------------------------------
+  // Infobulle de sort
+  // ---------------------------------------------------------------------
+  // Le taux affiché est celui du build importé, avec le détail du calcul à côté.
+  const FR_ELEMENT = { Fire: 'Feu', Earth: 'Terre', Air: 'Air', Water: 'Eau', Neutral: 'Neutre' };
+
+  function tauxCritique(sort) {
+    if (!sort.can_crit) return { texte: 'jamais', calcul: 'ce sort ne peut pas faire de coup critique' };
+    if (sort.crit_base == null) return { texte: 'inconnu', calcul: 'taux de base absent des données' };
+    const bonus = (resolu && typeof resolu.crit === 'number') ? resolu.crit : null;
+    if (bonus == null) return { texte: sort.crit_base + ' %', calcul: 'taux de base, aucun build importé' };
+    const effectif = Math.max(0, Math.min(100, sort.crit_base + bonus));
+    const plafonne = sort.crit_base + bonus > 100 ? ', plafonné' : '';
+    return {
+      texte: effectif + ' %',
+      calcul: sort.crit_base + ' % de base + ' + bonus + ' du build' + plafonne,
+      effectif,
+    };
+  }
+
+  function contenuInfobulle(sort) {
+    const elements = (sort.elements || []).map((e) => FR_ELEMENT[e] || e);
+    const uniques = [...new Set(elements)];
+    const portee = sort.range
+      ? (sort.range[0] === sort.range[1] ? 'portée ' + sort.range[0]
+         : 'portée ' + sort.range[0] + ' à ' + sort.range[1])
+      : null;
+    const crit = tauxCritique(sort);
+
+    // Seules les contraintes de lancer hors de l'ordinaire se disent.
+    const c = sort.cast || {};
+    const contraintes = [];
+    // En ligne et en diagonale cochés ensemble font une seule contrainte, plus
+    // large.
+    if (c.in_line && c.in_diagonal) contraintes.push('en ligne ou en diagonale');
+    else if (c.in_line) contraintes.push('en ligne uniquement');
+    else if (c.in_diagonal) contraintes.push('en diagonale uniquement');
+    if (c.needs_line_of_sight === false) contraintes.push('sans ligne de vue');
+    if (c.range_boostable === false) contraintes.push('portée non modifiable');
+    if (c.needs_free_cell) contraintes.push('case libre exigée');
+    if (c.needs_taken_cell) contraintes.push('case occupée exigée');
+    if (c.needs_cell_without_portal) contraintes.push('case sans portail');
+    if (c.needs_free_trap_cell) contraintes.push('case sans piège');
+
+    // Les effets dont la magnitude change sur un coup critique : une seule valeur,
+    // la critique à partir de 78 %, la normale en dessous.
+    const SEUIL_CRIT = 78;
+    const critEffets = (sort.critical_effects || []).map((e) => {
+      const applique = crit.effectif != null && crit.effectif >= SEUIL_CRIT;
+      return {
+        texte: e.label + ' ' + (applique ? e.critical : e.normal),
+        autre: applique ? e.normal : e.critical,
+        applique,
+      };
+    });
+
+    const entete = [uniques.join(', ') || 'sans élément', sort.ap + ' PA', portee]
+      .filter(Boolean).join(' · ');
+
+    // Les dégâts réels du sort sur le build importé, une ligne par palier de
+    // charge.
+    const table = (resolu && resolu.damage_tables && resolu.damage_tables[sort.id]) || null;
+    const etiquetteCharge = (n, total) => {
+      if (total <= 1) return 'Dégâts';
+      if (n === 0) return 'Sans charge';
+      return n + (n > 1 ? ' charges' : ' charge');
+    };
+    const fourchette = (n, c) => nb(n[0]) + ' - ' + nb(n[1])
+      + (c ? '<span class="calcul"> · ' + nb(c[0]) + ' - ' + nb(c[1]) + ' CC</span>' : '');
+    // Un sort multi-élément se détaille par élément, sur le dernier palier
+    // seulement.
+    const ventiler = (r, dernier) => (dernier && (r.by_element || []).length > 1)
+      ? '<dd class="ventilation">' + r.by_element.map((e) =>
+          echapper(FR_ELEMENT[e.element] || e.element) + ' ' + fourchette(e.normal, e.critical)
+        ).join('<br>') + '</dd>'
+      : '';
+    const lignes = table
+      ? table.map((r, i) =>
+          '<dt>' + echapper(etiquetteCharge(r.charges, table.length)) + '</dt>'
+          + '<dd>' + fourchette(r.normal, r.critical) + '</dd>'
+          + ventiler(r, i === table.length - 1)).join('')
+      : (sort.lines || []).filter((l) => l.normal || l.critical).map((l) => {
+          const n = l.normal ? l.normal[0] + '-' + l.normal[1] : '?';
+          const c = l.critical ? l.critical[0] + '-' + l.critical[1] : '?';
+          return '<dt>' + echapper(FR_ELEMENT[l.element] || l.element) + '</dt>'
+            + '<dd>' + n + '<span class="calcul"> · crit ' + c + '</span></dd>';
+        }).join('');
+
+    const limites = [];
+    if (sort.casts_per_turn > 0) limites.push(sort.casts_per_turn + ' par tour');
+    if (sort.casts_per_target > 0) limites.push(sort.casts_per_target + ' par cible');
+    if (sort.cooldown === 1) limites.push('relance au tour suivant');
+    else if (sort.cooldown > 1) limites.push('relance tous les ' + sort.cooldown + ' tours');
+
+    // La description du jeu d'abord : le joueur veut savoir ce que fait le
+    // sort avant de lire ses chiffres. Les sauts de ligne de la donnée sont
+    // conservés, ils séparent les effets.
+    const description = (sort.description || '')
+      .replace(/\{\{[^}]*::([^}]*)\}\}/g, '$1')   // balises de lien du jeu
+      .replace(/<[^>]+>/g, '')                        // couleurs
+      .trim();
+
+    return '<h4>' + echapper(sort.name) + '</h4>'
+      + '<div class="ligne1">' + echapper(entete) + '</div>'
+      + (contraintes.length
+          ? '<div class="contraintes">' + echapper(contraintes.join(' · ')) + '</div>'
+          : '')
+      + (critEffets.length
+          ? '<p class="critique">' + critEffets.map((e) =>
+              '<strong>' + echapper(e.texte) + '</strong> appliqué'
+              + (e.applique
+                  ? ' (valeur critique, car ce sort critique au moins ' + SEUIL_CRIT
+                    + ' % du temps sur votre build ; sinon ce serait ' + e.autre + ')'
+                  : ' (valeur normale, car ce sort critique moins de ' + SEUIL_CRIT
+                    + ' % du temps sur votre build ; au-delà ce serait ' + e.autre + ')')
+            ).join('<br>') + '</p>'
+          : '')
+      + (description
+          ? '<p class="description">' + echapper(description).replace(/\n+/g, '<br>') + '</p>'
+          : '')
+      + '<dl>'
+      + '<dt>Coup critique</dt><dd>' + echapper(crit.texte)
+      + '<span class="calcul"> · ' + echapper(crit.calcul) + '</span></dd>'
+      + (lignes
+          ? '<dt style="grid-column:1/-1;margin-top:.2rem">'
+            + (table ? 'Dégâts sur votre build' : 'Jet de base, avant caractéristiques')
+            + '</dt>' + lignes
+          : '<dt style="grid-column:1/-1;margin-top:.2rem">Aucun jet propre : les dégâts viennent de l\'état appliqué</dt>')
+      + (limites.length ? '<dt>Limites</dt><dd>' + echapper(limites.join(' · ')) + '</dd>' : '')
+      + '</dl>'
+      // Les choix de modélisation de ce sort quand le chiffre en dépend, à part des
+      // questions ouvertes : ici le nombre est exact, c'est le périmètre qui est
+      // choisi.
+      + ((sort.assumptions || []).length
+          ? '<p class="decision">' + sort.assumptions.map(echapper).join('<br>') + '</p>'
+          : '')
+      + ((sort.open_questions || []).length
+          ? '<p class="question">'
+            + (sort.open_questions.length > 1
+                ? sort.open_questions.length + ' points de ce sort ne sont pas tranchés'
+                : 'Un point de ce sort n\'est pas tranché')
+            + ' : les chiffres le concernant sont une hypothèse, pas une mesure.</p>'
+          : '');
+  }
+
+  function sortParId(id) {
+    const classe = classes && resolu && classes.find((c) => c.id === resolu.class);
+    return classe ? classe.spells.find((s) => s.id === id) : null;
+  }
+
+  function placerInfobulle(cible) {
+    const bulle = $('infobulle');
+    const c = cible.getBoundingClientRect();
+    const b = bulle.getBoundingClientRect();
+    const marge = 8;
+    // Sous l'élément si la place existe, au-dessus sinon. Puis recadrée
+    // horizontalement pour ne jamais sortir de la fenêtre.
+    let y = c.bottom + marge;
+    if (y + b.height > window.innerHeight - marge) y = Math.max(marge, c.top - b.height - marge);
+    let x = c.left;
+    if (x + b.width > window.innerWidth - marge) x = window.innerWidth - b.width - marge;
+    bulle.style.left = Math.max(marge, x) + 'px';
+    bulle.style.top = y + 'px';
+  }
+
+  function montrerInfobulle(cible) {
+    const sort = sortParId(cible.dataset.sort);
+    if (!sort) return;
+    const bulle = $('infobulle');
+    bulle.innerHTML = contenuInfobulle(sort);
+    bulle.hidden = false;
+    placerInfobulle(cible);
+  }
+
+  function cacherInfobulle() { $('infobulle').hidden = true; }
+
+  document.addEventListener('mouseover', (e) => {
+    const cible = e.target.closest('[data-sort]');
+    if (cible) montrerInfobulle(cible); else cacherInfobulle();
+  });
+  document.addEventListener('focusin', (e) => {
+    const cible = e.target.closest('[data-sort]');
+    if (cible) montrerInfobulle(cible);
+  });
+  document.addEventListener('focusout', cacherInfobulle);
+  window.addEventListener('scroll', cacherInfobulle, true);
+
+  // La grille se dessine au chargement, sous son bloc replié : la déplier ne
+  // doit pas produire un damier vide le temps d'un cadre.
+  document.querySelectorAll('input[name=modeCible]').forEach((r) =>
+    r.addEventListener('change', () => {
+      const pose = modeCible() === 'pose';
+      $('modePose').hidden = !pose;
+      $('modeDeclare').hidden = pose;
+      refletDeclare();
+      rafraichirApercu();
+    }));
+  $('grilleVider').addEventListener('click', () => {
+    placement.ennemis = [];
+    dessinerPlateau();
+    refletDeclare();
+    rafraichirApercu();
+  });
+  $('sortApercu').addEventListener('change', () => { dessinerPlateau(); detailApercu(); });
+  $('reseauVider').addEventListener('click', () => {
+    reseau.poses = []; reseau.entree = null; reseau.obstacles = [];
+    reseau.lanceur = [0, 0];
+    interrogerReseau();
+  });
+  $('tracePrecedent').addEventListener('click', () => allerA(
+    etapeCourante < 0 ? 0 : etapeCourante - 1));
+  $('traceSuivant').addEventListener('click', () => allerA(etapeCourante + 1));
+  $('traceTout').addEventListener('click', () => allerA(-1));
+  // ⚠️ SUR LE FORMULAIRE ENTIER, et pas champ par champ. Un abonnement par
+  // champ oublie le suivant qu'on ajoute, et l'oubli ne se voit pas : le
+  // panneau continue d'afficher un chiffre juste, pour d'autres réglages.
+  ['input', 'change'].forEach((ev) =>
+    $('formulaire').addEventListener(ev, (e) => {
+      // Le choix du sort dont on regarde la zone ne change aucun calcul.
+      if (e.target && e.target.id === 'sortApercu') return;
+      marquerPerime();
+    }));
+  // Le deck change l'aperçu : un sort décoché n'a plus à figurer dans la liste.
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.name === 'sort') rafraichirApercu();
+  });
+  dessinerPlateau();
+  refletDeclare();
+
+})();
+</script>
+  <div class="infobulle" id="infobulle" role="tooltip" hidden></div>
+</body>
+</html>

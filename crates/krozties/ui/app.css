@@ -1,0 +1,906 @@
+/*
+ * Krozties : le système visuel. Un rail d'outils fixe, une barre d'identité du
+ * personnage, et le reste de l'écran pour l'outil courant. Mode clair
+ * uniquement.
+ */
+
+:root {
+  /*
+   * La palette de Krozties : celle d'un personnage, ses cheveux et ses quatre
+   * couleurs de vêtements.
+   */
+  --cheveux: #c2bead;
+  --vetement-1: #d5c69f;
+  --vetement-2: #3c4649;
+  --vetement-3: #a79258;
+  --vetement-4: #6e6149;
+
+  /*
+   * Le texte reste noir : sur fond blanc, seuls l'ardoise (9,7:1) et le brun
+   * (6,1:1) passent le seuil de 4,5 ; l'ocre et les deux clairs servent aux aplats
+   * et aux cadres.
+   */
+  --encre: #1b1d21;
+  --doux: #5c6169;
+
+  --trait: #d6d1c2;                 /* bords, tirés des cheveux */
+  --fond: #ffffff;
+  --panneau: #f5f1e6;               /* aplat discret, tiré du vêtement 1 */
+  --ground: #eeebe3;                /* fond de l'application, tiré des cheveux */
+  --cadre: var(--vetement-1);       /* bandeau des encarts */
+  --accent: var(--vetement-2);      /* boutons, sélection, liens */
+  --accent-clair: #ece3cc;          /* case cochée, tirée du vêtement 1 */
+  --accent-doux: var(--vetement-3); /* seconde série des graphiques */
+  --alerte: #a23b2a;
+  --succes: #2e7d4f;
+  --rail: var(--vetement-2);
+  --rail-doux: var(--cheveux);      /* 5,2:1 sur l'ardoise */
+  --rail-texte: #efeadd;
+  --rayon: 6px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--encre);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Une application ne se sélectionne pas comme un texte : seuls les contenus
+     qu'on recopie vraiment restent sélectionnables. */
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+}
+input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text; user-select: text; }
+
+/* ---------------------------------------------------------------- charpente */
+
+#atelier {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "rail entete" "rail contenu";
+  height: 100vh;
+}
+
+/* Le rail : il ne bouge jamais, et c'est ce qui donne à l'outil sa forme
+   d'application. On sait toujours où on est et ce qui existe à côté. */
+#rail {
+  grid-area: rail;
+  background: var(--rail);
+  color: var(--rail-texte);
+  display: flex;
+  flex-direction: column;
+  padding: .9rem .6rem;
+  gap: .15rem;
+  overflow-y: auto;
+}
+#rail .marque {
+  font-weight: 700; letter-spacing: -.01em; font-size: 1.05rem;
+  padding: .1rem .5rem .8rem; display: flex; align-items: baseline; gap: .4rem;
+}
+#rail .marque small { color: var(--rail-doux); font-weight: 400; font-size: .68rem; }
+#rail .groupe {
+  color: var(--rail-doux); font-size: .66rem; text-transform: uppercase;
+  letter-spacing: .07em; padding: .9rem .5rem .3rem; font-weight: 600;
+}
+#rail button {
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: .5rem;
+  padding: .45rem .5rem; border-radius: var(--rayon); font-size: .88rem;
+  color: var(--rail-texte);
+}
+#rail button:hover { background: rgba(255, 255, 255, .08); }
+/* ⚠️ LA SÉLECTION NE PREND PAS L'ACCENT. Accent et rail sont tous deux
+   l'ardoise : l'outil courant serait devenu invisible. Le sable porte le noir à
+   plus de 10:1. */
+#rail button[aria-current="page"] { background: var(--cadre); color: var(--encre); font-weight: 600; }
+#rail button[disabled] { opacity: .35; cursor: not-allowed; }
+#rail button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+#rail .pousse { margin-top: auto; }
+#rail .note { color: var(--rail-doux); font-size: .7rem; padding: .5rem; line-height: 1.4; }
+
+/* L'entête : QUI on calcule. Le prototype enterrait cette information dans une
+   « étape 2 » qu'on ne revoyait jamais. */
+#entete {
+  grid-area: entete;
+  background: var(--fond);
+  border-bottom: 1px solid var(--trait);
+  padding: .6rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+#entete .titre { font-weight: 600; font-size: .95rem; }
+#entete .vide { color: var(--doux); }
+
+#contenu { grid-area: contenu; overflow: auto; padding: 1.1rem; }
+.outil { max-width: 100rem; margin: 0 auto; }
+.outil > h2 { margin: 0 0 .2rem; font-size: 1.15rem; letter-spacing: -.01em; }
+.outil > .sous { margin: 0 0 1rem; color: var(--doux); }
+
+/* Le bandeau de KrozTools : un onglet par outil, son nom puis ce qu'il fait.
+   Il défile de côté plutôt que de passer à la ligne sur un écran étroit. */
+.onglets { display: flex; gap: .2rem; overflow-x: auto; margin: .4rem 0 1rem;
+           border-bottom: 1px solid var(--trait); scrollbar-width: thin; }
+.onglets [role=tab] { all: unset; cursor: pointer; display: grid; gap: .05rem;
+                      padding: .45rem .9rem .5rem; white-space: nowrap;
+                      border-bottom: 3px solid transparent; margin-bottom: -1px;
+                      border-radius: var(--rayon) var(--rayon) 0 0; }
+.onglets [role=tab] .nom { font-weight: 700; font-size: .95rem; letter-spacing: -.01em; }
+.onglets [role=tab] .quoi { font-size: .72rem; color: var(--doux); }
+.onglets [role=tab]:hover:not([disabled]) { background: var(--panneau); }
+.onglets [role=tab][aria-selected="true"] { border-bottom-color: var(--accent); }
+.onglets [role=tab][disabled] { cursor: not-allowed; opacity: .5; }
+.onglets [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ------------------------------------------------------------------ pièces */
+
+/*
+ * Un encart se distingue par son cadre : un bandeau sable en titre, un bord
+ * couleur des cheveux.
+ */
+.carte { background: var(--fond); border: 1px solid var(--cheveux);
+         border-radius: var(--rayon); padding: .9rem 1rem; overflow: hidden; }
+.carte > h3 { margin: -.9rem -1rem .7rem; padding: .4rem 1rem;
+              background: var(--cadre); border-bottom: 1px solid var(--cheveux);
+              font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+              color: var(--encre); font-weight: 700; }
+/*
+ * Un encart se replie d'un clic sur sa barre de titre ; le triangle dit s'il est
+ * ouvert.
+ */
+.titre-repli { display: flex; align-items: baseline; gap: .5rem; }
+.titre-repli button { flex: 1 1 auto; display: inline-flex; align-items: center; gap: .45rem;
+                      margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
+                      font: inherit; letter-spacing: inherit; text-transform: inherit;
+                      color: inherit; text-align: left; }
+.titre-repli button::before { content: ''; border-left: 4px solid transparent;
+                              border-right: 4px solid transparent;
+                              border-top: 5px solid currentColor; transition: transform .12s; }
+.titre-repli button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.carte.repliee { padding-bottom: 0; }
+.carte.repliee > .titre-repli { margin-bottom: 0; border-bottom: 0; }
+.carte.repliee > .titre-repli button::before { transform: rotate(-90deg); }
+.carte.repliee > :not(.titre-repli) { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .titre-repli button::before { transition: none; }
+}
+
+button.action {
+  font: inherit; font-weight: 600; padding: .5rem 1rem; border-radius: var(--rayon);
+  border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer;
+}
+button.action.discret { background: var(--fond); color: var(--accent); }
+button.action[disabled] { opacity: .45; cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+label { display: block; margin-bottom: .3rem; font-weight: 500; font-size: .85rem; }
+input[type=number], input[type=text], input[type=url], select, textarea {
+  width: 100%; font: inherit; padding: .4rem .55rem; border: 1px solid var(--trait);
+  border-radius: 4px; background: var(--fond); color: inherit;
+}
+textarea { min-height: 5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+           font-size: 12px; }
+
+.aide { font-size: .76rem; color: var(--doux); margin: .25rem 0 0; }
+/* Les remarques du calcul, sous la répartition de la Rotation. */
+.remarques { margin: .4rem 0 0; padding-left: 1.1rem; }
+.remarques li + li { margin-top: .3rem; }
+.alerte { color: var(--alerte); }
+.bandeau { padding: .5rem .7rem; border-radius: 4px; font-size: .85rem; }
+.bandeau.souci { background: #fff8e6; border: 1px solid #e8c96a; color: #6b4e00; }
+.bandeau.bon { background: #eef4ee; border: 1px solid #cfe3d2; }
+
+/* Le dépliant des explications : chaque mot reste, aucun ne s'impose. */
+details.pourquoi > summary {
+  cursor: pointer; display: inline-flex; font-size: .74rem; color: var(--accent);
+  list-style: none; border: 1px solid var(--trait); border-radius: 999px;
+  padding: .05rem .55rem;
+}
+details.pourquoi > summary::-webkit-details-marker { display: none; }
+details.pourquoi > summary:hover { background: var(--panneau); }
+
+/* L'écran d'accueil, tant qu'aucun équipement n'est chargé. */
+#accueil { display: grid; place-items: center; height: 100%; }
+#accueil .boite { max-width: 34rem; text-align: center; }
+#accueil h2 { font-size: 1.4rem; margin: 0 0 .4rem; }
+#accueil p { color: var(--doux); margin: 0 0 1rem; }
+
+@media (max-width: 60rem) {
+  #atelier { grid-template-columns: 1fr; grid-template-areas: "entete" "contenu"; }
+  #rail { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+          flex-direction: row; overflow-x: auto; padding: .4rem; gap: .3rem; }
+  #rail .marque, #rail .groupe, #rail .note, #rail .pousse { display: none; }
+  #contenu { padding-bottom: 4rem; }
+}
+
+/* ------------------------------------------------------------- le damier */
+
+/* Le damier et son panneau côte à côte : c'est l'ORDRE qui se lit, et un
+   panneau sous le damier oblige à défiler entre le geste et son effet. */
+.vue-damier { display: grid; gap: 1rem; align-items: start;
+              grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 62rem) {
+  .vue-damier { grid-template-columns: minmax(0, 1fr) 21rem; }
+}
+
+.plateau { width: 100%; }
+.plateau svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* ⚠️ L'ORDRE DE CES RÈGLES EST LA RÈGLE. Même spécificité, donc la dernière
+   écrite gagne : l'alternance du damier passe AVANT la zone et les jetons,
+   sans quoi une case claire sur deux effacerait le coloriage. */
+.case { fill: var(--fond); stroke: var(--trait); stroke-width: 1; cursor: pointer; }
+.case.sombre { fill: #f1f2f4; }
+/* La portée du sort en main, en bleu comme en jeu. */
+.case.portee { fill: #e3edf8; }
+.case.portee.sombre { fill: #d7e5f4; }
+/* À portée mais hors de vue : un bleu éteint, pour qu'on voie ce que le mur ou
+   le corps retire à la portée. */
+.case.portee-masquee { fill: #e1e5eb; }
+.case.portee-masquee.sombre { fill: #d8dde4; }
+/* KrozSight : ce que la case choisie ne voit pas est ombré. */
+.case.cachee { fill: #bcc3cd; }
+.case.cachee.sombre { fill: #b3bac5; }
+.case:hover { fill: var(--panneau); }
+/*
+ * Pas de teinte de zone sur la case : le calque `zone-fond` porte déjà la
+ * couleur de l'élément du sort.
+ */
+.case.lanceur { fill: var(--accent); }
+.case.ennemi { fill: #f6dccd; }
+.case.ennemi.zone { fill: #efc8ad; }
+.case:focus { outline: none; stroke: var(--accent); stroke-width: 2.5; }
+
+/* Les murs des cartes de boss, en blocs de pierre aux teintes du vêtement 4.
+   Ils ne se cliquent pas : seul le sol reçoit des pièces. */
+.bloc { pointer-events: none; }
+.bloc polygon { stroke: #574d3b; stroke-width: .6; stroke-linejoin: round; }
+.bloc .dessus { fill: #a39880; }
+.bloc .gauche { fill: #857a62; }
+.bloc .droite { fill: #6e6149; }
+.bloc.cachee .dessus { fill: #807866; }
+.bloc.cachee .gauche { fill: #6a6251; }
+.bloc.cachee .droite { fill: #585041; }
+
+/* Les cibles posées, en Poutch Ingball, et leur numéro à leurs pieds. */
+.poutch, .poutch-rang, .poutch-rang-texte { pointer-events: none; }
+/* KrozBoom : les bombes, leurs murs et leurs souffles. Le mur en aplat, le
+   souffle en pointillé : deux zones qui se superposent sans se confondre. */
+.bombe-icone, .bombe-combo, .bombe-combo-fond, .bombe-choisie,
+.souffle-fond, .souffle-contour, .mur-bombe { pointer-events: none; }
+.bombe-choisie { fill: none; stroke: var(--accent); stroke-width: 2; }
+.bombe-combo-fond { stroke: #fff; stroke-width: 1.2; }
+.bombe-combo { fill: #fff; font-size: 8.5px; font-weight: 700; text-anchor: middle; }
+.souffle-fond { opacity: .10; }
+.souffle-contour { fill: none; stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .7; }
+.mur-bombe { opacity: .42; }
+.bombe-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem;
+  padding: .3rem .4rem; border-radius: var(--rayon); }
+.bombe-ligne.choisie { background: var(--accent-clair); }
+.bombe-ligne .bombe-nom { font-weight: 600; }
+.bombe-ligne .aide { margin: 0; }
+.bombe-ligne label, .choix-bombe { display: inline-flex; align-items: center; gap: .35rem; margin: 0; }
+.bombe-ligne select, .choix-bombe select { width: auto; }
+.poutch-rang { fill: var(--alerte); stroke: #fff; stroke-width: 1.2; }
+.poutch-rang-texte { fill: #fff; font-size: 9px; font-weight: 700; text-anchor: middle;
+                     dominant-baseline: central; }
+.case.creature { fill: #ece5d6; }
+
+/* L'aperçu de pose : ce qu'un clic poserait sous le curseur, en transparence ;
+   une croix s'il retirerait la pièce, un contour rouge s'il ne poserait rien. */
+.apercu-pose { pointer-events: none; }
+.fantome-pose { opacity: .6; }
+.apercu-case { fill: var(--accent); }
+.apercu-retrait polygon, .apercu-interdit polygon { fill: none; stroke: var(--alerte);
+                                                    stroke-width: 2.2; stroke-linejoin: round; }
+.apercu-retrait polygon { stroke-dasharray: 4 3; }
+.apercu-retrait text { fill: var(--alerte); font-size: 18px; font-weight: 700;
+                       text-anchor: middle; dominant-baseline: central; }
+
+/* Le choix du plateau, dans la barre d'outils. */
+.choix-plateau { display: inline-flex; align-items: center; gap: .4rem;
+                 font-size: .84rem; font-weight: 500; }
+.choix-plateau select { max-width: 17rem; }
+
+/* ⚠️ LES CALQUES NE REÇOIVENT PAS LA SOURIS : dessinés par-dessus, ils
+   intercepteraient les clics de pose. */
+.zone-fond, .zone-contour, .visee-trait, .jeton,
+.etiq-fond, .etiq-texte, .etiq-tige { pointer-events: none; }
+.zone-fond { opacity: .22; }
+.zone-contour { fill: none; stroke-width: 2; stroke-linecap: round;
+                stroke-linejoin: round; opacity: .75; }
+.visee-trait { fill: none; stroke: var(--alerte); stroke-width: 2.5; }
+.visee-trait.refusee { stroke-dasharray: 4 3; }
+/* La zone qu'on obtiendrait en visant la case survolée : en pointillé, pour ne
+   pas la confondre avec celle de la case visée. */
+.fantome { pointer-events: none; }
+.fantome .zone-contour { stroke-dasharray: 4 3; opacity: 1; }
+.fantome .zone-fond { opacity: .16; }
+
+.jeton { font-size: 11px; font-weight: 700; text-anchor: middle;
+         dominant-baseline: central; }
+.jeton.lanceur { fill: #fff; }
+.jeton.ennemi { fill: var(--alerte); }
+.jeton.allie { fill: var(--succes); }
+
+/* L'étiquette de dégâts, posée au-dessus de la cible comme le jeu affiche ses
+   nombres. Fond clair et texte coloré : sur une carte déjà colorée, un pavé
+   sombre attire l'œil avant la zone elle-même. */
+.etiq-fond { fill: #fff; stroke: var(--trait); stroke-width: 1; }
+.etiq-texte { font-size: 11px; font-weight: 700; text-anchor: middle;
+              dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.etiq-tige { stroke: var(--trait); stroke-width: 1; }
+
+/* ------------------------------------------------------------- contrôles */
+
+/*
+ * La barre d'avancement : le moteur donne la fraction, elle ne se devine pas
+ * depuis le temps écoulé.
+ */
+.barre { height: 6px; margin: .5rem 0 .3rem; border-radius: 3px;
+  background: var(--accent-clair); overflow: hidden; }
+.barre > span { display: block; height: 100%; width: 0;
+  background: var(--accent); transition: width .25s linear; }
+@media (prefers-reduced-motion: reduce) { .barre > span { transition: none; } }
+
+.barre-outils { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+                margin: 0 0 .6rem; }
+.segment { display: inline-flex; align-items: center; gap: .3rem; margin: 0;
+           padding: .3rem .7rem; border: 1px solid var(--trait); border-radius: 4px;
+           cursor: pointer; font-weight: 500; font-size: .84rem; background: var(--fond); }
+.segment:has(input:checked) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.segment input { position: absolute; opacity: 0; pointer-events: none; }
+.segment:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+table.mini { border-collapse: collapse; width: 100%; font-size: .84rem; }
+table.mini th, table.mini td { text-align: left; padding: .2rem .6rem .2rem 0; }
+table.mini thead th { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+                      color: var(--doux); font-weight: 600; }
+table.mini td { font-variant-numeric: tabular-nums; }
+/* La fourchette qui ne tombe pas sur ce build : lisible, mais en retrait. */
+table.mini .attenue { color: var(--doux); }
+
+/* ------------------------------------------------------- réseau de pièges */
+
+.palette { display: grid; gap: .3rem;
+           grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+.palette button {
+  all: unset; cursor: pointer; border: 1px solid var(--trait); border-radius: 4px;
+  padding: .35rem .5rem; font-size: .82rem; display: flex; gap: .45rem;
+  align-items: center; background: var(--fond);
+}
+.palette button:hover { background: var(--panneau); }
+.palette button[aria-pressed=true] { background: var(--accent); color: #fff;
+                                     border-color: var(--accent); }
+.palette button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.palette .cout { color: var(--doux); font-size: .73rem; margin-left: auto; text-align: right; }
+.palette button[aria-pressed=true] .cout { color: var(--accent-clair); }
+.palette img { width: 22px; height: 22px; border-radius: 4px; flex: 0 0 22px; }
+
+.case.piege { fill: #cbb79b; }
+.case.entree { fill: #cfe3d2; }
+.case.arrivee-case { fill: #9fc9a8; }
+.case.mur { fill: #b9bdc4; }
+
+/* ⚠️ L'ICÔNE NE PARAÎT QU'AU SURVOL. Quatre icônes posées en permanence sur un
+   damier de treize cases le saturaient, et c'est la FORME des zones qu'on vient
+   y lire. Le numéro de pose, lui, reste : l'ordre FIFO décide de tout. */
+.piege-icone { pointer-events: none; opacity: 0; transition: opacity .12s; }
+.piege-groupe.survole .piege-icone { opacity: 1; }
+.piege-groupe.survole .zone-contour { stroke-width: 3.5; opacity: 1; }
+.piege-groupe.survole .zone-fond { opacity: .38; }
+.piege-rang { pointer-events: none; font-size: 9px; font-weight: 700;
+              text-anchor: middle; dominant-baseline: central; fill: #fff; }
+.piege-pastille { pointer-events: none; fill: var(--encre); }
+/*
+ * Les poses proposées par le générateur : zone en pointillé et pastille brune,
+ * pour distinguer l'essai de ce qui est au sol.
+ */
+.piege-groupe.proposee .zone-contour { stroke-dasharray: 4 3; }
+.piege-groupe.proposee .zone-fond { opacity: .12; }
+.piege-groupe.proposee .piege-pastille { fill: var(--vetement-4); }
+
+.champ-pa { display: inline-flex; align-items: center; gap: .4rem; margin: 0; white-space: nowrap; }
+.champ-pa input { width: 4.2rem; }
+.tour-courant { font-weight: 600; font-size: .85rem; }
+
+.trajet { fill: none; stroke: var(--alerte); stroke-width: 2.5; stroke-linejoin: round;
+          stroke-linecap: round; pointer-events: none; stroke-dasharray: 6 4; }
+.trajet-pas { fill: var(--alerte); pointer-events: none; }
+/* Un trajet par entité, à la couleur de son camp : les ennemis en rouge, vos
+   alliés en vert, le Sram en ardoise. */
+.trajet.allie { stroke: var(--succes); }
+.trajet-pas.allie { fill: var(--succes); }
+.trajet.sram { stroke: var(--accent); }
+.trajet-pas.sram { fill: var(--accent); }
+
+/*
+ * Les portails de l'Éliotrope, en violet, la sortie plus sombre. `.plateau` en
+ * tête pour passer devant `.case.portee.sombre`.
+ */
+.plateau .case.portail { fill: #e4def4; }
+.plateau .case.portail.sortie { fill: #d2c9ee; }
+/* L'image du portail et sa pastille de rang, au-dessus du damier : comme les
+   autres calques, ils laissent passer les clics. */
+.portail-image, .portail-rang, .portail-rang-texte { pointer-events: none; }
+.portail-rang { fill: #4f418f; stroke: #fff; stroke-width: 1.5; }
+.portail-rang.sortie { fill: var(--alerte); }
+.portail-rang-texte { fill: #fff; font-size: 9.5px; }
+.trajet.portail { stroke: #4f418f; stroke-dasharray: none; }
+.trajet.portail.refusee { stroke-dasharray: 4 3; }
+/* La visée de l'Éliotrope vers le portail d'entrée, en pointillé fin. */
+.trajet.vise { stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 4 3; }
+
+/* L'empilement se lit de haut en bas, à côté du damier : c'est l'ORDRE qui
+   s'y lit, et une liste sous le damier oblige à défiler entre le geste et son
+   effet. */
+.pile { border: 1px solid var(--trait); border-radius: var(--rayon);
+        overflow: hidden; background: var(--fond); }
+.pile h4 { margin: 0; padding: .4rem .6rem; font-size: .72rem; text-transform: uppercase;
+           letter-spacing: .05em; color: var(--doux); background: var(--panneau);
+           border-bottom: 1px solid var(--trait); font-weight: 600; }
+.pile ol { list-style: none; margin: 0; padding: 0; max-height: 28rem; overflow: auto;
+           counter-reset: pas; }
+.pile li { display: grid; grid-template-columns: 1.4rem 1fr; gap: .4rem;
+           padding: .3rem .6rem; font-size: .82rem; line-height: 1.35;
+           border-bottom: 1px solid var(--trait); }
+.pile li:last-child { border-bottom: 0; }
+.pile li::before { counter-increment: pas; content: counter(pas); color: var(--doux);
+                   font-variant-numeric: tabular-nums; font-size: .72rem; padding-top: .1rem; }
+.pile li.courante { background: var(--accent-clair); }
+.pile li.pale { opacity: .4; }
+.pile .quoi { font-weight: 600; }
+.pile .degats { color: var(--alerte); font-variant-numeric: tabular-nums; }
+.pile .detail { color: var(--doux); font-size: .76rem; }
+.pile .avec-icone { display: flex; gap: .4rem; align-items: center; }
+.pile img { width: 22px; height: 22px; border-radius: 4px; flex: 0 0 22px; }
+
+/* ------------------------------------------------------------- rotation */
+
+.vue-rotation { display: grid; gap: 1rem; align-items: start;
+                grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 62rem) {
+  .vue-rotation { grid-template-columns: minmax(0, 1fr) 19rem; }
+  /* Le panneau reste en vue pendant qu'on coche : le prototype obligeait à
+     descendre, cliquer, puis remonter lire. */
+  .panneau { position: sticky; top: 0; }
+}
+
+.panneau { border: 1px solid var(--trait); border-radius: var(--rayon);
+           background: var(--panneau); padding: .8rem .9rem; }
+.panneau button.action { width: 100%; }
+.panneau h3 { margin: 0 0 .4rem; font-size: .72rem; text-transform: uppercase;
+              letter-spacing: .05em; color: var(--doux); font-weight: 600; }
+.panneau .chiffre { font-size: 1.6rem; font-weight: 600; letter-spacing: -.02em;
+                    line-height: 1.15; font-variant-numeric: tabular-nums; }
+.panneau .sous-chiffre { color: var(--doux); font-size: .85rem; }
+.panneau dl { display: grid; gap: .1rem .8rem; grid-template-columns: 1fr auto;
+              margin: .6rem 0 0; font-size: .85rem; }
+.panneau dt { color: var(--doux); }
+.panneau dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* Périmé : le chiffre reste lisible mais ne se donne plus pour le résultat des
+   réglages courants. */
+.panneau.perime #resumeRotation { opacity: .45; }
+/* Le nom d'un groupe de boutons, là où une phrase expliquait le choix. */
+.libelle-groupe { margin: .7rem 0 .25rem; font-size: .85rem; font-weight: 500; }
+/* « Pour aller plus loin » : les réglages fins, repliés ; le compteur dit
+   combien diffèrent du défaut. */
+.plus-loin { margin: .7rem 0 0; border-top: 1px solid var(--trait); padding-top: .5rem; }
+.plus-loin > summary { cursor: pointer; font-size: .85rem; font-weight: 600; display: flex;
+                       align-items: center; gap: .5rem; list-style: none; }
+.plus-loin > summary::-webkit-details-marker { display: none; }
+.plus-loin > summary::before { content: ''; border-top: 4px solid transparent;
+                               border-bottom: 4px solid transparent;
+                               border-left: 5px solid currentColor; transition: transform .12s; }
+.plus-loin[open] > summary::before { transform: rotate(90deg); }
+.plus-loin > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plus-loin .modifies { margin-left: auto; font-size: .72rem; font-weight: 600;
+                       background: var(--accent-clair); color: var(--encre);
+                       border-radius: 999px; padding: .05rem .5rem; }
+.plus-loin .modifies:empty { display: none; }
+.plus-loin > .reglages { margin-top: .6rem; }
+.plus-loin .groupe { margin: .8rem 0 .2rem; font-size: .7rem; text-transform: uppercase;
+                     letter-spacing: .05em; color: var(--doux); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .plus-loin > summary::before { transition: none; }
+}
+.reglages { display: grid; gap: .4rem .6rem; grid-template-columns: 1fr 1fr;
+            margin-top: .7rem; }
+
+/* La case « calcul rapide », dans le panneau des réglages. Même grain que les
+   cartes de sorts : une case, un mot, et le détail sous un dépliant. */
+.bascule { display: flex; gap: .4rem; align-items: center; margin: .6rem 0 .2rem;
+  font-size: .82rem; cursor: pointer; }
+.bascule input { margin: 0; }
+/* Les paliers de calcul : une case par mécanique, son prix sous elle. */
+.paliers, .bonus-dofus { margin: .6rem 0 .2rem; }
+/* Le mur de bombes du Roublard : l'élément puis un combo par bombe, sur une ligne. */
+.mur-bombes { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .6rem 0 .2rem; }
+.mur-bombes label, .mur-bombes .aide { flex-basis: 100%; margin: 0; }
+.mur-bombes select { width: auto; }
+.paliers .bascule, .bonus-dofus .bascule { margin: .5rem 0 0; }
+.paliers .palier-aide, .bonus-dofus .palier-aide { margin: .1rem 0 .4rem 1.4rem; }
+
+.sorts { display: grid; gap: .2rem .5rem;
+         grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.sorts .sort { display: flex; gap: .4rem; align-items: center; margin: 0;
+               padding: .18rem .3rem; border-radius: 4px; font-weight: 400;
+               font-size: .84rem; cursor: pointer; }
+.sorts .sort:hover { background: var(--panneau); }
+.sorts .sort.coche { background: var(--accent-clair); }
+.sorts img, .sorts .vide { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 4px; }
+.sorts .vide { background: var(--panneau); }
+.sorts .cout { margin-left: auto; color: var(--doux); font-size: .76rem; }
+
+/*
+ * La frise : un palier par tour, une ligne par lancer ; les colonnes de chiffres
+ * s'alignent d'une ligne à l'autre.
+ */
+.frises { display: grid; gap: .4rem; }
+.palier { border: 1px solid var(--trait); border-radius: 4px; overflow: hidden; }
+/* Un tour fermé tient sur sa ligne : ses dégâts, ses PA, ses sorts. Le
+   triangle dit s'il est ouvert. */
+.palier > summary { display: flex; gap: .7rem; align-items: baseline; padding: .3rem .5rem;
+                    background: var(--panneau); font-size: .78rem; cursor: pointer;
+                    list-style: none; }
+.palier > summary::-webkit-details-marker { display: none; }
+.palier > summary::before { content: ''; align-self: center; border-top: 4px solid transparent;
+                            border-bottom: 4px solid transparent;
+                            border-left: 5px solid currentColor; transition: transform .12s; }
+.palier[open] > summary { border-bottom: 1px solid var(--trait); }
+.palier[open] > summary::before { transform: rotate(90deg); }
+.palier > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.palier > summary b, .palier > summary span { white-space: nowrap; }
+.palier > summary span { color: var(--doux); font-variant-numeric: tabular-nums; }
+.palier > summary .sorts-du-tour { flex: 1 1 auto; min-width: 0; overflow: hidden;
+                                   text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) {
+  .palier > summary::before { transition: none; }
+}
+.lancers { list-style: none; margin: 0; padding: .2rem 0; }
+.lancers li { display: grid; align-items: center; gap: .5rem; font-size: .8rem;
+              grid-template-columns: 18px minmax(0, 1fr) 5.5rem 3.6rem 4.6rem;
+              padding: .18rem .5rem; border-left: 3px solid transparent; }
+.lancers img, .lancers .sans-icone { width: 18px; height: 18px; border-radius: 3px; }
+.lancers .nom { overflow-wrap: anywhere; }
+.lancers .degats, .lancers .pa, .lancers .reste { text-align: right;
+                                                  font-variant-numeric: tabular-nums; }
+.lancers .pa, .lancers .reste { color: var(--doux); }
+/* Ce qui tombe en début de tour, avant tout lancer : un poison, un effet à
+   retardement. Il n'a ni coût ni décompte. */
+.lancers .ouverture { color: var(--doux); }
+.lancers .ouverture .degats { color: var(--encre); }
+.lancers .moment { font-size: .72rem; font-style: italic; margin-left: .3rem; }
+.lancer[data-tour] { cursor: pointer; }
+.lancer[data-tour]:hover { background: var(--panneau); }
+.lancer.ouvert { background: var(--accent-clair); border-left-color: var(--accent); }
+.lancer[data-tour]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.conseil { padding: 0 .5rem .45rem; }
+.conseil table { margin-top: .2rem; }
+.conseil tr.joue td { background: var(--accent-clair); }
+
+.classes { display: flex; flex-wrap: wrap; gap: .3rem; }
+.classe { border: 1px solid var(--trait); border-radius: 999px; padding: .1rem .6rem;
+          font-size: .8rem; display: inline-flex; gap: .35rem; align-items: baseline; }
+.classe.complete { border-color: #cfe3d2; background: #eef4ee; }
+.classe .cout { color: var(--doux); font-size: .72rem; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------- graphiques */
+
+/* ⚠️ LA COULEUR SORT DE LA PALETTE, elle n'est pas choisie au graphique. Le
+   prototype codait en dur un bleu et un orange qui n'existaient nulle part
+   ailleurs dans l'interface : trois teintes de bleu cohabitaient à l'écran. */
+/* Une bande sous les deux colonnes, un graphique par ligne. Les mettre côte à
+   côte rendrait chacun à 600 px : le dessin en fait 700 et son axe repasserait
+   sous les neuf pixels. La comparaison ne vaut pas l'illisibilité. */
+.bande-graphiques { display: grid; gap: 1rem; margin-top: 1rem; max-width: 56rem; }
+/* ⚠️ UN PLAFOND DE LARGEUR, pas seulement un plancher. Le dessin fait 700
+   unités pour des étiquettes de 10 : étiré à 1 600 px le texte passe à 23 px et
+   le graphique se met à crier. */
+.graphique { margin: .2rem 0 0; max-width: 54rem; }
+.graphique figcaption { font-size: .78rem; color: var(--doux); margin-bottom: .4rem; }
+.graphique svg { display: block; width: 100%; height: auto; overflow: visible; }
+.g-grille { stroke: var(--trait); stroke-width: 1; }
+.g-axe { fill: var(--doux); font-size: 10px; font-variant-numeric: tabular-nums; }
+/*
+ * L'ouverture se distingue de la boucle par le poids, pas par une couleur
+ * d'alerte.
+ */
+.g-boucle { fill: var(--accent); }
+.g-ouverture { fill: var(--accent-doux); }
+/* Le pointillé de la moyenne passe en encre et non en couleur de série : il ne
+   décrit aucune des deux, il les traverse. */
+.g-moyenne { stroke: var(--encre); stroke-width: 2; stroke-dasharray: 5 4;
+             stroke-linecap: round; }
+.g-moyenne-texte { fill: var(--encre); font-size: 10px; font-weight: 600;
+                   font-variant-numeric: tabular-nums; }
+/* Le texte ne porte jamais la couleur de la donnée : la colonne en dessous
+   suffit à dire de quelle série il parle. */
+.g-repere { fill: var(--doux); font-size: 10px; font-variant-numeric: tabular-nums; }
+
+/* La courbe selon le nombre d'ennemis. Une ligne et non des colonnes : du point
+   de vue du lecteur c'est la PENTE qui compte, pas chaque valeur. */
+.g-courbe { fill: none; stroke: var(--accent); stroke-width: 2.5;
+            stroke-linejoin: round; stroke-linecap: round; }
+.g-point { fill: var(--accent); }
+.g-point-actif { fill: var(--alerte); stroke: var(--fond); stroke-width: 2; }
+.g-lineaire { fill: none; stroke: var(--doux); stroke-width: 1.5; stroke-dasharray: 4 4; }
+
+.g-legende { display: flex; gap: 1rem; font-size: .76rem; color: var(--doux);
+             margin-top: .35rem; flex-wrap: wrap; }
+.g-legende span { display: inline-flex; align-items: center; gap: .35rem; }
+.g-puce { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.g-p-boucle { background: var(--accent); }
+.g-p-ouverture { background: var(--accent-doux); }
+.g-p-moyenne { background: var(--encre); height: 2px; border-radius: 1px; }
+
+/* --------------------------------------------------- fiche du build */
+
+/*
+ * L'équipement à gauche, les chiffres à droite : ce sont les noms d'objets
+ * qu'on parcourt, ils portent le poids du texte.
+ */
+.fiche { display: grid; gap: 1rem 1.6rem; align-items: start;
+         grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+@media (max-width: 62rem) { .fiche { grid-template-columns: minmax(0, 1fr); } }
+
+/* Les encarts, dans l'ordre du jeu : équipement, main, compagnons, Dofus. Dix-
+   sept emplacements à la suite ne se parcourent pas. */
+.equipement, .cotes { display: grid; gap: .9rem; align-content: start; }
+.bloc h4 { margin: 0 0 .35rem; font-size: .66rem; text-transform: uppercase;
+           letter-spacing: .05em; color: var(--doux); font-weight: 600; }
+
+.slots { display: grid; gap: .3rem;
+         grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+/* ⚠️ L'ICÔNE OCCUPE SA PROPRE COLONNE SUR TOUTE LA HAUTEUR. Posée dans le flux,
+   elle repoussait le nom d'une ligne et chaque encart changeait de hauteur
+   selon qu'il portait une panoplie ou une forgemagie. */
+.slot { border: 1px solid var(--trait); border-radius: 5px; padding: .35rem .5rem;
+        display: grid; grid-template-columns: auto 1fr auto; gap: 0 .5rem;
+        align-items: baseline; font-size: .82rem; }
+.slot .objet { grid-row: 1 / span 4; grid-column: 1; width: 32px; height: 32px;
+               align-self: center; border-radius: 4px; }
+.slot span.objet { background: var(--panneau); }
+.slot .ou { grid-column: 2 / -1; font-size: .66rem; text-transform: uppercase;
+            letter-spacing: .05em; color: var(--doux); }
+.slot .quoi { grid-column: 2; font-weight: 600; }
+.slot .niv { grid-column: 3; color: var(--doux); font-size: .72rem;
+             font-variant-numeric: tabular-nums; }
+.slot .pano, .slot .fm { grid-column: 2 / -1; font-size: .72rem; color: var(--doux); }
+.slot .fm { color: var(--accent); }
+/*
+ * « Non compté » s'écrit en toutes lettres : une forgemagie affichée mais hors
+ * profil le dit.
+ */
+.slot .fm i { font-style: normal; color: var(--doux); font-size: .68rem; }
+/* Un emplacement vide est un choix du joueur, un objet inconnu est une lacune
+   du catalogue : le second se signale, le premier s'efface. */
+.slot.vide { border-style: dashed; color: var(--doux); }
+.slot.vide .ou, .slot.vide .rien { grid-column: 1 / -1; }
+.slot.vide .rien { font-size: .76rem; }
+.slot.douteux { border-color: var(--alerte); }
+
+.chiffres { display: grid; grid-template-columns: 1fr auto; gap: 0 .8rem; margin: 0;
+            font-size: .8rem; }
+.chiffres dt { color: var(--doux); }
+.chiffres dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------- résumé du build */
+
+/* Ce que la barre du haut ne peut pas tenir : d'où le build tire ses dégâts.
+   Elle porte déjà classe, niveau, PA, PM, crit, puissance et do. critiques, et
+   les répéter ici ferait deux fois le même écran. */
+.resume { display: grid; gap: 1rem 1.6rem; align-items: start;
+          grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+@media (max-width: 52rem) { .resume { grid-template-columns: minmax(0, 1fr); } }
+
+.elements { font-variant-numeric: tabular-nums; }
+.elements th { text-align: left; font-weight: 600; font-size: .7rem;
+               text-transform: uppercase; letter-spacing: .04em; color: var(--doux);
+               padding-bottom: .2rem; }
+.elements td { padding: .1rem .9rem .1rem 0; }
+.elements td:not(:first-child) { text-align: right; padding-right: 0; padding-left: .9rem; }
+/* L'élément dominant se lit sans légende : il porte le poids du texte, et la
+   pastille dit lequel c'est. Une ligne en gras parmi cinq se trouve à vue. */
+.elements .dominant td { font-weight: 600; }
+.pastille { width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+            margin-right: .45rem; vertical-align: middle; }
+
+.faits { display: grid; gap: .15rem .9rem; grid-template-columns: auto minmax(0, 1fr);
+         margin: 0; font-size: .84rem; align-items: baseline; }
+.faits dt { color: var(--doux); white-space: nowrap; }
+.faits dd { margin: 0; }
+.faits .cout { color: var(--doux); font-size: .78rem; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------- paires de variantes */
+
+/*
+ * Deux variantes ne s'équipent pas ensemble : les paires sont dessinées comme
+ * des paires, et la paire entière rougit quand les deux sont cochées.
+ */
+.paire { display: grid; gap: .1rem; border: 1px solid transparent;
+         border-radius: 5px; padding: .1rem; }
+.paire.conflit { border-color: var(--alerte); background: #f8ebe7; }
+.paire.conflit .sort.coche { background: #f0d6cf; }
+
+/* ------------------------------------------- fiche du build */
+
+/*
+ * Trois colonnes : l'identité et les caractéristiques à gauche, l'équipement au
+ * centre, les dommages et résistances à droite ; chaque encart a son cadre et
+ * son bandeau.
+ */
+/* La colonne de gauche porte un tableau à cinq colonnes : sous 18rem, la
+   dernière, « Parcho », sortait du cadre. */
+.fiche-db { display: grid; gap: .8rem; align-items: start;
+            grid-template-columns: minmax(18rem, 1.1fr) minmax(20rem, 1.3fr) minmax(16rem, 1fr); }
+@media (max-width: 78rem) {
+  .fiche-db { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fiche-db > .colonne:nth-child(2) { grid-column: 1 / -1; grid-row: 1; }
+}
+@media (max-width: 50rem) { .fiche-db { grid-template-columns: minmax(0, 1fr); } }
+.fiche-db > .colonne { display: grid; gap: .8rem; align-content: start; }
+
+.encart { border: 1px solid var(--cheveux); border-radius: var(--rayon);
+          background: var(--fond); overflow: hidden; }
+.encart > h4 { margin: 0; padding: .35rem .7rem; background: var(--cadre);
+               border-bottom: 1px solid var(--cheveux); color: var(--encre);
+               font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
+.encart > :not(h4) { padding: .5rem .7rem; }
+
+/* Une statistique se lit valeur d'abord : l'œil descend la colonne des nombres. */
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .9rem; }
+.stat { display: grid; grid-template-columns: 3.4rem 1fr; gap: .45rem;
+        align-items: baseline; font-size: .8rem; padding: .08rem 0; }
+.stat b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.stat span { color: var(--doux); }
+.stat span i { font-style: normal; font-size: .68rem; }
+.stat[title] { cursor: help; }
+.stats-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .9rem; }
+
+/*
+ * Le tableau des caractéristiques : total, total plus Puissance, capital et
+ * parchemin.
+ */
+.caracs { width: 100%; border-collapse: collapse; font-size: .8rem;
+          font-variant-numeric: tabular-nums; }
+.caracs th { font-size: .66rem; font-weight: 600; color: var(--doux);
+             text-align: right; padding: 0 .3rem .25rem .4rem; white-space: nowrap; }
+.caracs td { padding: .12rem .3rem .12rem .4rem; }
+.caracs td.v { text-align: right; }
+.caracs td:first-child { font-weight: 600; padding-left: 0; }
+.caracs tr[title] { cursor: help; }
+.caracs tbody tr:nth-child(odd) td { background: var(--panneau); }
+.caracs tr.pu td { border-top: 1px solid var(--trait); }
+
+/* Le centre : deux colonnes de tuiles, puis les six Dofus en ligne. */
+.poupee { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
+.tuile { display: grid; grid-template-columns: 44px 1fr; gap: .45rem;
+         align-items: center; border: 1px solid var(--trait); border-radius: 5px;
+         padding: .3rem .4rem; background: var(--panneau); min-height: 3.4rem; }
+.tuile .objet { width: 44px; height: 44px; border-radius: 4px; }
+.tuile span.objet { background: var(--fond); border: 1px dashed var(--cheveux); }
+.tuile .nom { font-size: .78rem; font-weight: 600; line-height: 1.25; min-width: 0; }
+.tuile .nom small { display: block; font-weight: 400; font-size: .66rem; color: var(--doux); }
+.tuile .nom em { display: block; font-style: normal; font-weight: 500; font-size: .68rem;
+                 color: var(--encre); }
+.tuile.vide { background: transparent; border-style: dashed; color: var(--doux); }
+.tuile.vide .nom { font-weight: 400; }
+
+.trophees { display: grid; grid-template-columns: repeat(6, 1fr); gap: .35rem;
+            margin-top: .35rem; padding-top: .45rem; border-top: 1px solid var(--trait); }
+.trophee { aspect-ratio: 1; border: 1px solid var(--trait); border-radius: 5px;
+           background: var(--panneau); display: grid; place-items: center; cursor: help; }
+.trophee img { width: 80%; height: 80%; }
+.trophee.vide { border-style: dashed; background: transparent; cursor: default; }
+
+/* ------------------------------------------------------------------ import */
+
+/* Une seule porte d'entrée, et elle n'a pas besoin de toute la largeur : un
+   champ de lien étiré sur mille pixels se lit comme un formulaire vide. */
+.carte.import { max-width: 44rem; }
+.saisie { display: flex; gap: .4rem; }
+.saisie input { flex: 1; }
+.carte.import .aide span:not(:empty) { display: block; margin-top: .2rem; }
+
+/* L'infobulle, dessinée par la page : le `title` natif ne s'affiche pas dans
+   la fenêtre de l'application de bureau. `position: fixed` : une frise vit
+   dans un conteneur qui défile, et rognerait une bulle placée dans son flux. */
+.infobulle { position: fixed; z-index: 50; max-width: 22rem; pointer-events: none;
+             background: var(--fond); border: 1px solid var(--trait); border-radius: 6px;
+             box-shadow: 0 4px 16px rgba(0,0,0,.13); padding: .55rem .7rem;
+             font-size: .78rem; line-height: 1.45; color: var(--encre); }
+.infobulle[hidden] { display: none; }
+/* La fiche du sort dans les Zones reprend celle de l'infobulle. */
+.fiche-sort { margin-top: .8rem; padding-top: .6rem; border-top: 1px solid var(--trait);
+              font-size: .8rem; line-height: 1.45; }
+:is(.infobulle, .fiche-sort) h4 { margin: 0 0 .15rem; font-size: .85rem; }
+:is(.infobulle, .fiche-sort) dl { display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem;
+                margin: .35rem 0 0; }
+:is(.infobulle, .fiche-sort) dt { color: var(--doux); }
+:is(.infobulle, .fiche-sort) dt.pleine { grid-column: 1 / -1; margin-top: .2rem; }
+:is(.infobulle, .fiche-sort) dd { margin: 0; font-variant-numeric: tabular-nums; }
+:is(.infobulle, .fiche-sort) .ventilation { grid-column: 2; margin: .05rem 0 .2rem; padding-left: .5rem;
+                          border-left: 2px solid var(--trait); font-size: .92em;
+                          color: var(--doux); }
+:is(.infobulle, .fiche-sort) .ligne1 { color: var(--doux); }
+:is(.infobulle, .fiche-sort) .description { margin: .4rem 0 0; padding-top: .35rem;
+                          border-top: 1px solid var(--trait); }
+:is(.infobulle, .fiche-sort) .contraintes { margin-top: .2rem; color: var(--alerte); font-size: .74rem; }
+:is(.infobulle, .fiche-sort) .critique, :is(.infobulle, .fiche-sort) .decision { margin: .35rem 0 0; padding-top: .3rem;
+                         border-top: 1px solid var(--trait); font-size: .74rem;
+                         color: var(--doux); line-height: 1.4; }
+:is(.infobulle, .fiche-sort) .critique strong { color: var(--encre); }
+:is(.infobulle, .fiche-sort) .calcul { color: var(--doux); font-size: .72rem; }
+:is(.infobulle, .fiche-sort) .question { margin: .4rem 0 0; padding-top: .35rem;
+                       border-top: 1px solid var(--trait); color: var(--doux);
+                       font-size: .72rem; }
+/*
+ * La fiche d'un objet : une section par effet, titrée en petites capitales, et
+ * ce que la Rotation fait de l'effet dans une étiquette, pleine quand il est
+ * compté.
+ */
+.infobulle .section { margin: .45rem 0 0; padding-top: .35rem; border-top: 1px solid var(--trait); }
+.infobulle .section h5 { margin: 0 0 .2rem; display: flex; gap: .5rem; align-items: baseline;
+                         font-size: .66rem; font-weight: 600; letter-spacing: .05em;
+                         text-transform: uppercase; color: var(--doux); }
+.infobulle .section p { margin: 0; }
+.infobulle .statut { margin-left: auto; text-transform: none; letter-spacing: 0; white-space: nowrap;
+                     border: 1px solid var(--trait); border-radius: 999px; padding: 0 .45rem;
+                     color: var(--doux); }
+.infobulle .statut.compte { border-color: #cfe3d2; background: #eef4ee; color: var(--encre); }
+
+/* Le concepteur montre un tour à la fois : les pièges posés aux tours d'avant
+   s'effacent, ceux du tour affiché gardent leur pastille sombre. */
+.piege-groupe.anterieur .zone-fond { opacity: .08; }
+.piege-groupe.anterieur .zone-contour { opacity: .45; }
+.piege-groupe.anterieur .piege-pastille { fill: var(--doux); }
+/* La case d'entrée d'un réseau de pièges : là où la cible doit entrer. Au
+   déclenchement d'un plan, celle qu'on suit en plein, les autres plus claires. */
+.jeton.entree { fill: #2f6b3a; font-size: 12px; }
+.jeton.entree.autre { fill: #5f8f68; font-weight: 600; }
+
+/* Le concepteur de réseaux : ses étapes, un tour de pose chacune puis le
+   déclenchement. Au tour affiché, ses pièges montrent leur icône ; ceux des
+   tours d'avant, pâles, n'ont plus de numéro. */
+.plan { display: grid; gap: .5rem; margin: .7rem 0; }
+.plan:empty { display: none; }
+.plan .bandeau, .plan-etapes { margin: 0; }
+.plan-etapes button.action { padding: .3rem .65rem; }
+.etape { font: inherit; font-size: .82rem; padding: .3rem .7rem; border-radius: 999px;
+         border: 1px solid var(--trait); background: var(--fond); color: var(--encre);
+         cursor: pointer; font-variant-numeric: tabular-nums; }
+.etape:hover { background: var(--panneau); }
+.etape[aria-pressed=true] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.piege-groupe.du-tour .piege-icone { opacity: 1; }
+.pile.poses li .detail { margin-left: auto; padding-left: .5rem; white-space: nowrap; }
+.entree-contour { fill: none; stroke: #2f6b3a; stroke-width: 2.5; pointer-events: none; }
+.entree-contour.autre { stroke: #5f8f68; stroke-width: 1.8; stroke-dasharray: 4 3; }
+.entree-etiquette { fill: #fff; stroke: #2f6b3a; stroke-width: 1.5; pointer-events: none; }
+.entree-etiquette.autre { stroke: #5f8f68; }
+.entree-etiquette + .jeton.entree { font-size: 10px; }
+#panneauPlan > .bandeau { margin: 0 0 .6rem; }
+/* Les cases d'entrée : une ligne chacune, celle qu'on suit surlignée. */
+.pile.entrees li { grid-template-columns: 1fr; padding: 0; }
+.pile.entrees li::before { content: none; }
+.pile.entrees li:has(button[aria-pressed=true]) { background: var(--accent-clair); }
+.entree-choix { display: flex; gap: .6rem; align-items: baseline; width: 100%;
+                padding: .35rem .6rem; font: inherit; font-size: .82rem; text-align: left;
+                background: none; border: 0; color: inherit; cursor: pointer; }
+.entree-choix strong { color: #2f6b3a; }
+.entree-choix .detail { margin-left: auto; font-variant-numeric: tabular-nums; }
+.entree-choix:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/*
+ * Bêta en cours : une liste par classe, chaque sort et ses changements en deux
+ * colonnes, libellé puis « de → vers ».
+ */
+.beta .barre-outils { margin-bottom: .8rem; flex-wrap: wrap; }
+.beta-classe { max-width: 46rem; }
+.beta-sort { margin-top: .9rem; }
+.beta-sort h4 { margin: 0 0 .25rem; font-size: .95rem; }
+.beta-ligne { display: grid; grid-template-columns: minmax(9rem, 15rem) 1fr; gap: 1rem;
+  padding: .12rem 0 .12rem .8rem; font-variant-numeric: tabular-nums; }
+.beta-ligne .libelle { color: var(--doux); }
+.beta-sort .aide { margin: .15rem 0 .15rem .8rem; }

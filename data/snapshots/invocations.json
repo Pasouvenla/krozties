@@ -1,0 +1,8484 @@
+{
+ "source": "DofusBook /api/spells/class (attaques, palier pi, PA, PM, resistances) et DofusDB (cout en PA, lancers et critique de chaque attaque), releves une fois",
+ "releve": "2026-10-01",
+ "ecarts": [
+  "Mot Alchimique rang 1 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 1 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 1 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 1 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 2 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 2 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 2 : « Ennemi » sans attaque DofusDB",
+  "Mot Alchimique rang 2 : « Ennemi » sans attaque DofusDB",
+  "Ébriété rang 1 : « Ennemi » sans attaque DofusDB",
+  "Ébriété rang 2 : « Ennemi » sans attaque DofusDB",
+  "Ébriété rang 3 : « Ennemi » sans attaque DofusDB",
+  "Invocations communes (Arakne, Chaferfu et leurs variantes) : DofusBook montre pour chaque sort le monstre de son second effet d'invocation, celui à 20 %, avec le coût et le critique de l'attaque de l'autre. Reconstruites sur DofusDB le 01/10/2026 : monstre à 80 % (`monstre`) et à 20 % (`autre`), PA, PM, résistances et attaque de chacun."
+ ],
+ "invocations": [
+  {
+   "classe": 1,
+   "sort": 12979,
+   "nom": "Barricade",
+   "monstre": 7864,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 10,
+     "grade": 1,
+     "nom": "Barricade",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 77,
+     "grade": 2,
+     "nom": "Barricade",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 144,
+     "grade": 3,
+     "nom": "Barricade",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 1,
+   "sort": 13016,
+   "nom": "Pavois",
+   "monstre": 5910,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 120,
+     "grade": 1,
+     "nom": "Pavois",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 187,
+     "grade": 2,
+     "nom": "Pavois",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 1,
+   "sort": 12995,
+   "nom": "Bastion",
+   "monstre": 7865,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 25,
+     "grade": 1,
+     "nom": "Bastion",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 92,
+     "grade": 2,
+     "nom": "Bastion",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 159,
+     "grade": 3,
+     "nom": "Bastion",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 1,
+   "sort": 13018,
+   "nom": "Égide",
+   "monstre": 5903,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 150,
+     "grade": 1,
+     "nom": "Égide",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31115,
+   "nom": "Tofu",
+   "monstre": 8070,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 10,
+     "grade": 1,
+     "nom": "Tofu",
+     "pi": 1,
+     "pa": 4,
+     "pm": 6,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 0,
+      "eau": 10,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Béco-béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         15,
+         17,
+         0,
+         0
+        ]
+       ],
+       "sort": 31154,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "va",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         16,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdva",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "pdva",
+         1,
+         16,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 77,
+     "grade": 2,
+     "nom": "Tofu",
+     "pi": 1,
+     "pa": 4,
+     "pm": 7,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 0,
+      "eau": 10,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Béco-béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         17,
+         19,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         20,
+         22,
+         0,
+         0
+        ]
+       ],
+       "sort": 31154,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "va",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         21,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdva",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "pdva",
+         1,
+         21,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 144,
+     "grade": 3,
+     "nom": "Tofu",
+     "pi": 1,
+     "pa": 4,
+     "pm": 8,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 0,
+      "eau": 10,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Béco-béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         21,
+         23,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         25,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 31154,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "va",
+         0,
+         22,
+         25,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdva",
+         0,
+         22,
+         25,
+         0,
+         0
+        ],
+        [
+         "pdva",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Bisou Béco",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31156,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31116,
+   "nom": "Bouftou",
+   "monstre": 8072,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 15,
+     "grade": 1,
+     "nom": "Bouftou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 10,
+      "eau": 10,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Bouffe-tout",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         15,
+         17,
+         0,
+         0
+        ]
+       ],
+       "sort": 31158,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vt",
+         0,
+         15,
+         17,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         18,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvt",
+         0,
+         15,
+         17,
+         0,
+         0
+        ],
+        [
+         "pdvt",
+         1,
+         18,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 82,
+     "grade": 2,
+     "nom": "Bouftou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 10,
+      "eau": 10,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Bouffe-tout",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 31158,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vt",
+         0,
+         19,
+         22,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         23,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvt",
+         0,
+         19,
+         22,
+         0,
+         0
+        ],
+        [
+         "pdvt",
+         1,
+         23,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 149,
+     "grade": 3,
+     "nom": "Bouftou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 10,
+      "eau": 10,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Bouffe-tout",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         20,
+         22,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         24,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31158,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vt",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Saute-bouftou",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvt",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "pdvt",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 31159,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31117,
+   "nom": "Crapipou",
+   "monstre": 8074,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 20,
+     "grade": 1,
+     "nom": "Crapipou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 0,
+      "feu": 10,
+      "eau": 20,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         11,
+         13,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         14,
+         16,
+         0,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         11,
+         13,
+         1,
+         0
+        ],
+        [
+         "de",
+         1,
+         14,
+         16,
+         1,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         17,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "pdve",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "pdve",
+         1,
+         17,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 87,
+     "grade": 2,
+     "nom": "Crapipou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 10,
+      "terre": 0,
+      "feu": 10,
+      "eau": 20,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         14,
+         16,
+         1,
+         0
+        ],
+        [
+         "de",
+         1,
+         17,
+         19,
+         1,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         22,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "pdve",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "pdve",
+         1,
+         22,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 154,
+     "grade": 3,
+     "nom": "Crapipou",
+     "pi": 1,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 10,
+      "terre": 0,
+      "feu": 10,
+      "eau": 20,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         22,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Crapoison",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         18,
+         20,
+         1,
+         0
+        ],
+        [
+         "de",
+         1,
+         22,
+         24,
+         1,
+         0
+        ]
+       ],
+       "sort": 31162,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         23,
+         26,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         28,
+         31,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Croassement",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "pdve",
+         0,
+         23,
+         26,
+         0,
+         0
+        ],
+        [
+         "pdve",
+         1,
+         28,
+         31,
+         0,
+         0
+        ]
+       ],
+       "sort": 31164,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31118,
+   "nom": "Dragoune",
+   "monstre": 8076,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 25,
+     "grade": 1,
+     "nom": "Dragoune",
+     "pi": 1,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 20,
+      "eau": 0,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Dracoflammes",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         15,
+         17,
+         0,
+         0
+        ]
+       ],
+       "sort": 31166,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vf",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 92,
+     "grade": 2,
+     "nom": "Dragoune",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 20,
+      "eau": 0,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Dracoflammes",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         15,
+         17,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         18,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 31166,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vf",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         24,
+         27,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         24,
+         27,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 159,
+     "grade": 3,
+     "nom": "Dragoune",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 20,
+      "eau": 0,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Dracoflammes",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         23,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 31166,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vf",
+         0,
+         25,
+         28,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         30,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Dracorage",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         25,
+         28,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         30,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 31168,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31126,
+   "nom": "Ventritofu",
+   "monstre": 8071,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 70,
+     "grade": 1,
+     "nom": "Ventritofu",
+     "pi": 2,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 10,
+      "eau": 20,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Bécompresseur",
+       "cibles": "Ennemi",
+       "zone": "carre",
+       "effets": [
+        [
+         "va",
+         0,
+         17,
+         20,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         21,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 31155,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Ventripoussée",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         20,
+         22,
+         0,
+         0
+        ]
+       ],
+       "sort": 31157,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Ventripoussée",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31157,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 137,
+     "grade": 2,
+     "nom": "Ventritofu",
+     "pi": 2,
+     "pa": 4,
+     "pm": 6,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 10,
+      "eau": 20,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Bécompresseur",
+       "cibles": "Ennemi",
+       "zone": "carre",
+       "effets": [
+        [
+         "va",
+         0,
+         22,
+         25,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 31155,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Ventripoussée",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         21,
+         23,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         25,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 31157,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Ventripoussée",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31157,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31149,
+   "nom": "Craquolosse",
+   "monstre": 8078,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 180,
+     "grade": 1,
+     "nom": "Craquolosse",
+     "pi": 3,
+     "pa": 4,
+     "pm": 2,
+     "res": {
+      "neutre": 40,
+      "terre": 40,
+      "feu": 30,
+      "eau": 30,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Fronde Rocheuse",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         22,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 31174,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Cœur de Pierre",
+       "cibles": "Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "dt",
+         0,
+         26,
+         29,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         31,
+         35,
+         0,
+         0
+        ]
+       ],
+       "sort": 31175,
+       "pa": 2,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 5
+      },
+      {
+       "nom": "Écrasement Colossal",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dt",
+         0,
+         29,
+         32,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         34,
+         38,
+         0,
+         0
+        ]
+       ],
+       "sort": 32198,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31127,
+   "nom": "Bouflourd",
+   "monstre": 8073,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 75,
+     "grade": 1,
+     "nom": "Bouflourd",
+     "pi": 2,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 20,
+      "eau": 20,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Pacage",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "vt",
+         0,
+         19,
+         22,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         23,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31160,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Charge du Bouflourd",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 31161,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 142,
+     "grade": 2,
+     "nom": "Bouflourd",
+     "pi": 2,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 20,
+      "eau": 20,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Pacage",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "vt",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 31160,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Charge du Bouflourd",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         20,
+         22,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         24,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31161,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31150,
+   "nom": "Crocoléreux",
+   "monstre": 8080,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 185,
+     "grade": 1,
+     "nom": "Crocoléreux",
+     "pi": 3,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 30,
+      "terre": 20,
+      "feu": 30,
+      "eau": 40,
+      "air": 40
+     },
+     "attaques": [
+      {
+       "nom": "Crocs Coléreux",
+       "cibles": "Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "de",
+         0,
+         20,
+         22,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         24,
+         26,
+         0,
+         0
+        ]
+       ],
+       "sort": 31180,
+       "pa": 2,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 5
+      },
+      {
+       "nom": "Crocolère",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         26,
+         29,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         30,
+         33,
+         0,
+         0
+        ]
+       ],
+       "sort": 32225,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 10
+      },
+      {
+       "nom": "Trombe Bourbeuse",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         23,
+         26,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         28,
+         31,
+         0,
+         0
+        ]
+       ],
+       "sort": 31182,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31128,
+   "nom": "Crapipaud",
+   "monstre": 8075,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 80,
+     "grade": 1,
+     "nom": "Crapipaud",
+     "pi": 2,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 10,
+      "feu": 20,
+      "eau": 30,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Crapogive",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         22,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapogive",
+       "cibles": "Ennemi - Fin de tour",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         19,
+         21,
+         1,
+         0
+        ],
+        [
+         "de",
+         1,
+         22,
+         25,
+         1,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapogive",
+       "cibles": "Allié / Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapobatie",
+       "cibles": "Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "ve",
+         0,
+         17,
+         19,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         20,
+         23,
+         0,
+         0
+        ]
+       ],
+       "sort": 31165,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 147,
+     "grade": 2,
+     "nom": "Crapipaud",
+     "pi": 2,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 10,
+      "feu": 20,
+      "eau": 30,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Crapogive",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         23,
+         26,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         28,
+         31,
+         0,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapogive",
+       "cibles": "Ennemi - Fin de tour",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         23,
+         26,
+         1,
+         0
+        ],
+        [
+         "de",
+         1,
+         28,
+         31,
+         1,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapogive",
+       "cibles": "Allié / Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31163,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Crapobatie",
+       "cibles": "Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "ve",
+         0,
+         21,
+         24,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         25,
+         29,
+         0,
+         0
+        ]
+       ],
+       "sort": 31165,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31151,
+   "nom": "Sulfénix",
+   "monstre": 8081,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 190,
+     "grade": 1,
+     "nom": "Sulfénix",
+     "pi": 3,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 40,
+      "eau": 20,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Sulfuria",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         23,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 31183,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Renaissance",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "df",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 31184,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "",
+       "cibles": "Lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "Danse Flammes",
+       "cibles": "Allié",
+       "zone": "ligne-cible",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         22,
+         24,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         26,
+         29,
+         0,
+         0
+        ]
+       ],
+       "sort": 32211,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Danse Flammes",
+       "cibles": "Ennemi",
+       "zone": "ligne-cible",
+       "effets": [
+        [
+         "df",
+         0,
+         22,
+         24,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         26,
+         29,
+         0,
+         0
+        ]
+       ],
+       "sort": 32211,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31129,
+   "nom": "Dragonnet",
+   "monstre": 8077,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 85,
+     "grade": 1,
+     "nom": "Dragonnet",
+     "pi": 2,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 30,
+      "eau": 10,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Embrasement",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         17,
+         19,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         20,
+         23,
+         0,
+         0
+        ]
+       ],
+       "sort": 31167,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Souffle du Dragon",
+       "cibles": "Ennemi",
+       "zone": "cone",
+       "effets": [
+        [
+         "vf",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         24,
+         27,
+         0,
+         0
+        ]
+       ],
+       "sort": 31169,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Souffle du Dragon",
+       "cibles": "Allié / Ennemi",
+       "zone": "cone",
+       "effets": [
+        [
+         "pou",
+         0,
+         1,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31169,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 152,
+     "grade": 2,
+     "nom": "Dragonnet",
+     "pi": 2,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 30,
+      "eau": 10,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Embrasement",
+       "cibles": "Tous sauf lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         21,
+         24,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         25,
+         29,
+         0,
+         0
+        ]
+       ],
+       "sort": 31167,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Souffle du Dragon",
+       "cibles": "Ennemi",
+       "zone": "cone",
+       "effets": [
+        [
+         "vf",
+         0,
+         25,
+         28,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         30,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 31169,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Souffle du Dragon",
+       "cibles": "Allié / Ennemi",
+       "zone": "cone",
+       "effets": [
+        [
+         "pou",
+         0,
+         1,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 31169,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 2,
+   "sort": 31148,
+   "nom": "Scarafoudre",
+   "monstre": 8079,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 195,
+     "grade": 1,
+     "nom": "Scarafoudre",
+     "pi": 3,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 20,
+      "eau": 30,
+      "air": 40
+     },
+     "attaques": [
+      {
+       "nom": "Scarapace",
+       "cibles": "Ennemi",
+       "zone": "carre",
+       "effets": [
+        [
+         "da",
+         0,
+         25,
+         28,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         30,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 31178,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      },
+      {
+       "nom": "Scarafusée",
+       "cibles": "Ennemi",
+       "zone": "ligne-cible",
+       "effets": [
+        [
+         "da",
+         0,
+         21,
+         23,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         25,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 31179,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 2,
+       "critique": 5
+      },
+      {
+       "nom": "Scaratonnerre",
+       "cibles": "Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "da",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         28,
+         31,
+         0,
+         0
+        ]
+       ],
+       "sort": 32222,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13328,
+   "nom": "Sac Animé",
+   "monstre": 5830,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 5,
+     "grade": 1,
+     "nom": "Sac Animé",
+     "pi": 1,
+     "pa": 5,
+     "pm": 6,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 72,
+     "grade": 2,
+     "nom": "Sac Animé",
+     "pi": 1,
+     "pa": 5,
+     "pm": 6,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 139,
+     "grade": 3,
+     "nom": "Sac Animé",
+     "pi": 1,
+     "pa": 5,
+     "pm": 6,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13354,
+   "nom": "Musette Animée",
+   "monstre": 5838,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Musette Animée",
+     "pi": 1,
+     "pa": 5,
+     "pm": 6,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Musette Animée",
+     "pi": 1,
+     "pa": 5,
+     "pm": 6,
+     "res": {
+      "neutre": 25,
+      "terre": 25,
+      "feu": 25,
+      "eau": 25,
+      "air": 25
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13344,
+   "nom": "Pelle Animée",
+   "monstre": 5834,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 35,
+     "grade": 1,
+     "nom": "Pelle Animée",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 102,
+     "grade": 2,
+     "nom": "Pelle Animée",
+     "pi": 1,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 169,
+     "grade": 3,
+     "nom": "Pelle Animée",
+     "pi": 1,
+     "pa": 4,
+     "pm": 6,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13361,
+   "nom": "Bêche Animée",
+   "monstre": 5841,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 145,
+     "grade": 1,
+     "nom": "Bêche Animée",
+     "pi": 1,
+     "pa": 4,
+     "pm": 6,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Bêchattaque",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vt",
+         0,
+         31,
+         35,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         36,
+         40,
+         0,
+         0
+        ]
+       ],
+       "sort": 13377,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 29755,
+   "nom": "Pelle de Fortune",
+   "monstre": 5829,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 195,
+     "grade": 1,
+     "nom": "Pelle de Fortune",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Lanceur",
+       "cibles": "Dans 2 tours",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         8,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13347,
+   "nom": "Coffre Animé",
+   "monstre": 5840,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 90,
+     "grade": 1,
+     "nom": "Coffre Animé",
+     "pi": 1,
+     "pa": 5,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Prospection",
+       "cibles": "Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "de",
+         0,
+         8,
+         10,
+         0,
+         0
+        ]
+       ],
+       "sort": 13350,
+       "pa": 4,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 157,
+     "grade": 2,
+     "nom": "Coffre Animé",
+     "pi": 1,
+     "pa": 5,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Prospection",
+       "cibles": "Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "de",
+         0,
+         8,
+         10,
+         0,
+         0
+        ]
+       ],
+       "sort": 13350,
+       "pa": 4,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 3,
+   "sort": 13371,
+   "nom": "Malle Animée",
+   "monstre": 5839,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 200,
+     "grade": 1,
+     "nom": "Malle Animée",
+     "pi": 1,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Malle aux Trésors",
+       "cibles": "Allié",
+       "zone": "cercle",
+       "effets": [
+        [
+         "ppv",
+         0,
+         8,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13381,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 5,
+   "sort": 13258,
+   "nom": "Cadran de Xélor",
+   "monstre": 3960,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Cadran de Xélor",
+     "pi": 0,
+     "pa": 9,
+     "pm": -1,
+     "res": {
+      "neutre": 24,
+      "terre": 24,
+      "feu": 24,
+      "eau": 24,
+      "air": 24
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Cadran de Xélor",
+     "pi": 0,
+     "pa": 12,
+     "pm": -1,
+     "res": {
+      "neutre": 24,
+      "terre": 24,
+      "feu": 24,
+      "eau": 24,
+      "air": 24
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 5,
+   "sort": 13247,
+   "nom": "Synchro",
+   "monstre": 3958,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 90,
+     "grade": 1,
+     "nom": "Synchro",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 12,
+      "terre": 12,
+      "feu": 12,
+      "eau": 12,
+      "air": 12
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 157,
+     "grade": 2,
+     "nom": "Synchro",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 12,
+      "terre": 12,
+      "feu": 12,
+      "eau": 12,
+      "air": 12
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 6,
+   "sort": 12856,
+   "nom": "Griffe Invocatrice",
+   "monstre": 5847,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 60,
+     "grade": 1,
+     "nom": "Chaton Enragé",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Âme Féline",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         26,
+         27,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         30,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 12860,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 30
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 127,
+     "grade": 2,
+     "nom": "Chaton Enragé",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Âme Féline",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         31,
+         33,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         35,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 12860,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 30
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 194,
+     "grade": 3,
+     "nom": "Chaton Enragé",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Âme Féline",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "ve",
+         0,
+         36,
+         39,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         45,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 12860,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 6,
+   "sort": 12869,
+   "nom": "Caresse Invocatrice",
+   "monstre": 5848,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 170,
+     "grade": 1,
+     "nom": "Chaton Affectueux",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Mistigri",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         30,
+         32,
+         0,
+         0
+        ],
+        [
+         "pdvf",
+         1,
+         54,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 12884,
+       "pa": 3,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 7,
+   "sort": 25795,
+   "nom": "Mot d'Amitié",
+   "monstre": 7370,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 5,
+     "grade": 1,
+     "nom": "Lapino",
+     "pi": 1,
+     "pa": 7,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         15,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Terre",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         15,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Feu",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         15,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         15,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         13,
+         15,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         15,
+         18,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Bisou Magique",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 25785,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "vn",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Terre",
+       "zone": "cone",
+       "effets": [
+        [
+         "vt",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Feu",
+       "zone": "cone",
+       "effets": [
+        [
+         "vf",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "cone",
+       "effets": [
+        [
+         "ve",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "va",
+         0,
+         16,
+         18,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         19,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 72,
+     "grade": 2,
+     "nom": "Lapino",
+     "pi": 1,
+     "pa": 7,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         20,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Terre",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         20,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Feu",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         20,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         20,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         20,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Bisou Magique",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 25785,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "vn",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         24,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Terre",
+       "zone": "cone",
+       "effets": [
+        [
+         "vt",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         24,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Feu",
+       "zone": "cone",
+       "effets": [
+        [
+         "vf",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         24,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "cone",
+       "effets": [
+        [
+         "ve",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         24,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "va",
+         0,
+         20,
+         23,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         24,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 139,
+     "grade": 3,
+     "nom": "Lapino",
+     "pi": 1,
+     "pa": 7,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         21,
+         25,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         25,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Terre",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         21,
+         25,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         25,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot de Feu",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         21,
+         25,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         25,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         21,
+         25,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         25,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Lapinopoing",
+       "cibles": "Allié / Ennemi - Lanceur sous Mot d'Air",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         21,
+         25,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         25,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 25790,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 15
+      },
+      {
+       "nom": "Bisou Magique",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 25785,
+       "pa": 3,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sans Mot de Terre - Lanceur sans Mot de Feu - Lanceur sans Mot d'Eau - Lanceur sans Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "vn",
+         0,
+         26,
+         30,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         31,
+         36,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Terre",
+       "zone": "cone",
+       "effets": [
+        [
+         "vt",
+         0,
+         26,
+         30,
+         0,
+         0
+        ],
+        [
+         "vt",
+         1,
+         31,
+         36,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot de Feu",
+       "zone": "cone",
+       "effets": [
+        [
+         "vf",
+         0,
+         26,
+         30,
+         0,
+         0
+        ],
+        [
+         "vf",
+         1,
+         31,
+         36,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Eau",
+       "zone": "cone",
+       "effets": [
+        [
+         "ve",
+         0,
+         26,
+         30,
+         0,
+         0
+        ],
+        [
+         "ve",
+         1,
+         31,
+         36,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Souffle Alchimique",
+       "cibles": "Ennemi - Lanceur sous Mot d'Air",
+       "zone": "cone",
+       "effets": [
+        [
+         "va",
+         0,
+         26,
+         30,
+         0,
+         0
+        ],
+        [
+         "va",
+         1,
+         31,
+         36,
+         0,
+         0
+        ]
+       ],
+       "sort": 25788,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 7,
+   "sort": 25802,
+   "nom": "Mot Alchimique",
+   "monstre": 7371,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Fiole Alchimique",
+     "pi": 1,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvt",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdve",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdva",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dt",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "df",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "da",
+         0,
+         10,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Fiole Alchimique",
+     "pi": 1,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvt",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdve",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "pdva",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dt",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "df",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "da",
+         0,
+         20,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 8,
+   "sort": 13148,
+   "nom": "Conquête",
+   "monstre": 5130,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Stratège Iop",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Stratège Iop",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 9,
+   "sort": 32467,
+   "nom": "Balise Tactique",
+   "monstre": 8347,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Balise Tactique",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Balise Tactique",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 9,
+   "sort": 32474,
+   "nom": "Balise de Survie",
+   "monstre": 8348,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 60,
+     "grade": 1,
+     "nom": "Balise de Survie",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Tous sauf lanceur",
+       "zone": "cercle",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 127,
+     "grade": 2,
+     "nom": "Balise de Survie",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Tous sauf lanceur",
+       "zone": "cercle",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 194,
+     "grade": 3,
+     "nom": "Balise de Survie",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Tous sauf lanceur",
+       "zone": "cercle",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13519,
+   "nom": "Arbre",
+   "monstre": 5894,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 5,
+     "grade": 1,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 72,
+     "grade": 2,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 139,
+     "grade": 3,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13560,
+   "nom": "Arbre Feuillu",
+   "monstre": 5894,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13515,
+   "nom": "La Folle Transmutée",
+   "monstre": 5896,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 120,
+     "grade": 1,
+     "nom": "La Folle",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": -5,
+      "feu": 20,
+      "eau": 15,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Agacement",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         12,
+         0,
+         2,
+         0
+        ]
+       ],
+       "sort": 14380,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 0
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 144,
+     "grade": 2,
+     "nom": "La Folle",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": -5,
+      "feu": 20,
+      "eau": 15,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Agacement",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         16,
+         0,
+         2,
+         0
+        ]
+       ],
+       "sort": 14380,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13565,
+   "nom": "Rempotage",
+   "monstre": 5894,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 135,
+     "grade": 1,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Invocation Sadida",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         25,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13526,
+   "nom": "La Bloqueuse Transmutée",
+   "monstre": 5895,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 140,
+     "grade": 1,
+     "nom": "La Bloqueuse",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 30,
+      "eau": 30,
+      "air": 30
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13522,
+   "nom": "La Sacrifiée Transmutée",
+   "monstre": 5898,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 160,
+     "grade": 1,
+     "nom": "La Sacrifiée",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 20,
+      "feu": -5,
+      "eau": 30,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Explosion Ouatée",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "de",
+         0,
+         19,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 14385,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13534,
+   "nom": "Arbre de Vie",
+   "monstre": 5894,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 65,
+     "grade": 1,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 131,
+     "grade": 2,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    },
+    {
+     "rang": 3,
+     "niveau": 198,
+     "grade": 3,
+     "nom": "Arbre",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13523,
+   "nom": "La Gonflable Transmutée",
+   "monstre": 5897,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 180,
+     "grade": 1,
+     "nom": "La Gonflable",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 30,
+      "terre": 15,
+      "feu": 30,
+      "eau": -5,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Souffle Printanier",
+       "cibles": "Allié",
+       "zone": "cercle",
+       "effets": [
+        [
+         "pdvf",
+         0,
+         30,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 14383,
+       "pa": 2,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Brise Automnale",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 29624,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Brise Automnale",
+       "cibles": "Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "df",
+         0,
+         30,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 29624,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 10,
+   "sort": 13520,
+   "nom": "La Surpuissante Transmutée",
+   "monstre": 5899,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 200,
+     "grade": 1,
+     "nom": "La Surpuissante",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": 30,
+      "feu": 15,
+      "eau": 20,
+      "air": -5
+     },
+     "attaques": [
+      {
+       "nom": "Choc Hivernal",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         18,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 14387,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 11,
+   "sort": 12744,
+   "nom": "Épée Vorace",
+   "monstre": 434,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 15,
+     "grade": 1,
+     "nom": "Épée Vorace",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Tourbillon Sanglant",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "vn",
+         0,
+         8,
+         10,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         11,
+         13,
+         0,
+         0
+        ]
+       ],
+       "sort": 29795,
+       "pa": 4,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Soif de Sang",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         8,
+         10,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         11,
+         13,
+         0,
+         0
+        ]
+       ],
+       "sort": 12705,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 82,
+     "grade": 2,
+     "nom": "Épée Vorace",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Tourbillon Sanglant",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "vn",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         14,
+         16,
+         0,
+         0
+        ]
+       ],
+       "sort": 29795,
+       "pa": 4,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Soif de Sang",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         14,
+         16,
+         0,
+         0
+        ]
+       ],
+       "sort": 12705,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 149,
+     "grade": 3,
+     "nom": "Épée Vorace",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Tourbillon Sanglant",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "vn",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 29795,
+       "pa": 4,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 20
+      },
+      {
+       "nom": "Soif de Sang",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 12705,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 11,
+   "sort": 12765,
+   "nom": "Épée Dansante",
+   "monstre": 5192,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 125,
+     "grade": 1,
+     "nom": "Épée Dansante",
+     "pi": 1,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Danse-lames",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         11,
+         13,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         14,
+         16,
+         0,
+         0
+        ]
+       ],
+       "sort": 8153,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      },
+      {
+       "nom": "Danse Mortelle",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         6,
+         8,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         9,
+         11,
+         0,
+         0
+        ]
+       ],
+       "sort": 29794,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 192,
+     "grade": 2,
+     "nom": "Épée Dansante",
+     "pi": 1,
+     "pa": 4,
+     "pm": 5,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "Danse-lames",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 8153,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      },
+      {
+       "nom": "Danse Mortelle",
+       "cibles": "Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         9,
+         11,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         12,
+         14,
+         0,
+         0
+        ]
+       ],
+       "sort": 29794,
+       "pa": 2,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 12,
+   "sort": 12826,
+   "nom": "Ébriété",
+   "monstre": 5844,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 30,
+     "grade": 1,
+     "nom": "Tonneau de l'Éméché",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 20,
+      "terre": 30,
+      "feu": -10,
+      "eau": 20,
+      "air": -10
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dme",
+         0,
+         4,
+         6,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 97,
+     "grade": 2,
+     "nom": "Tonneau de l'Éméché",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dme",
+         0,
+         6,
+         8,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 164,
+     "grade": 3,
+     "nom": "Tonneau de l'Éméché",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Ennemi",
+       "zone": "cercle",
+       "effets": [
+        [
+         "dme",
+         0,
+         8,
+         10,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 12,
+   "sort": 12777,
+   "nom": "Ivresse",
+   "monstre": 5843,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 140,
+     "grade": 1,
+     "nom": "Tonneau de l'Ivrogne",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 12,
+      "terre": -18,
+      "feu": 12,
+      "eau": -18,
+      "air": 22
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Lanceur",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ]
+       ]
+      },
+      {
+       "nom": "",
+       "cibles": "Tous sauf lanceur",
+       "zone": "cercle",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 12,
+   "sort": 12785,
+   "nom": "Bambouseraie",
+   "monstre": 7355,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 165,
+     "grade": 1,
+     "nom": "Petit Bambou",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 12,
+   "sort": 12799,
+   "nom": "Lien Spiritueux",
+   "monstre": 5845,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 85,
+     "grade": 1,
+     "nom": "Pandawasta",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 152,
+     "grade": 2,
+     "nom": "Pandawasta",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 35,
+      "terre": 35,
+      "feu": 35,
+      "eau": 35,
+      "air": 35
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 12,
+   "sort": 12824,
+   "nom": "Bambou",
+   "monstre": 5846,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 195,
+     "grade": 1,
+     "nom": "Bambou",
+     "pi": 1,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 14,
+   "sort": 13424,
+   "nom": "Grimace",
+   "monstre": 5152,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 85,
+     "grade": 1,
+     "nom": "Masque Grimaçant",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 152,
+     "grade": 2,
+     "nom": "Masque Grimaçant",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix-vide",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13829,
+   "nom": "Harponneuse",
+   "monstre": 5836,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 5,
+     "grade": 1,
+     "nom": "Harponneuse",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         11,
+         14,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         14,
+         16,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         15,
+         18,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         18,
+         21,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         19,
+         23,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         23,
+         28,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 72,
+     "grade": 2,
+     "nom": "Harponneuse",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         22,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 139,
+     "grade": 3,
+     "nom": "Harponneuse",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         21,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         23,
+         27,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         28,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Espadon",
+       "cibles": "Ennemi - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         30,
+         34,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         36,
+         41,
+         0,
+         0
+        ]
+       ],
+       "sort": 29112,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13859,
+   "nom": "Chalutier",
+   "monstre": 5832,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 115,
+     "grade": 1,
+     "nom": "Chalutier",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 182,
+     "grade": 2,
+     "nom": "Chalutier",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13830,
+   "nom": "Gardienne",
+   "monstre": 5835,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 15,
+     "grade": 1,
+     "nom": "Gardienne",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         4,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         5,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         6,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         7,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         8,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         9,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 82,
+     "grade": 2,
+     "nom": "Gardienne",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         5,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         7,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         7,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         9,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         9,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         11,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 149,
+     "grade": 3,
+     "nom": "Gardienne",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         6,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         8,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         8,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         10,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Maintenance",
+       "cibles": "Allié - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         10,
+         0,
+         0,
+         0
+        ],
+        [
+         "ppv",
+         1,
+         12,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13847,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13864,
+   "nom": "Foreuse",
+   "monstre": 5833,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 125,
+     "grade": 1,
+     "nom": "Foreuse",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         14,
+         16,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         17,
+         19,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         19,
+         21,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         22,
+         25,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         24,
+         27,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         29,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 192,
+     "grade": 2,
+     "nom": "Foreuse",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sans Évolution II - Lanceur sans Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         21,
+         24,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sous Évolution II",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         23,
+         27,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         28,
+         32,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Forage",
+       "cibles": "Ennemi - Lanceur sous Évolution III",
+       "zone": "case",
+       "effets": [
+        [
+         "vme",
+         0,
+         30,
+         34,
+         0,
+         0
+        ],
+        [
+         "vme",
+         1,
+         36,
+         41,
+         0,
+         0
+        ]
+       ],
+       "sort": 29117,
+       "pa": 2,
+       "lancers_par_tour": 3,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13831,
+   "nom": "Tactirelle",
+   "monstre": 5837,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 35,
+     "grade": 1,
+     "nom": "Tactirelle",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         4,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 102,
+     "grade": 2,
+     "nom": "Tactirelle",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         4,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 169,
+     "grade": 3,
+     "nom": "Tactirelle",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         4,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      },
+      {
+       "nom": "Barycentre",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "pou",
+         0,
+         6,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 13844,
+       "pa": 3,
+       "lancers_par_tour": 1,
+       "lancers_par_cible": 0,
+       "critique": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 15,
+   "sort": 13869,
+   "nom": "Bathyscaphe",
+   "monstre": 5831,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 145,
+     "grade": 1,
+     "nom": "Bathyscaphe",
+     "pi": 0,
+     "pa": 6,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 16,
+   "sort": 14612,
+   "nom": "Vestige",
+   "monstre": 5109,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 190,
+     "grade": 1,
+     "nom": "Totem Eliotrope",
+     "pi": 0,
+     "pa": 0,
+     "pm": 0,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "ppv",
+         0,
+         15,
+         0,
+         63,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 17,
+   "sort": 13720,
+   "nom": "Gardien Élémentaire",
+   "monstre": 5129,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 180,
+     "grade": 1,
+     "nom": "Gardien Élémentaire",
+     "pi": 1,
+     "pa": 9,
+     "pm": 5,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Ennemi - Cible sans Feu - Cible sans Eau - Cible sans Terre - Cible sans Air",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Allié",
+       "zone": "case",
+       "effets": [
+        [
+         "dn",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "dn",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Ennemi - Cible sous Terre",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Ennemi - Cible sous Feu",
+       "zone": "case",
+       "effets": [
+        [
+         "df",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "df",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Ennemi - Cible sous Eau",
+       "zone": "case",
+       "effets": [
+        [
+         "de",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "de",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      },
+      {
+       "nom": "Rayon Quadramental",
+       "cibles": "Ennemi - Cible sous Air",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         24,
+         28,
+         0,
+         0
+        ],
+        [
+         "da",
+         1,
+         29,
+         34,
+         0,
+         0
+        ]
+       ],
+       "sort": 13734,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 18,
+   "sort": 13774,
+   "nom": "Lance-roquet",
+   "monstre": 5865,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 15,
+     "grade": 1,
+     "nom": "Roquet",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Accrocs",
+       "cibles": "Joueur ennemi + Compagnon ennemi / Monstre ennemi / Joueur allié + Compagnon allié / Monstre allié",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         12,
+         14,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         15,
+         17,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      },
+      {
+       "nom": "Accrocs",
+       "cibles": "Invocation ennemie / Invocation alliée",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         31,
+         33,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         41,
+         43,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 82,
+     "grade": 2,
+     "nom": "Roquet",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Accrocs",
+       "cibles": "Joueur ennemi + Compagnon ennemi / Monstre ennemi / Joueur allié + Compagnon allié / Monstre allié",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         18,
+         20,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         21,
+         23,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      },
+      {
+       "nom": "Accrocs",
+       "cibles": "Invocation ennemie / Invocation alliée",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         51,
+         53,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         61,
+         63,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 149,
+     "grade": 3,
+     "nom": "Roquet",
+     "pi": 1,
+     "pa": 6,
+     "pm": 4,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Accrocs",
+       "cibles": "Joueur ennemi + Compagnon ennemi / Monstre ennemi / Joueur allié + Compagnon allié / Monstre allié",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         24,
+         26,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         27,
+         29,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      },
+      {
+       "nom": "Accrocs",
+       "cibles": "Invocation ennemie / Invocation alliée",
+       "zone": "case",
+       "effets": [
+        [
+         "vn",
+         0,
+         71,
+         73,
+         0,
+         0
+        ],
+        [
+         "vn",
+         1,
+         81,
+         83,
+         0,
+         0
+        ]
+       ],
+       "sort": 13752,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 367,
+   "nom": "Cawotte Savouweuse",
+   "monstre": 7220,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 20,
+     "grade": 1,
+     "nom": "Cawotte Savouweuse",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "ppv",
+         0,
+         2,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 87,
+     "grade": 2,
+     "nom": "Cawotte Savouweuse",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "ppv",
+         0,
+         3,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 154,
+     "grade": 3,
+     "nom": "Cawotte Savouweuse",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": [
+      {
+       "nom": "",
+       "cibles": "Allié / Ennemi",
+       "zone": "croix",
+       "effets": [
+        [
+         "ppv",
+         0,
+         4,
+         0,
+         0,
+         0
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 370,
+   "nom": "Invocation de l'Arakne",
+   "monstre": 246,
+   "autre": {
+    "monstre": 2630,
+    "chance": 20
+   },
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 1,
+     "grade": 1,
+     "nom": "Arakne",
+     "pi": 1,
+     "pa": 5,
+     "pm": 2,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Frapperie",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 32502,
+       "pa": 5,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 66,
+     "grade": 2,
+     "nom": "Arakne",
+     "pi": 1,
+     "pa": 5,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Frapperie",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 32502,
+       "pa": 5,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 132,
+     "grade": 3,
+     "nom": "Arakne",
+     "pi": 1,
+     "pa": 5,
+     "pm": 3,
+     "res": {
+      "neutre": 10,
+      "terre": 10,
+      "feu": 10,
+      "eau": 10,
+      "air": 10
+     },
+     "attaques": [
+      {
+       "nom": "Frapperie",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         20,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         26,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 32502,
+       "pa": 5,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 373,
+   "nom": "Invocation de Chaferfu",
+   "monstre": 262,
+   "autre": {
+    "monstre": 1108,
+    "chance": 20
+   },
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 20,
+     "grade": 1,
+     "nom": "Chaferfu",
+     "pi": 1,
+     "pa": 5,
+     "pm": 3,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Coup du Chafer",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         23,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         35,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 32500,
+       "pa": 4,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 5
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 87,
+     "grade": 2,
+     "nom": "Chaferfu",
+     "pi": 1,
+     "pa": 5,
+     "pm": 3,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Coup du Chafer",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         23,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         35,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 32500,
+       "pa": 4,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 5
+      }
+     ]
+    },
+    {
+     "rang": 3,
+     "niveau": 154,
+     "grade": 3,
+     "nom": "Chaferfu",
+     "pi": 1,
+     "pa": 5,
+     "pm": 3,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Coup du Chafer",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         23,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         35,
+         0,
+         0,
+         0
+        ]
+       ],
+       "sort": 32500,
+       "pa": 4,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 0,
+       "critique": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 24022,
+   "nom": "Cawotte Chawnue",
+   "monstre": 7221,
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 87,
+     "grade": 1,
+     "nom": "Cawotte Chawnue",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    },
+    {
+     "rang": 2,
+     "niveau": 154,
+     "grade": 2,
+     "nom": "Cawotte Chawnue",
+     "pi": 0,
+     "pa": 0,
+     "pm": -1,
+     "res": {
+      "neutre": 0,
+      "terre": 0,
+      "feu": 0,
+      "eau": 0,
+      "air": 0
+     },
+     "attaques": []
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 24027,
+   "nom": "Invocation de l'Arakne Majeure",
+   "monstre": 2630,
+   "autre": {
+    "monstre": 246,
+    "chance": 20
+   },
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 66,
+     "grade": 2,
+     "nom": "Arakne Majeure",
+     "pi": 1,
+     "pa": 4,
+     "pm": 3,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Coude boule",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         11,
+         15,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         16,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 32499,
+       "pa": 4,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 132,
+     "grade": 3,
+     "nom": "Arakne Majeure",
+     "pi": 1,
+     "pa": 4,
+     "pm": 4,
+     "res": {
+      "neutre": 15,
+      "terre": 15,
+      "feu": 15,
+      "eau": 15,
+      "air": 15
+     },
+     "attaques": [
+      {
+       "nom": "Coude boule",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         11,
+         15,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         16,
+         20,
+         0,
+         0
+        ]
+       ],
+       "sort": 32499,
+       "pa": 4,
+       "lancers_par_tour": 2,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "classe": 0,
+   "sort": 24028,
+   "nom": "Invocation de Chaferfu Lancier",
+   "monstre": 1108,
+   "autre": {
+    "monstre": 262,
+    "chance": 20
+   },
+   "rangs": [
+    {
+     "rang": 1,
+     "niveau": 87,
+     "grade": 2,
+     "nom": "Chaferfu Lancier",
+     "pi": 1,
+     "pa": 10,
+     "pm": 3,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Embrochée",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         25,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         21,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 32501,
+       "pa": 5,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 154,
+     "grade": 3,
+     "nom": "Chaferfu Lancier",
+     "pi": 1,
+     "pa": 10,
+     "pm": 3,
+     "res": {
+      "neutre": 20,
+      "terre": 20,
+      "feu": 20,
+      "eau": 20,
+      "air": 20
+     },
+     "attaques": [
+      {
+       "nom": "Embrochée",
+       "cibles": "Allié / Ennemi",
+       "zone": "case",
+       "effets": [
+        [
+         "dt",
+         0,
+         16,
+         25,
+         0,
+         0
+        ],
+        [
+         "dt",
+         1,
+         21,
+         30,
+         0,
+         0
+        ]
+       ],
+       "sort": 32501,
+       "pa": 5,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 15
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

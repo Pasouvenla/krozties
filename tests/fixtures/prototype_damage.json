@@ -1,0 +1,310 @@
+{
+  "multi": {
+    "aiguille_line_crit_range": [
+      479,
+      513
+    ],
+    "glas_by_stacks": {
+      "0": 1604,
+      "1": 1864,
+      "2": 2124,
+      "3": 2383,
+      "4": 2644,
+      "5": 2904,
+      "6": 3164
+    },
+    "profile": {
+      "elements": {
+        "Air": {
+          "characteristic": 680,
+          "flat_damage": 124
+        },
+        "Earth": {
+          "characteristic": 690,
+          "flat_damage": 138
+        },
+        "Fire": {
+          "characteristic": 840,
+          "flat_damage": 155
+        },
+        "Water": {
+          "characteristic": 405,
+          "flat_damage": 108
+        }
+      },
+      "flat_crit_damage": 151,
+      "multiplier_percent": [
+        110,
+        105
+      ],
+      "power": 185
+    },
+    "sablier_delayed_crit_range": [
+      717,
+      742
+    ],
+    "spells": {
+      "Aiguille": {
+        "ap": 2,
+        "base_crit_range": [
+          13,
+          16
+        ],
+        "crit_range": [
+          479,
+          513
+        ],
+        "element": "Earth"
+      },
+      "Engrenage": {
+        "ap": 3,
+        "base_crit_range": [
+          26,
+          29
+        ],
+        "crit_range": [
+          626,
+          659
+        ],
+        "element": "Earth"
+      },
+      "Horloge": {
+        "ap": 4,
+        "base_crit_range": [
+          28,
+          30
+        ],
+        "crit_range": [
+          649,
+          671
+        ],
+        "crit_range_horloge_up": [
+          919,
+          941
+        ],
+        "element": "Earth"
+      },
+      "Petrification": {
+        "ap": 4,
+        "base_crit_range": [
+          32,
+          36
+        ],
+        "crit_range": [
+          553,
+          585
+        ],
+        "element": "Water"
+      },
+      "Poussiere": {
+        "ap": 4,
+        "base_crit_range": [
+          35,
+          38
+        ],
+        "crit_range": [
+          807,
+          846
+        ],
+        "element": "Fire"
+      },
+      "Ralentissement": {
+        "ap": 2,
+        "base_crit_range": [
+          18,
+          20
+        ],
+        "crit_range": [
+          442,
+          458
+        ],
+        "element": "Water"
+      },
+      "Refraction": {
+        "ap": 2,
+        "base_crit_range": [
+          19,
+          22
+        ],
+        "crit_range": [
+          599,
+          638
+        ],
+        "element": "Fire"
+      },
+      "Sablier": {
+        "ap": 2,
+        "base_crit_range": [
+          13,
+          15
+        ],
+        "crit_range": [
+          522,
+          547
+        ],
+        "element": "Fire"
+      },
+      "Souvenir": {
+        "ap": 2,
+        "base_crit_range": [
+          13,
+          15
+        ],
+        "crit_range": [
+          462,
+          483
+        ],
+        "element": "Air"
+      }
+    }
+  },
+  "water": {
+    "glas_by_stacks_even": {
+      "0": 1384,
+      "1": 1576,
+      "2": 1771,
+      "3": 1964,
+      "4": 2156,
+      "5": 2350,
+      "6": 2544
+    },
+    "glas_by_stacks_odd": {
+      "0": 1661,
+      "1": 1893,
+      "2": 2125,
+      "3": 2357,
+      "4": 2588,
+      "5": 2821,
+      "6": 3053
+    },
+    "profile": {
+      "elements": {
+        "Air": {
+          "characteristic": 320,
+          "flat_damage": 74
+        },
+        "Earth": {
+          "characteristic": 260,
+          "flat_damage": 65
+        },
+        "Fire": {
+          "characteristic": 250,
+          "flat_damage": 69
+        },
+        "Water": {
+          "characteristic": 1118,
+          "flat_damage": 131
+        }
+      },
+      "flat_crit_damage": 167,
+      "multiplier_percent_even": [
+        110,
+        105
+      ],
+      "multiplier_percent_odd": [
+        120,
+        110,
+        105
+      ],
+      "power": 110
+    },
+    "spells": {
+      "Clepsydre": {
+        "ap": 4,
+        "base_crit_range": [
+          40,
+          44
+        ],
+        "crit_range_even": [
+          957,
+          1018
+        ],
+        "crit_range_odd": [
+          1148,
+          1222
+        ],
+        "element": "Water"
+      },
+      "Compte-goutte": {
+        "ap": 3,
+        "base_crit_range": [
+          22,
+          25
+        ],
+        "crit_range_even": [
+          681,
+          727
+        ],
+        "crit_range_odd": [
+          817,
+          873
+        ],
+        "element": "Water"
+      },
+      "Gelure": {
+        "ap": 2,
+        "base_crit_range": [
+          13,
+          15
+        ],
+        "crit_range_even": [
+          542,
+          574
+        ],
+        "crit_range_odd": [
+          651,
+          688
+        ],
+        "element": "Water"
+      },
+      "Permutation": {
+        "ap": 4,
+        "base_crit_range": [
+          25,
+          29
+        ],
+        "crit_range_even": [
+          727,
+          788
+        ],
+        "crit_range_odd": [
+          873,
+          946
+        ],
+        "element": "Water"
+      },
+      "Petrification": {
+        "ap": 4,
+        "base_crit_range": [
+          32,
+          36
+        ],
+        "crit_range_even": [
+          833,
+          896
+        ],
+        "crit_range_odd": [
+          1000,
+          1075
+        ],
+        "element": "Water"
+      },
+      "Ralentissement": {
+        "ap": 2,
+        "base_crit_range": [
+          18,
+          20
+        ],
+        "crit_range_even": [
+          620,
+          650
+        ],
+        "crit_range_odd": [
+          744,
+          780
+        ],
+        "element": "Water"
+      }
+    }
+  }
+}
