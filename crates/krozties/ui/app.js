@@ -127,3 +127,9 @@ $('hote').textContent = hote === 'bureau' ? '' : 'Navigateur';
 
 majIdentite();
 afficher('equipement');
+
+// Une nouvelle version : seule l'application de bureau la cherche, et une
+// vérification qui échoue ne gêne rien.
+if (hote === 'bureau') {
+  import('./commun/mise-a-jour.js').then((m) => m.verifier()).catch(() => {});
+}

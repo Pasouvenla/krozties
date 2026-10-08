@@ -11,6 +11,11 @@ Données du jeu : version 3.7.
 
 En développement : aucune version n'est encore publiée.
 
+## Mises à jour
+
+L'application de bureau demande à GitHub, au plus une fois par jour, si une
+nouvelle version est publiée, et l'annonce en bas à droite de la fenêtre.
+
 ## Installation
 
 Les instructions par système (macOS, Windows, Linux), avec WinGet et Homebrew,

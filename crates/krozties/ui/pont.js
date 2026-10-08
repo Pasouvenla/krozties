@@ -26,17 +26,19 @@ const ROUTES = {
   /// Bureau seulement : elle lit un équipement par une vue invisible sur la page de
   /// DofusBook, seule origine que leur API accepte. Le serveur du CLI la refuse
   /// clairement.
-  importer: { commande: 'importer_equipement', bureau_seulement: true },
+  importer: { commande: 'importer_equipement', bureau_seulement: "cette lecture n'est possible que dans "
+    + "l'application de bureau : un navigateur ne peut pas interroger DofusBook depuis une autre origine." },
+  /// Bureau seulement : la version installée, et la page des versions ouverte
+  /// dans le navigateur du système.
+  version: { commande: 'version_de_l_application', bureau_seulement: "seule l'application de bureau a une version installée." },
+  versions: { commande: 'ouvrir_les_versions', bureau_seulement: "seule l'application de bureau ouvre la page des versions." },
 };
 
 export async function appeler(nom, charge) {
   const route = ROUTES[nom];
   if (!route) throw new Error(`appel inconnu : ${nom}`);
 
-  if (route.bureau_seulement && !DANS_TAURI) {
-    throw new Error("cette lecture n'est possible que dans l'application de bureau : "
-      + "un navigateur ne peut pas interroger DofusBook depuis une autre origine.");
-  }
+  if (route.bureau_seulement && !DANS_TAURI) throw new Error(route.bureau_seulement);
 
   if (DANS_TAURI) {
     // Le moteur rend du JSON déjà sérialisé, le même des deux côtés. Sans nom

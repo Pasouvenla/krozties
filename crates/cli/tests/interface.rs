@@ -156,6 +156,12 @@ fn chaque_outil_s_affiche_sans_erreur() {
     let r: serde_json::Value = serde_json::from_str(&sans_entites(&document[debut..fin])).unwrap();
 
     assert_eq!(r["erreurs"], serde_json::json!([]), "erreurs JavaScript : {r}");
+    assert_eq!(r["majComparee"], serde_json::json!([true, false, true, false]), "{r}");
+    assert_eq!(
+        r["majTexte"],
+        "Krozties 0.2.0 est disponible Vous utilisez la version 0.1.0. Télécharger Plus tard",
+        "{r}"
+    );
     for (outil, titre) in [
         ("equipement", "Équipement"),
         ("rotation", "Rotation"),

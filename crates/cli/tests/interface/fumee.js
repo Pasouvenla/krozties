@@ -29,6 +29,14 @@ try {
   const app = await import('/app.js');
   const { appeler } = await import('/pont.js');
 
+  // La mini fenêtre de mise à jour : la comparaison des numéros, puis son texte.
+  const maj = await import('/commun/mise-a-jour.js');
+  resultat.majComparee = [['0.10.0', '0.9.9'], ['0.1.0', '0.1.0'], ['1.0', '0.12.3'], ['0.1.0', '0.2.0']]
+    .map(([a, b]) => maj.plusRecente(a, b));
+  const fenetre = maj.afficher('0.2.0', '0.1.0');
+  resultat.majTexte = fenetre.innerText.replace(/\s+/g, ' ').trim();
+  fenetre.remove();
+
   // Un Sram de niveau 200, comme les tests du moteur : la Rotation exige un
   // équipement pour s'ouvrir.
   const build = {

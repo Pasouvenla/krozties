@@ -104,6 +104,37 @@ fn ligne_de_vue(requete: cartes::RequeteVue) -> Sortie {
     cartes::vue_json(&requete)
 }
 
+/// La page des versions publiées. Fixe : la page ne peut rien faire ouvrir
+/// d'autre.
+const PAGE_DES_VERSIONS: &str = "https://github.com/Pasouvenla/krozties/releases/latest";
+
+/// La version de l'application, celle du `Cargo.toml` de l'espace de travail.
+#[tauri::command]
+fn version_de_l_application() -> Sortie {
+    serde_json::to_string(env!("CARGO_PKG_VERSION")).map_err(|e| e.to_string())
+}
+
+/// La page des versions, dans le navigateur du système.
+#[tauri::command]
+fn ouvrir_les_versions() -> Sortie {
+    let ouvreur = if cfg!(target_os = "macos") {
+        "open"
+    } else if cfg!(target_os = "windows") {
+        "explorer"
+    } else {
+        "xdg-open"
+    };
+    let mut enfant = std::process::Command::new(ouvreur)
+        .arg(PAGE_DES_VERSIONS)
+        .spawn()
+        .map_err(|e| format!("impossible d'ouvrir {PAGE_DES_VERSIONS} : {e}"))?;
+    // L'ouvreur est attendu à part, pour ne pas laisser de processus zombie.
+    std::thread::spawn(move || {
+        let _ = enfant.wait();
+    });
+    Ok("null".into())
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -121,7 +152,9 @@ fn main() {
             cartes_de_boss,
             beta_en_cours,
             ligne_de_vue,
-            importer_equipement
+            importer_equipement,
+            version_de_l_application,
+            ouvrir_les_versions
         ])
         .run(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer");
@@ -213,6 +246,15 @@ mod tests {
             .expect("portails"),
         );
         assert_eq!(port["bonus"], 16);
+    }
+
+    /// La version que l'application annonce est celle de son paquet : la mini
+    /// fenêtre de mise à jour compare la dernière version publiée à celle-ci.
+    #[test]
+    fn la_version_est_celle_du_paquet() {
+        assert_eq!(json(&version_de_l_application().expect("version")), env!("CARGO_PKG_VERSION"));
+        let configuration = json(include_str!("../tauri.conf.json"));
+        assert_eq!(configuration["version"], env!("CARGO_PKG_VERSION"), "tauri.conf.json et Cargo.toml");
     }
 
     /// Le manifeste déclare exactement les commandes que le code expose, et le pont
