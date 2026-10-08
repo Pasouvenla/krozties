@@ -23,14 +23,6 @@ fn xelor() -> Ruleset {
     charger("xelor", 5)
 }
 
-/// Un sort qui porte un effet n'est jamais élagué : sa valeur dépend de l'état.
-/// Dès qu'une ressource d'une classe porte `modifies_damage`, elle entre dans
-/// les dépendances de tous ses sorts, et plus aucun n'est inerte : avec un buff
-/// global, l'ordre des lancers cesse d'être indifférent.
-fn eniripsa() -> Ruleset {
-    charger("eniripsa", 7)
-}
-
 fn run(rs: &Ruleset, deck: &[&str], reduce: bool) -> (i64, usize, u64) {
     let build = Build {
         name: "Xélor".into(),

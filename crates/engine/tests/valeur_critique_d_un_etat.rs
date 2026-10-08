@@ -13,7 +13,9 @@ use dofus_engine::*;
 use dofus_ruleset::Ruleset;
 
 /// Un état qui relève le taux de 15 points ET donne un montant différent en
-/// critique. `critique` écrit ou non la seconde valeur.
+/// critique. `critique` écrit ou non la seconde valeur. Le coup part à 70 %,
+/// sous le seuil de 78 : seul l'état le fait passer au-dessus, donc choisir le
+/// montant avant d'avoir ajouté le taux donnerait 250.
 fn banc(critique: bool) -> Ruleset {
     let ligne = if critique {
         "        critical_amount: 300\n"
@@ -52,7 +54,7 @@ resources:
     name: {{ fr: "Coup", en: "Hit" }}
     ap_cost: {{ base: 3 }}
     casts_per_turn: 1
-    crit: {{ base_rate: 80 }}
+    crit: {{ base_rate: 70 }}
     lines:
       - element: water
         critical: [20, 20]

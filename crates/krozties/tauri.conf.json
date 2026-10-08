@@ -35,6 +35,16 @@
     ],
     "macOS": {
       "signingIdentity": "-"
+    },
+    "windows": {
+      "wix": {
+        "language": "fr-FR"
+      },
+      "nsis": {
+        "languages": [
+          "French"
+        ]
+      }
     }
   }
 }
