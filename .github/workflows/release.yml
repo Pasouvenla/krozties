@@ -1,0 +1,89 @@
+name: Release
+
+# Une étiquette v* construit Krozties pour macOS (universel), Windows et Linux,
+# et dépose les paquets dans une version en brouillon, à relire avant de la
+# publier. Lancé à la main, le workflow construit sans rien publier : les
+# paquets restent dans les artefacts du run.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: L'étiquette suit la version de l'application
+        if: github.ref_type == 'tag'
+        run: |
+          app=$(python3 -c "import json; print(json.load(open('crates/krozties/tauri.conf.json'))['version'])")
+          cargo=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          echo "étiquette ${GITHUB_REF_NAME}, application ${app}, Cargo ${cargo}"
+          test "${GITHUB_REF_NAME}" = "v${app}" && test "${app}" = "${cargo}"
+
+  paquets:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target universal-apple-darwin
+          - os: windows-latest
+            args: ''
+          # La plus ancienne glibc encore servie : les paquets Linux tournent
+          # ainsi sur plus de distributions.
+          - os: ubuntu-22.04
+            args: ''
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Bibliothèques système de Tauri
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      # La version de Rust est celle de `rust-toolchain.toml`.
+      - name: Rust
+        run: rustup toolchain install && rustup show active-toolchain
+
+      - name: Les deux architectures du Mac
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+
+      # La CLI de la même version que le crate `tauri`, plutôt que la dernière.
+      - name: CLI Tauri
+        run: npm install -g @tauri-apps/cli@2.11.4
+
+      - id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/krozties
+          tauriScript: tauri
+          args: ${{ matrix.args }}
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Krozties {0}', github.ref_name) || '' }}
+          releaseBody: Paquets pour macOS (Apple Silicon et Intel), Windows et Linux. L'installation est décrite dans le README.
+          releaseDraft: true
+
+      - name: Paquets de l'essai
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: krozties-${{ runner.os }}
+          path: ${{ join(fromJSON(steps.tauri.outputs.artifactPaths), fromJSON('"\n"')) }}
