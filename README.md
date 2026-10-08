@@ -9,7 +9,7 @@ Données du jeu : version 3.7.
 
 ## État
 
-En développement : aucune version n'est encore publiée.
+Version 0.1.0, la première publiée.
 
 ## Mises à jour
 
@@ -18,8 +18,35 @@ nouvelle version est publiée, et l'annonce en bas à droite de la fenêtre.
 
 ## Installation
 
-Les instructions par système (macOS, Windows, Linux), avec WinGet et Homebrew,
-arrivent avec la première version.
+Chaque version dépose ses paquets sur la page des
+[versions](https://github.com/Pasouvenla/krozties/releases/latest).
+
+### macOS (Apple Silicon et Intel)
+
+Avec [Homebrew](https://brew.sh) :
+
+```bash
+brew install --cask pasouvenla/krozties/krozties
+```
+
+Sinon, ouvrir `Krozties_<version>_universal.dmg` et glisser Krozties dans
+Applications.
+
+Krozties n'est pas signé par Apple : au premier lancement, macOS refuse de
+l'ouvrir. Dans Réglages Système, Confidentialité et sécurité, cliquer sur
+« Ouvrir quand même », une seule fois.
+
+### Windows
+
+Lancer `Krozties_<version>_x64-setup.exe`, ou le `.msi`. Krozties n'est pas
+signé : si SmartScreen affiche « Windows a protégé votre ordinateur », cliquer
+sur « Informations complémentaires », puis sur « Exécuter quand même ».
+
+### Linux
+
+- AppImage : `chmod +x Krozties_<version>_amd64.AppImage`, puis la lancer.
+- Debian, Ubuntu : `sudo apt install ./Krozties_<version>_amd64.deb`
+- Fedora : `sudo dnf install ./Krozties-<version>-1.x86_64.rpm`
 
 ## Licence
 
