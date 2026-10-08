@@ -76,9 +76,10 @@ l'ouvrir. Dans Réglages Système, Confidentialité et sécurité, cliquer sur
 
 ### Windows
 
-Lancer `Krozties_<version>_x64-setup.exe`, ou le `.msi`. Krozties n'est pas
-signé : si SmartScreen affiche « Windows a protégé votre ordinateur », cliquer
-sur « Informations complémentaires », puis sur « Exécuter quand même ».
+[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/download/v0.1.0/Krozties_0.1.0_x64-setup.exe)
+(le `.msi` est aussi sur la page des versions), puis le lancer. Krozties n'est
+pas signé : si SmartScreen affiche « Windows a protégé votre ordinateur »,
+cliquer sur « Informations complémentaires », puis sur « Exécuter quand même ».
 
 ### Linux
 
