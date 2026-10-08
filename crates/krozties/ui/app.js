@@ -16,6 +16,7 @@ export const etat = {
   classes: null,    // le catalogue des classes et de leurs sorts
   refusCatalogue: null, // ce que le moteur a répondu s'il a refusé
   outil: 'equipement',
+  replies: { invocations: true }, // les encarts repliés, voir `commun/repli.js`
 };
 
 /// Les outils connus. Chargés à la demande : tant qu'on ne va pas dans le
