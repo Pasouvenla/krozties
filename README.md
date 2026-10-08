@@ -48,10 +48,11 @@ version et le numéro qu'il a vu. L'équipement importé n'est pas conservé.
 
 ## DofusBook
 
-Krozties ne remplace pas DofusBook, il s'appuie dessus. On compose son
-équipement sur DofusBook, et Krozties lit celui que vous lui désignez : il
-ouvre sa page chez DofusBook, à votre demande, comme votre navigateur
-l'afficherait. Rien d'autre n'est lu, rien n'est conservé ni renvoyé ailleurs.
+Krozties ne cherche pas à remplacer DofusBook : c'est toujours là qu'on monte
+son stuff, et Krozties prend le relais pour les rotations. Quand vous lui donnez
+le lien de votre équipement, il ouvre la page, comme vous le feriez dans votre
+navigateur, et regarde ce que porte votre personnage. C'est tout : il ne lit
+rien d'autre, ne garde rien et n'envoie rien ailleurs.
 
 ## Installation
 
