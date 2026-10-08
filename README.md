@@ -48,6 +48,17 @@ votre utilisation. L'application ne contacte le réseau que dans trois cas :
 Sur votre machine, Krozties ne garde que la date de sa dernière vérification de
 version et le numéro qu'il a vu. L'équipement importé n'est pas conservé.
 
+## DofusBook
+
+Krozties ne remplace pas DofusBook, il s'appuie dessus. On compose son
+équipement sur DofusBook, et Krozties lit celui que vous lui désignez : il
+ouvre sa page chez DofusBook, à votre demande, comme votre navigateur
+l'afficherait. Rien d'autre n'est lu, rien n'est conservé ni renvoyé ailleurs.
+
+Les chiffres de sorts de DofusBook nous ont servi de référence pour vérifier
+nos calculs, et les caractéristiques des invocations viennent d'un relevé de
+leur site. Merci à l'équipe de DofusBook pour cet outil extraordinaire.
+
 ## Installation
 
 Chaque version dépose ses paquets sur la page des
