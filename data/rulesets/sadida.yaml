@@ -162,8 +162,6 @@ spells:
       Invoque une Poupée maîtrisable qui peut Infecter et appliquer un poison Air de début de tour.
       
       La Poupée est remplacée par un Arbre 3 tours après son invocation.
-    assumptions:
-      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
     lines: []
     effects: []
 
@@ -258,8 +256,6 @@ spells:
       Elle peut également invoquer une autre Poupée maîtrisable qui peut voler ou donner de la Portée.
       
       La Poupée est remplacée par un Arbre 3 tours après son invocation.
-    assumptions:
-      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
     lines: []
     effects: []
 
@@ -299,7 +295,6 @@ spells:
       La Poupée est remplacée par un Arbre 3 tours après son invocation.
     assumptions:
       - "Effet 1160 : lance aussi « Préparation Poupesque », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
-      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
     lines: []
     effects: []
 
@@ -314,8 +309,6 @@ spells:
       Invoque une Poupée maîtrisable qui peut soigner, occasionner des dommages Feu et repousser.
       
       La Poupée est remplacée par un Arbre 3 tours après son invocation.
-    assumptions:
-      - "Les invocations de ce sort ne sont pas modélisées : ce calculateur résout une rotation à un seul lanceur."
     lines: []
     effects: []
 
