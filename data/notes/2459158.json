@@ -1,0 +1,114 @@
+{
+ "id": "2459158",
+ "forum": "Patch notes",
+ "titre": "Patch Notes 3.7.5 du 08/10/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2459158-patch-notes-3-7-5-08-10-2026",
+ "publie": "2026-10-08T18:47:32+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Visuels / Son"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors des lancers de sorts de classe, les voix masculines et féminines sont inversées."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Certaines têtes ne sont pas affichées sur les personnages."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Classes / Compagnons"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors de l'invocation de certaines entités en combat (piège sram, glyphe huppermage, ...), l'animation d'apparition se joue en boucle."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "En combat, certains sorts mettent du temps à se lancer (Onde Celeste de l'Huppermage, Fourvoiement du Sram ...)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "En mode créature, les icones d'états ne sont parfois pas bien placées."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Performances / Crashs"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Il arrive parfois que le client se ferme lors de l'arrivée sur une carte."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Chat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, le chat se redimensionne tout seul."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Divers"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas (notamment en Autofollow), il arrive que certains personnages se désynchronisent."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Cartes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Remettre l'effet de fondu au changement de carte."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
