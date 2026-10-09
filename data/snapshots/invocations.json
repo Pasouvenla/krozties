@@ -14,7 +14,7 @@
   "Ébriété rang 2 : « Ennemi » sans attaque DofusDB",
   "Ébriété rang 3 : « Ennemi » sans attaque DofusDB",
   "Invocations communes (Arakne, Chaferfu et leurs variantes) : DofusBook montre pour chaque sort le monstre de son second effet d'invocation, celui à 20 %, avec le coût et le critique de l'attaque de l'autre. Reconstruites sur DofusDB le 01/10/2026 : monstre à 80 % (`monstre`) et à 20 % (`autre`), PA, PM, résistances et attaque de chacun.",
-  "La Gonflable Transmutée : Brise Automnale à 1 lancer par tour, le relevé n'en portait aucune limite (0 par tour et par cible), à confirmer en jeu."
+  "Poupées Transmutées du Sadida : le sort les invoque au grade 3 (2 puis 3 pour la Folle), le relevé avait pris le grade 1. Valeurs lues en jeu : Brise Automnale 50 Feu, repousse de 4 cases, relance 2 ; Agacement 20 Air ; Choc Hivernal 23 Terre ; Explosion Ouatée 30 Eau, qui tue la poupée. Agacement au grade 2 : 16, la valeur que le relevé donnait au grade 2."
  ],
  "invocations": [
   {
@@ -5117,44 +5117,6 @@
     {
      "rang": 1,
      "niveau": 120,
-     "grade": 1,
-     "nom": "La Folle",
-     "pi": 1,
-     "pa": 6,
-     "pm": 5,
-     "res": {
-      "neutre": 30,
-      "terre": -5,
-      "feu": 20,
-      "eau": 15,
-      "air": 30
-     },
-     "attaques": [
-      {
-       "nom": "Agacement",
-       "cibles": "Allié / Ennemi - Début de tour",
-       "zone": "case",
-       "effets": [
-        [
-         "da",
-         0,
-         12,
-         0,
-         2,
-         0
-        ]
-       ],
-       "sort": 14380,
-       "pa": 3,
-       "lancers_par_tour": 0,
-       "lancers_par_cible": 1,
-       "critique": 0
-      }
-     ]
-    },
-    {
-     "rang": 2,
-     "niveau": 144,
      "grade": 2,
      "nom": "La Folle",
      "pi": 1,
@@ -5177,6 +5139,44 @@
          "da",
          0,
          16,
+         0,
+         2,
+         0
+        ]
+       ],
+       "sort": 14380,
+       "pa": 3,
+       "lancers_par_tour": 0,
+       "lancers_par_cible": 1,
+       "critique": 0
+      }
+     ]
+    },
+    {
+     "rang": 2,
+     "niveau": 144,
+     "grade": 3,
+     "nom": "La Folle",
+     "pi": 1,
+     "pa": 6,
+     "pm": 5,
+     "res": {
+      "neutre": 30,
+      "terre": -5,
+      "feu": 20,
+      "eau": 15,
+      "air": 30
+     },
+     "attaques": [
+      {
+       "nom": "Agacement",
+       "cibles": "Allié / Ennemi - Début de tour",
+       "zone": "case",
+       "effets": [
+        [
+         "da",
+         0,
+         20,
          0,
          2,
          0
@@ -5267,7 +5267,7 @@
     {
      "rang": 1,
      "niveau": 160,
-     "grade": 1,
+     "grade": 3,
      "nom": "La Sacrifiée",
      "pi": 1,
      "pa": 6,
@@ -5288,7 +5288,7 @@
         [
          "de",
          0,
-         19,
+         30,
          0,
          0,
          0
@@ -5298,7 +5298,8 @@
        "pa": 2,
        "lancers_par_tour": 1,
        "lancers_par_cible": 0,
-       "critique": 0
+       "critique": 0,
+       "sacrifie": true
       }
      ]
     }
@@ -5372,7 +5373,7 @@
     {
      "rang": 1,
      "niveau": 180,
-     "grade": 1,
+     "grade": 3,
      "nom": "La Gonflable",
      "pi": 1,
      "pa": 6,
@@ -5413,7 +5414,7 @@
         [
          "pou",
          0,
-         2,
+         4,
          0,
          0,
          0
@@ -5421,9 +5422,10 @@
        ],
        "sort": 29624,
        "pa": 2,
-       "lancers_par_tour": 1,
+       "lancers_par_tour": 0,
        "lancers_par_cible": 0,
-       "critique": 0
+       "critique": 0,
+       "relance": 2
       },
       {
        "nom": "Brise Automnale",
@@ -5433,7 +5435,7 @@
         [
          "df",
          0,
-         30,
+         50,
          0,
          0,
          0
@@ -5441,9 +5443,10 @@
        ],
        "sort": 29624,
        "pa": 2,
-       "lancers_par_tour": 1,
+       "lancers_par_tour": 0,
        "lancers_par_cible": 0,
-       "critique": 0
+       "critique": 0,
+       "relance": 2
       }
      ]
     }
@@ -5458,7 +5461,7 @@
     {
      "rang": 1,
      "niveau": 200,
-     "grade": 1,
+     "grade": 3,
      "nom": "La Surpuissante",
      "pi": 1,
      "pa": 6,
@@ -5479,7 +5482,7 @@
         [
          "dt",
          0,
-         18,
+         23,
          0,
          0,
          0

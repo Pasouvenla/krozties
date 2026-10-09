@@ -408,7 +408,8 @@ pub struct Outcome {
     pub placement_ignore: Vec<String>,
     /// La rotation qui se répète, indépendante de l'horizon demandé.
     pub steady: dofus_engine::SteadyState,
-    /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×1 ») :
+    /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×1, un
+    /// tour sur 2 ») :
     /// la frise l'écrit sur sa ligne de début de tour.
     pub jeu_des_invocations: BTreeMap<String, String>,
     /// Les sorts du deck, par leur nom, que la position du joueur a écartés.
@@ -840,14 +841,18 @@ fn avec_les_invocations(
     let lignes_d_attaque = |a: &AttaqueJouee, facteur: i64, compteur: Option<&str>, reduction: Option<u32>| {
         a.lignes.iter().map(|l| ligne(l, a.taux_critique, facteur, compteur, reduction)).collect::<Vec<_>>()
     };
-    let lignes_du_tour = |tour: &[AttaqueJouee], facteur: i64, compteur: Option<&str>| -> Vec<serde_json::Value> {
-        tour.iter()
-            .flat_map(|a| (0..a.coups).flat_map(|_| lignes_d_attaque(a, facteur, compteur, None)).collect::<Vec<_>>())
-            .collect()
-    };
-    let en_clair = |tour: &[AttaqueJouee]| -> String {
-        tour.iter().map(|a| format!("{} ×{}", a.nom, a.coups)).collect::<Vec<_>>().join(" et ")
-    };
+    // Une attaque à relance ne part pas à chaque tour : chaque tour en porte sa
+    // part (voir `invocations::part_par_tour`).
+    let lignes_du_tour =
+        |tour: &[AttaqueJouee], facteur: i64, compteur: Option<&str>, vie: Option<u8>| -> Vec<serde_json::Value> {
+            tour.iter()
+                .flat_map(|a| {
+                    let part = (a.relance >= 2).then(|| crate::invocations::part_par_tour(a.relance, vie));
+                    (0..a.coups).flat_map(|_| lignes_d_attaque(a, facteur, compteur, part)).collect::<Vec<_>>()
+                })
+                .collect()
+        };
+    let en_clair = crate::invocations::en_clair;
 
     // Les créatures de l'Osamodas, que le Pacte Bestial sacrifie : les
     // monstres 8070 à 8081, visés par famille aux rangs 1 et 4 de son
@@ -907,10 +912,12 @@ fn avec_les_invocations(
             let tour = tour_de_l_invocation(rang, &resolved.profile, facteur, pa_de(rang), &[]);
             Some((a.chance, rang.nom.clone().unwrap_or_else(|| entree.nom.clone()), facteur, tour))
         });
-        let vie = sort
-            .dofusdb_id
-            .zip(invocation.monstre)
-            .and_then(|(id, monstre)| duree_de_vie(instantane.as_ref()?, id, monstre));
+        // Une attaque qui la sacrifie la retire dès son premier tour.
+        let vie = if tour.iter().any(|a| a.sacrifie) {
+            Some(1)
+        } else {
+            sort.dofusdb_id.zip(invocation.monstre).and_then(|(id, monstre)| duree_de_vie(instantane.as_ref()?, id, monstre))
+        };
         jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre, vie });
     }
     if jouees.is_empty() {
@@ -1003,12 +1010,12 @@ fn avec_les_invocations(
         // Un sort commun tire l'un de deux monstres : le tour de chacun, en
         // tirage, à sa chance.
         let lignes = match &j.autre {
-            None => lignes_du_tour(&j.tour, j.facteur, Some(&id)),
+            None => lignes_du_tour(&j.tour, j.facteur, Some(&id), j.vie),
             Some((chance, _, facteur_autre, tour_autre)) => {
                 let issues = [(0, 100 - *chance, &j.tour, j.facteur), (1, *chance, tour_autre, *facteur_autre)];
                 let mut lignes = Vec::new();
                 for (issue, chance, tour, facteur) in issues {
-                    for mut l in lignes_du_tour(tour, facteur, Some(&id)) {
+                    for mut l in lignes_du_tour(tour, facteur, Some(&id), j.vie) {
                         l["tirage"] = serde_json::json!(id);
                         l["issue"] = serde_json::json!(issue);
                         l["chance"] = serde_json::json!(chance);
@@ -1176,7 +1183,7 @@ fn avec_les_invocations(
                     "while_present": [{
                         "trigger": "turn_start",
                         "requires": { "kind": "caster_has", "resource": compteur },
-                        "lines": lignes_du_tour(&plus, facteur, None),
+                        "lines": lignes_du_tour(&plus, facteur, None, None),
                     }],
                 }))
                 .map_err(|e| e.to_string())?,
@@ -1511,9 +1518,7 @@ fn avec_les_tourelles(
             "id": "invocations_en_jeu", "scope": "caster", "max": plafond, "default": 0, "monotone": "increasing",
         }),
     )?;
-    let en_clair = |tour: &[AttaqueJouee]| -> String {
-        tour.iter().map(|a| format!("{} ×{}", a.nom, a.coups)).collect::<Vec<_>>().join(" et ")
-    };
+    let en_clair = crate::invocations::en_clair;
     for t in &tourelles {
         let compteur = format!("tourelle_{}", t.id);
         match &t.offensive {
@@ -4266,8 +4271,8 @@ mod tests {
     }
 
     /// L'encart Invocations dit ce que chacune joue par tour et combien de tours
-    /// elle vit : la Gonflable Transmutée, une Brise Automnale, la seule que le
-    /// sort permet par tour malgré ses six PA, trois tours. Les tourelles du Steamer n'ont pas de ligne, elles jouent
+    /// elle vit : la Gonflable Transmutée, une Brise Automnale un tour sur deux,
+    /// sa relance, malgré ses six PA, trois tours. Les tourelles du Steamer n'ont pas de ligne, elles jouent
     /// selon leur palier d'Évolution.
     #[test]
     fn l_encart_dit_ce_que_joue_chaque_invocation() {
@@ -4278,7 +4283,7 @@ mod tests {
             sadida.as_array().unwrap().iter().find(|i| i["nom"] == "La Gonflable Transmutée").expect("la Gonflable");
         assert_eq!(
             (&gonflable["jeu"], &gonflable["pa_depenses"], &gonflable["pa"], &gonflable["vie"]),
-            (&serde_json::json!("Brise Automnale ×1"), &serde_json::json!(2), &serde_json::json!(6), &serde_json::json!(3))
+            (&serde_json::json!("Brise Automnale ×1, un tour sur 2"), &serde_json::json!(2), &serde_json::json!(6), &serde_json::json!(3))
         );
         let steamer = crate::invocations::invocations_du_profil(15, 200, &profil);
         let tourelles: Vec<&serde_json::Value> =
@@ -4500,25 +4505,30 @@ mod tests {
         assert_eq!(lancers, [1, 5]);
         assert_eq!(frappes, [2, 3, 4, 6, 7]);
         // Sa ligne de début de tour dit ce qu'elle a joué.
-        assert_eq!(details, ["Brise Automnale ×1"]);
+        assert_eq!(details, ["Brise Automnale ×1, un tour sur 2"]);
     }
 
     /// Deux poupées invoquées au même tour partent au même tour et rendent
-    /// leurs deux places : la Sacrifiée revient dès sa relance permise, la
-    /// Gonflable au terme de la sienne. Une seule place rendue n'en laisserait
-    /// revenir qu'une.
+    /// leurs deux places : la Gonflable et la Surpuissante reviennent toutes
+    /// deux au terme de leur relance. Une seule place rendue n'en laisserait
+    /// revenir qu'une. La Sacrifiée, elle, se sacrifie à son premier tour et
+    /// revient dès sa relance permise.
     #[test]
     fn deux_poupees_parties_au_meme_tour_rendent_deux_places() {
         let mut items = vec![0u32; 17];
         items[2] = 21228;
         let requete = serde_json::json!({
             "class": 10, "level": 200, "items": items, "horizon": 7,
-            "deck": ["la_gonflable_transmutee", "la_sacrifiee_transmutee"],
+            "deck": ["la_gonflable_transmutee", "la_surpuissante_transmutee"],
         });
         let (gonflable, _, _) = lancers_et_frappes(requete.clone(), "la_gonflable_transmutee");
+        let (surpuissante, _, _) = lancers_et_frappes(requete, "la_surpuissante_transmutee");
+        assert_eq!((gonflable.as_slice(), surpuissante.as_slice()), ([1, 5].as_slice(), [1, 5].as_slice()));
+        let requete = serde_json::json!({
+            "class": 10, "level": 200, "items": vec![0u32; 17], "horizon": 7, "deck": ["la_sacrifiee_transmutee"],
+        });
         let (sacrifiee, frappes, _) = lancers_et_frappes(requete, "la_sacrifiee_transmutee");
-        assert_eq!((gonflable.as_slice(), sacrifiee.as_slice()), ([1, 5].as_slice(), [1, 4].as_slice()));
-        assert_eq!(frappes, [2, 3, 4, 5, 6, 7]);
+        assert_eq!((sacrifiee.as_slice(), frappes.as_slice()), ([1, 3, 5].as_slice(), [2, 4, 6].as_slice()));
     }
 
     /// La rotation d'un Cra qui porte l'Épée de Boisaille, à une position

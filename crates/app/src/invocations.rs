@@ -81,6 +81,13 @@ pub struct Attaque {
     pub lancers_par_cible: Option<u8>,
     #[serde(default)]
     pub critique: Option<u8>,
+    /// L'intervalle de relance, en tours : 2 pour un lancer tous les deux tours.
+    #[serde(default)]
+    pub relance: Option<u8>,
+    /// L'attaque tue l'invocation qui la lance (« Tue la cible » de l'Explosion
+    /// Ouatée).
+    #[serde(default)]
+    pub sacrifie: bool,
 }
 
 /// Le relevé embarqué, lu une fois.
@@ -202,6 +209,37 @@ pub struct AttaqueJouee {
     pub pa: u8,
     pub coups: u8,
     pub taux_critique: u8,
+    /// Voir [`Attaque::relance`] ; 0 ou 1, à chaque tour.
+    pub relance: u8,
+    /// Voir [`Attaque::sacrifie`].
+    pub sacrifie: bool,
+}
+
+/// Ce qu'une invocation joue dans son tour, en clair : « Brise Automnale ×1, un
+/// tour sur 2 ».
+pub fn en_clair(tour: &[AttaqueJouee]) -> String {
+    tour.iter()
+        .map(|a| match a.relance {
+            r if r >= 2 => format!("{} ×{}, un tour sur {r}", a.nom, a.coups),
+            _ => format!("{} ×{}", a.nom, a.coups),
+        })
+        .collect::<Vec<_>>()
+        .join(" et ")
+}
+
+/// La part d'un lancer que chaque tour de l'invocation porte, en pour cent,
+/// quand l'attaque a une relance : ses lancers sur les `vie` tours qu'elle
+/// joue (au premier tour, puis tous les `relance` tours), répartis sur ces
+/// tours. Sans durée de vie connue, un lancer tous les `relance` tours.
+pub fn part_par_tour(relance: u8, vie: Option<u8>) -> u32 {
+    let r = u32::from(relance.max(1));
+    match vie {
+        Some(v) if v > 0 => {
+            let v = u32::from(v);
+            (100 * v.div_ceil(r) + v / 2) / v
+        }
+        _ => 100 / r,
+    }
 }
 
 /// Le palier d'Évolution qu'un groupe exige de la tourelle du Steamer qui le
@@ -261,7 +299,9 @@ fn attaques_au_palier(rang: &Rang, profil: &DamageProfile, facteur: i64, palier:
         };
         let taux = f64::from(a.critique.unwrap_or(0)) / 100.0;
         let valeur = (1.0 - taux) * moyenne(borne(normal)) + taux * moyenne(critique);
-        let limite = [a.lancers_par_tour, a.lancers_par_cible]
+        // Une relance ou un sacrifice : un lancer par tour au plus.
+        let une_fois = (a.relance.unwrap_or(0) > 0 || a.sacrifie).then_some(1);
+        let limite = [a.lancers_par_tour, a.lancers_par_cible, une_fois]
             .into_iter()
             .flatten()
             .filter(|n| *n > 0)
@@ -277,6 +317,8 @@ fn attaques_au_palier(rang: &Rang, profil: &DamageProfile, facteur: i64, palier:
                 if x.pa == 0 {
                     x.pa = a.pa.unwrap_or(0);
                 }
+                x.relance = x.relance.max(a.relance.unwrap_or(0));
+                x.sacrifie |= a.sacrifie;
             }
             None => par_nom.push((
                 AttaqueJouee {
@@ -285,6 +327,8 @@ fn attaques_au_palier(rang: &Rang, profil: &DamageProfile, facteur: i64, palier:
                     pa: a.pa.unwrap_or(0),
                     coups: 0,
                     taux_critique: a.critique.unwrap_or(0),
+                    relance: a.relance.unwrap_or(0),
+                    sacrifie: a.sacrifie,
                 },
                 limite,
                 valeur,
@@ -411,7 +455,11 @@ pub fn invocations_du_profil(classe: u32, niveau: u32, profil: &DamageProfile) -
             (!attaques.is_empty()).then(|| {
                 let tourelle = i.monstre.is_some_and(|m| crate::solve::TOURELLES_DU_STEAMER.contains(&m));
                 let tour = if tourelle { Vec::new() } else { tour_de_l_invocation(r, profil, f, pa_de(r), &[]) };
-                let vie = i.monstre.zip(instantane.as_ref()).and_then(|(m, s)| crate::solve::duree_de_vie(s, i.sort, m));
+                let vie = if tour.iter().any(|a| a.sacrifie) {
+                    Some(1)
+                } else {
+                    i.monstre.zip(instantane.as_ref()).and_then(|(m, s)| crate::solve::duree_de_vie(s, i.sort, m))
+                };
                 let autre = i.autre.as_ref().and_then(|a| {
                     let entree = releve().invocations.iter().find(|v| v.classe == 0 && v.monstre == Some(a.monstre))?;
                     let rang = rang_au_niveau(entree, niveau)?;
@@ -431,7 +479,7 @@ pub fn invocations_du_profil(classe: u32, niveau: u32, profil: &DamageProfile) -
                     "pm": r.pm,
                     "attaques": attaques,
                     "jeu": (!tour.is_empty())
-                        .then(|| tour.iter().map(|a| format!("{} ×{}", a.nom, a.coups)).collect::<Vec<_>>().join(" et ")),
+                        .then(|| en_clair(&tour)),
                     "pa_depenses": tour.iter().map(|a| i64::from(a.pa) * i64::from(a.coups)).sum::<i64>(),
                     "vie": vie,
                     "autre": autre,
@@ -561,7 +609,8 @@ mod tests {
     }
 
     /// Une attaque que les PA de l'invocation permettent de lancer plusieurs
-    /// fois par tour porte une limite écrite, par tour ou par cible : sans
+    /// fois par tour porte une limite écrite, par tour, par cible, une relance
+    /// ou un sacrifice : sans
     /// elle, la rotation la joue autant de fois que les PA le permettent.
     #[test]
     fn une_attaque_lancee_plusieurs_fois_porte_sa_limite() {
@@ -574,7 +623,12 @@ mod tests {
                         .attaques
                         .iter()
                         .filter(|b| b.nom == a.nom)
-                        .any(|b| b.lancers_par_tour.unwrap_or(0) > 0 || b.lancers_par_cible.unwrap_or(0) > 0);
+                        .any(|b| {
+                            b.lancers_par_tour.unwrap_or(0) > 0
+                                || b.lancers_par_cible.unwrap_or(0) > 0
+                                || b.relance.unwrap_or(0) > 0
+                                || b.sacrifie
+                        });
                     if !limite {
                         sans_limite.push(format!("{} rang {} : {}", i.nom, r.rang, a.nom));
                     }
@@ -582,6 +636,13 @@ mod tests {
             }
         }
         assert!(sans_limite.is_empty(), "{sans_limite:?}");
+    }
+
+    /// Une attaque à relance 2 sur une invocation qui joue trois tours part
+    /// deux fois, aux premier et troisième : chaque tour en porte 67 %.
+    #[test]
+    fn la_relance_se_repartit_sur_la_vie_de_l_invocation() {
+        assert_eq!((part_par_tour(2, Some(3)), part_par_tour(2, None), part_par_tour(0, Some(3))), (67, 50, 100));
     }
 
     /// Une poupée du Sadida reçoit tout, faute d'être Osamodas ; les
