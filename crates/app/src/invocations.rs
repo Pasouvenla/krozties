@@ -560,6 +560,30 @@ mod tests {
         assert_eq!((crapogive.coups, crapogive.lignes.len()), (1, 2), "{crapipaud:?}");
     }
 
+    /// Une attaque que les PA de l'invocation permettent de lancer plusieurs
+    /// fois par tour porte une limite écrite, par tour ou par cible : sans
+    /// elle, la rotation la joue autant de fois que les PA le permettent.
+    #[test]
+    fn une_attaque_lancee_plusieurs_fois_porte_sa_limite() {
+        let mut sans_limite = Vec::new();
+        for i in &releve().invocations {
+            for r in &i.rangs {
+                let pa = r.pa.unwrap_or(0);
+                for a in r.attaques.iter().filter(|a| a.pa.is_some_and(|c| c > 0 && pa >= 2 * i16::from(c))) {
+                    let limite = r
+                        .attaques
+                        .iter()
+                        .filter(|b| b.nom == a.nom)
+                        .any(|b| b.lancers_par_tour.unwrap_or(0) > 0 || b.lancers_par_cible.unwrap_or(0) > 0);
+                    if !limite {
+                        sans_limite.push(format!("{} rang {} : {}", i.nom, r.rang, a.nom));
+                    }
+                }
+            }
+        }
+        assert!(sans_limite.is_empty(), "{sans_limite:?}");
+    }
+
     /// Une poupée du Sadida reçoit tout, faute d'être Osamodas ; les
     /// invocations communes suivent toutes les classes ; la Lance du Forgelance
     /// n'est pas là.

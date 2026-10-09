@@ -408,7 +408,7 @@ pub struct Outcome {
     pub placement_ignore: Vec<String>,
     /// La rotation qui se répète, indépendante de l'horizon demandé.
     pub steady: dofus_engine::SteadyState,
-    /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×3 ») :
+    /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×1 ») :
     /// la frise l'écrit sur sa ligne de début de tour.
     pub jeu_des_invocations: BTreeMap<String, String>,
     /// Les sorts du deck, par leur nom, que la position du joueur a écartés.
@@ -4266,8 +4266,8 @@ mod tests {
     }
 
     /// L'encart Invocations dit ce que chacune joue par tour et combien de tours
-    /// elle vit : la Gonflable Transmutée, trois Brise Automnale pour ses six PA,
-    /// trois tours. Les tourelles du Steamer n'ont pas de ligne, elles jouent
+    /// elle vit : la Gonflable Transmutée, une Brise Automnale, la seule que le
+    /// sort permet par tour malgré ses six PA, trois tours. Les tourelles du Steamer n'ont pas de ligne, elles jouent
     /// selon leur palier d'Évolution.
     #[test]
     fn l_encart_dit_ce_que_joue_chaque_invocation() {
@@ -4278,7 +4278,7 @@ mod tests {
             sadida.as_array().unwrap().iter().find(|i| i["nom"] == "La Gonflable Transmutée").expect("la Gonflable");
         assert_eq!(
             (&gonflable["jeu"], &gonflable["pa_depenses"], &gonflable["pa"], &gonflable["vie"]),
-            (&serde_json::json!("Brise Automnale ×3"), &serde_json::json!(6), &serde_json::json!(6), &serde_json::json!(3))
+            (&serde_json::json!("Brise Automnale ×1"), &serde_json::json!(2), &serde_json::json!(6), &serde_json::json!(3))
         );
         let steamer = crate::invocations::invocations_du_profil(15, 200, &profil);
         let tourelles: Vec<&serde_json::Value> =
@@ -4500,7 +4500,7 @@ mod tests {
         assert_eq!(lancers, [1, 5]);
         assert_eq!(frappes, [2, 3, 4, 6, 7]);
         // Sa ligne de début de tour dit ce qu'elle a joué.
-        assert_eq!(details, ["Brise Automnale ×3"]);
+        assert_eq!(details, ["Brise Automnale ×1"]);
     }
 
     /// Deux poupées invoquées au même tour partent au même tour et rendent

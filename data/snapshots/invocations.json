@@ -13,7 +13,8 @@
   "Ébriété rang 1 : « Ennemi » sans attaque DofusDB",
   "Ébriété rang 2 : « Ennemi » sans attaque DofusDB",
   "Ébriété rang 3 : « Ennemi » sans attaque DofusDB",
-  "Invocations communes (Arakne, Chaferfu et leurs variantes) : DofusBook montre pour chaque sort le monstre de son second effet d'invocation, celui à 20 %, avec le coût et le critique de l'attaque de l'autre. Reconstruites sur DofusDB le 01/10/2026 : monstre à 80 % (`monstre`) et à 20 % (`autre`), PA, PM, résistances et attaque de chacun."
+  "Invocations communes (Arakne, Chaferfu et leurs variantes) : DofusBook montre pour chaque sort le monstre de son second effet d'invocation, celui à 20 %, avec le coût et le critique de l'attaque de l'autre. Reconstruites sur DofusDB le 01/10/2026 : monstre à 80 % (`monstre`) et à 20 % (`autre`), PA, PM, résistances et attaque de chacun.",
+  "La Gonflable Transmutée : Brise Automnale à 1 lancer par tour, le relevé n'en portait aucune limite (0 par tour et par cible), à confirmer en jeu."
  ],
  "invocations": [
   {
@@ -5420,7 +5421,7 @@
        ],
        "sort": 29624,
        "pa": 2,
-       "lancers_par_tour": 0,
+       "lancers_par_tour": 1,
        "lancers_par_cible": 0,
        "critique": 0
       },
@@ -5440,7 +5441,7 @@
        ],
        "sort": 29624,
        "pa": 2,
-       "lancers_par_tour": 0,
+       "lancers_par_tour": 1,
        "lancers_par_cible": 0,
        "critique": 0
       }
