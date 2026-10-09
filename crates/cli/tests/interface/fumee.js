@@ -335,9 +335,17 @@ try {
   const ligneBeco = [...document.querySelectorAll('#carteInvocations tbody tr')]
     .find((tr) => tr.children[0].textContent.startsWith('Béco-béco'));
   resultat.invocations = {
-    titre: texte('#carteInvocations h4'),
+    titre: `${texte('#carteInvocations .encart > h4')} | ${texte('#carteInvocations .encart .sort-source')}`,
     beco: ligneBeco && [...ligneBeco.children].slice(1).map((td) => td.textContent),
   };
+  // Une commune ne s'affiche que cochée : l'Arakne, décochée puis cochée.
+  const caseArakne = document.querySelector('#listeSorts input[value="invocation_de_l_arakne"]');
+  const arakne = () => [...document.querySelectorAll('#carteInvocations .encart > h4')]
+    .filter((h) => h.firstChild.textContent.trim() === 'Arakne').length;
+  if (caseArakne.checked) caseArakne.click();
+  const sansArakne = arakne();
+  caseArakne.click();
+  resultat.invocations.arakne = [sansArakne, arakne()];
 
   // Les conseils par tour : une rotation de deux tours sur quatre sorts, un
   // par paire de variantes (le jeu n'en laisse équiper qu'une), puis un clic

@@ -1073,29 +1073,8 @@ fn avec_les_invocations(
         } else if sort.blocked_at_max.is_none() {
             sort.blocked_at_max = Some("invocations_en_jeu".into());
         }
-        let depense = |tour: &[AttaqueJouee]| -> i64 { tour.iter().map(|a| i64::from(a.pa) * i64::from(a.coups)).sum() };
-        let (nom, rang, facteur, tour) = (&j.nom, j.rang, j.facteur, &j.tour);
-        notes.push(match &j.autre {
-            None => format!(
-                "{nom} : {} par tour ({} PA sur {}), à {facteur} % de vos caractéristiques, dès le tour qui \
-                 suit son invocation{} ; ni vos % de dommages ni vos dommages critiques",
-                en_clair(tour),
-                depense(tour),
-                pa_de(rang),
-                j.vie.map_or(String::new(), |v| format!(", {v} tours durant et une à la fois, puis sa place se libère")),
-            ),
-            Some((chance, nom_autre, _, tour_autre)) => format!(
-                "{} : {nom} à {} %, {} par tour ({} PA), ou {nom_autre} à {chance} %, {} par tour ({} PA) ; \
-                 à {facteur} % de vos caractéristiques, dès le tour qui suit son invocation ; ni vos % de \
-                 dommages ni vos dommages critiques",
-                ruleset.spells[j.i].name.fr,
-                100 - chance,
-                en_clair(tour),
-                depense(tour),
-                en_clair(tour_autre),
-                depense(tour_autre),
-            ),
-        });
+        // Ce que l'invocation joue par tour, l'encart Invocations le dit : voir
+        // `invocations::invocations_du_profil`.
     }
     if pacte {
         // Les créatures en jeu au lancer : un gain par créature de chaque
@@ -1392,7 +1371,7 @@ const STEAMER: u32 = 15;
 /// Les monstres des tourelles du Steamer : Bathyscaphe 5831, Chalutier 5832,
 /// Foreuse 5833, Gardienne 5835, Harponneuse 5836, Tactirelle 5837, que
 /// l'Évolution vise ensemble (« F5831 » à « F5837 » de sa cible).
-const TOURELLES_DU_STEAMER: [u32; 6] = [5831, 5832, 5833, 5835, 5836, 5837];
+pub(crate) const TOURELLES_DU_STEAMER: [u32; 6] = [5831, 5832, 5833, 5835, 5836, 5837];
 
 /// Un sort spécial : le monstre de la tourelle, le nom du sort, sa fourchette
 /// à chaque rang de la tourelle.
@@ -1794,7 +1773,7 @@ const PLACES_RENDUES: &str = "places_d_invocation_rendues";
 /// la cible « F<monstre> ». Les poupées Transmutées du Sadida redeviennent
 /// ainsi des Arbres trois tours après leur invocation ; le Pavois et l'Égide du
 /// Féca disparaissent de même.
-fn duree_de_vie(instantane: &Snapshot, sort: u32, monstre: u32) -> Option<u8> {
+pub(crate) fn duree_de_vie(instantane: &Snapshot, sort: u32, monstre: u32) -> Option<u8> {
     const FIN: [u32; 2] = [141, 405];
     let niveau = instantane.spells.iter().find(|s| s.id == sort)?.levels.iter().max_by_key(|l| l.grade)?;
     let vise = |cible: &str| {
@@ -4229,8 +4208,16 @@ mod tests {
             .count();
         assert_eq!(invocations, 1, "{r}");
         let notes = r["build"]["assumptions"].to_string();
-        assert!(notes.contains("Tofu : Béco-béco ×1 et Bisou Béco ×1 par tour (4 PA sur 4), à 50 %"), "{notes}");
         assert!(notes.contains("1 invocation en jeu au plus"), "{notes}");
+        // Ce que le Tofu joue par tour, l'encart Invocations le dit, et plus les
+        // remarques du calcul.
+        let encart = crate::invocations::invocations_du_profil(2, 200, &profil);
+        let tofu = encart.as_array().unwrap().iter().find(|i| i["nom"] == "Tofu").expect("le Tofu");
+        assert_eq!(
+            (&tofu["jeu"], &tofu["pa_depenses"], &tofu["facteur"]),
+            (&serde_json::json!("Béco-béco ×1 et Bisou Béco ×1"), &serde_json::json!(4), &serde_json::json!(50))
+        );
+        assert!(!notes.contains("par tour (4 PA sur 4)"), "{notes}");
     }
 
     /// Les invocations communes, à toutes les classes : un Iop à 100 de Force lance
@@ -4264,11 +4251,39 @@ mod tests {
         // La répartition le nomme, avec son icône.
         let part = &r["rotation"]["repartition"][0];
         assert_eq!((&part["name"], &part["dofusdb_id"]), (&serde_json::json!("Invocation de l'Arakne"), &serde_json::json!(370)), "{r}");
-        let notes = r["build"]["assumptions"].to_string();
-        assert!(
-            notes.contains("Invocation de l'Arakne : Arakne à 80 %, Frapperie ×1 par tour (5 PA), ou Arakne Majeure à 20 %, Coude boule ×1 par tour (4 PA)"),
-            "{notes}"
+        // L'encart Invocations dit ce qu'elle joue et l'autre monstre que son
+        // sort peut tirer.
+        let encart = crate::invocations::invocations_du_profil(8, 200, &profil);
+        let arakne = encart.as_array().unwrap().iter().find(|i| i["nom"] == "Invocation de l'Arakne").expect("l'Arakne");
+        assert_eq!(
+            (&arakne["jeu"], &arakne["pa_depenses"], &arakne["autre"]),
+            (
+                &serde_json::json!("Frapperie ×1"),
+                &serde_json::json!(5),
+                &serde_json::json!({ "chance": 20, "invocation": "Arakne Majeure" })
+            )
         );
+    }
+
+    /// L'encart Invocations dit ce que chacune joue par tour et combien de tours
+    /// elle vit : la Gonflable Transmutée, trois Brise Automnale pour ses six PA,
+    /// trois tours. Les tourelles du Steamer n'ont pas de ligne, elles jouent
+    /// selon leur palier d'Évolution.
+    #[test]
+    fn l_encart_dit_ce_que_joue_chaque_invocation() {
+        let build = dofus_build::BuildInput { class: 10, level: 200, items: vec![0; 17], ..Default::default() };
+        let profil = resolve_build(&build).unwrap().profile;
+        let sadida = crate::invocations::invocations_du_profil(10, 200, &profil);
+        let gonflable =
+            sadida.as_array().unwrap().iter().find(|i| i["nom"] == "La Gonflable Transmutée").expect("la Gonflable");
+        assert_eq!(
+            (&gonflable["jeu"], &gonflable["pa_depenses"], &gonflable["pa"], &gonflable["vie"]),
+            (&serde_json::json!("Brise Automnale ×3"), &serde_json::json!(6), &serde_json::json!(6), &serde_json::json!(3))
+        );
+        let steamer = crate::invocations::invocations_du_profil(15, 200, &profil);
+        let tourelles: Vec<&serde_json::Value> =
+            steamer.as_array().unwrap().iter().filter(|i| i["commune"] == false).collect();
+        assert!(!tourelles.is_empty() && tourelles.iter().all(|i| i["jeu"].is_null()), "{steamer}");
     }
 
     /// Le Tacheté porté ne fait pas un écart avec DofusBook : son Harmonie de

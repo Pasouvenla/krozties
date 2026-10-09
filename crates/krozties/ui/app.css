@@ -501,7 +501,8 @@ table.mini .attenue { color: var(--doux); }
                        background: var(--accent-clair); color: var(--encre);
                        border-radius: 999px; padding: .05rem .5rem; }
 .plus-loin .modifies:empty { display: none; }
-.plus-loin > .reglages { margin-top: .6rem; }
+.plus-loin > .reglages { margin-top: .6rem; align-items: end; }
+.plus-loin .reglage-aide { grid-column: 1 / -1; margin: 0; }
 .plus-loin .groupe { margin: .8rem 0 .2rem; font-size: .7rem; text-transform: uppercase;
                      letter-spacing: .05em; color: var(--doux); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
@@ -750,6 +751,19 @@ table.mini .attenue { color: var(--doux); }
                border-bottom: 1px solid var(--cheveux); color: var(--encre);
                font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
 .encart > :not(h4) { padding: .5rem .7rem; }
+
+/* Les invocations de la Rotation : un encart chacune, en grille, comme la fiche
+   du build. Les nombres ne se coupent pas, le nom de l'attaque prend le reste. */
+.grille-encarts { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
+.grille-encarts .encart > h4 .rang { font-weight: 500; color: var(--doux); }
+.grille-encarts .sort-source { font-size: .74rem; color: var(--doux); margin: 0 0 .3rem; }
+.grille-encarts table.mini th, .grille-encarts table.mini td:not(:first-child) { white-space: nowrap; }
+.grille-encarts table.mini td:first-child { width: 100%; }
+.grille-encarts table.mini .cibles { display: block; font-size: .72rem; color: var(--doux); }
+.grille-encarts .jeu { font-size: .74rem; color: var(--doux); margin: .45rem 0 0; padding-top: .35rem;
+                       border-top: 1px dashed var(--trait); }
+.groupe-encarts { margin: 1rem 0 .4rem; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
+                  color: var(--doux); font-weight: 600; }
 
 /* Une statistique se lit valeur d'abord : l'œil descend la colonne des nombres. */
 .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .9rem; }

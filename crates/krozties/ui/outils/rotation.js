@@ -198,8 +198,10 @@ export async function rendre(cible, etat, { appeler }) {
             <div class="reglages">
               <div><label for="pmDepenses">PM dépensés</label>
                 <input type="number" id="pmDepenses" min="0" max="12" value="${reglages.pmDepenses}"></div>
-              <div><label for="etalement">Écart entre ennemis</label>
+              <div><label for="etalement">Cases entre les ennemis touchés</label>
                 <input type="number" id="etalement" min="0" max="4" value="${reglages.etalement}"></div>
+              <p class="aide reglage-aide">À 0, tous sont au centre de la zone ; les sorts dégressifs perdent de
+                la puissance avec la distance.</p>
               ${arme ? `<div><label for="maitrise">Maîtrise d'arme</label>
                 <select id="maitrise">
                   ${[[0, 'Aucune'], [300, 'Normale (300)'], [360, 'Critique (360)']]
@@ -311,8 +313,10 @@ export async function rendre(cible, etat, { appeler }) {
         paire.classList.toggle('conflit', cases.length > 1 && cases.every((c) => c.checked));
         majCompteur();
         marquerPerime();
+        dessinerInvocations();
       });
     });
+    dessinerInvocations();
     majCompteur();
   }
 
@@ -753,39 +757,65 @@ export async function rendre(cible, etat, { appeler }) {
     }
   }
 
-  /// Les invocations du build, attaque par attaque : ni les % de dommages ni les
-  /// dommages critiques de l'invocateur ne s'y appliquent.
+  /// Les invocations du build, un encart chacune : celles de sa classe, et les
+  /// communes que le deck coche. Ni les % de dommages ni les dommages critiques
+  /// de l'invocateur ne s'y appliquent. La réponse se garde : cocher une commune
+  /// la fait apparaître sans redemander.
+  let invocationsDuBuild = null;
   async function remplirInvocations() {
-    const hote = $('carteInvocations');
     if (!etat.build) return;
-    let reponse;
     try {
-      reponse = await appeler('invocations', etat.build);
+      invocationsDuBuild = (await appeler('invocations', etat.build)).invocations || [];
     } catch (e) {
       return;
     }
-    const liste = reponse.invocations || [];
-    if (!liste.length) return;
-    const fourchette = (f) => (f ? `${nb(f[0])} à ${nb(f[1])}` : '–');
-    const bloc = (i) => `
-      <h4>${echapper(i.invocation)}${i.invocation !== i.nom ? ` <span class="aide">(${echapper(i.nom)})</span>` : ''}
-        <span class="aide">rang ${i.rang}${i.facteur !== 100 ? `, ${i.facteur} % de vos caractéristiques` : ''}</span></h4>
-      <table class="mini">
-        <thead><tr><th>Attaque</th><th>Normal</th><th>Critique</th><th>PA</th></tr></thead>
-        <tbody>${i.attaques.map((a) => `<tr>
-          <td style="color:${COULEUR_ELEMENT[majuscule(a.element)]}">${echapper(a.nom || i.invocation)}${a.vol ? ' (vol)' : ''}
-            <span class="aide">${echapper(a.cibles)}</span></td>
-          <td>${fourchette(a.normal)}</td><td>${fourchette(a.critique)}</td><td>${a.pa ?? '?'}</td>
-        </tr>`).join('')}</tbody>
-      </table>`;
-    const propres = liste.filter((i) => !i.commune);
-    const communes = liste.filter((i) => i.commune);
+    dessinerInvocations();
+  }
+
+  function dessinerInvocations() {
+    const hote = $('carteInvocations');
+    if (!invocationsDuBuild) return;
+    const idDuSort = new Map(sorts.map((s) => [s.dofusdb_id, s.id]));
+    const propres = invocationsDuBuild.filter((i) => !i.commune);
+    const communes = invocationsDuBuild.filter((i) => i.commune && reglages.coches.has(idDuSort.get(i.sort)));
+    if (!propres.length && !communes.length) {
+      hote.hidden = true;
+      return;
+    }
+    const valeur = (f) => {
+      if (!f) return '–';
+      return f[0] === f[1] ? nb(f[0]) : `${nb(f[0])} à ${nb(f[1])}`;
+    };
+    // Ce que la rotation lui fait jouer à chaque tour.
+    const jeu = (i) => {
+      if (!i.jeu) return '';
+      const morceaux = [`${i.jeu} par tour (${i.pa_depenses} PA sur ${i.pa})`];
+      if (i.vie) morceaux.push(`${i.vie} tours durant, une à la fois`);
+      if (i.autre) morceaux.push(`ou ${i.autre.invocation} à ${i.autre.chance} %`);
+      return `<p class="jeu">${echapper(morceaux.join(', '))}.</p>`;
+    };
+    const encart = (i) => `
+      <section class="encart"><h4>${echapper(i.invocation)} <span class="rang">· rang ${i.rang}</span></h4>
+        <div>
+          <p class="sort-source">${echapper(i.nom)}${i.facteur !== 100 ? `, ${i.facteur} % de vos caractéristiques` : ''}</p>
+          <table class="mini">
+            <thead><tr><th>Attaque</th><th>Normal</th><th>Critique</th><th>PA</th></tr></thead>
+            <tbody>${i.attaques.map((a) => `<tr>
+              <td style="color:${COULEUR_ELEMENT[majuscule(a.element)]}">${echapper(a.nom || i.invocation)}${a.vol ? ' (vol)' : ''}
+                <span class="cibles">${echapper(a.cibles)}</span></td>
+              <td>${valeur(a.normal)}</td><td>${valeur(a.critique)}</td><td>${a.pa ?? '?'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+          ${jeu(i)}
+        </div>
+      </section>`;
     hote.classList.toggle('repliee', Boolean(etat.replies && etat.replies.invocations));
     hote.innerHTML = `${titreRepliable(etat, 'invocations', 'Invocations')}
       <p class="aide">Calculés avec vos caractéristiques, sans vos % de dommages ni vos
         dommages critiques.</p>
-      ${propres.map(bloc).join('')}
-      ${communes.length ? `<h4>Communes à toutes les classes</h4>${communes.map(bloc).join('')}` : ''}`;
+      ${propres.length ? `<div class="grille-encarts">${propres.map(encart).join('')}</div>` : ''}
+      ${communes.length ? `<p class="groupe-encarts">Communes à toutes les classes, cochées</p>
+        <div class="grille-encarts">${communes.map(encart).join('')}</div>` : ''}`;
     hote.hidden = false;
   }
 

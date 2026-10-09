@@ -369,8 +369,13 @@ pub fn pa_de(rang: &Rang) -> i64 {
 }
 
 /// Les invocations d'une classe et les communes, avec les dégâts de chaque
-/// attaque pour ce profil : celles qui frappent, et elles seules.
+/// attaque pour ce profil : celles qui frappent, et elles seules. Pour chacune,
+/// ce que la rotation lui fait jouer à chaque tour (`jeu`, `pa_depenses`), les
+/// tours qu'elle vit quand son sort la retire (`vie`), et pour un sort commun,
+/// l'autre monstre qu'il peut tirer (`autre`). Une tourelle du Steamer joue selon
+/// son palier d'Évolution, que les remarques du calcul détaillent : pas de `jeu`.
 pub fn invocations_du_profil(classe: u32, niveau: u32, profil: &DamageProfile) -> serde_json::Value {
+    let instantane = crate::solve::snapshot_for(classe).ok();
     let liste: Vec<serde_json::Value> = releve()
         .invocations
         .iter()
@@ -404,6 +409,17 @@ pub fn invocations_du_profil(classe: u32, niveau: u32, profil: &DamageProfile) -
                 })
                 .collect();
             (!attaques.is_empty()).then(|| {
+                let tourelle = i.monstre.is_some_and(|m| crate::solve::TOURELLES_DU_STEAMER.contains(&m));
+                let tour = if tourelle { Vec::new() } else { tour_de_l_invocation(r, profil, f, pa_de(r), &[]) };
+                let vie = i.monstre.zip(instantane.as_ref()).and_then(|(m, s)| crate::solve::duree_de_vie(s, i.sort, m));
+                let autre = i.autre.as_ref().and_then(|a| {
+                    let entree = releve().invocations.iter().find(|v| v.classe == 0 && v.monstre == Some(a.monstre))?;
+                    let rang = rang_au_niveau(entree, niveau)?;
+                    Some(serde_json::json!({
+                        "chance": a.chance,
+                        "invocation": rang.nom.clone().unwrap_or_else(|| entree.nom.clone()),
+                    }))
+                });
                 serde_json::json!({
                     "sort": i.sort,
                     "nom": i.nom,
@@ -414,6 +430,11 @@ pub fn invocations_du_profil(classe: u32, niveau: u32, profil: &DamageProfile) -
                     "pa": r.pa,
                     "pm": r.pm,
                     "attaques": attaques,
+                    "jeu": (!tour.is_empty())
+                        .then(|| tour.iter().map(|a| format!("{} ×{}", a.nom, a.coups)).collect::<Vec<_>>().join(" et ")),
+                    "pa_depenses": tour.iter().map(|a| i64::from(a.pa) * i64::from(a.coups)).sum::<i64>(),
+                    "vie": vie,
+                    "autre": autre,
                 })
             })
         })

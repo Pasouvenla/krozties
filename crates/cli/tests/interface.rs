@@ -227,6 +227,8 @@ fn chaque_outil_s_affiche_sans_erreur() {
     let titre = r["invocations"]["titre"].as_str().unwrap_or("");
     assert!(titre.contains("Tofu") && titre.contains("50 %"), "{r}");
     assert_eq!(r["invocations"]["beco"], serde_json::json!(["21 à 23", "25 à 28", "2"]), "{r}");
+    // L'Arakne, commune à toutes les classes, n'a d'encart que cochée.
+    assert_eq!(r["invocations"]["arakne"], serde_json::json!([0, 1]), "{r}");
     // Un clic sur un lancer de la rotation : ce que chaque sort vaudrait à sa
     // place, le sort joué compris et marqué.
     assert!(r["conseil"]["lignes"].as_u64().unwrap_or(0) >= 1, "{r}");
