@@ -539,6 +539,13 @@ struct EffetDeDofus {
 
 const PAS_TAPE: &str = "si vous n'êtes pas tapé entre deux tours";
 
+/// Le bonus de Dofus ne joue pas au premier tour : « s'il n'a subi aucune
+/// attaque ennemie depuis son précédent tour de jeu », et au premier tour il
+/// n'y a pas de tour précédent. Le Jaune Ocre et le Rouge Vermeil.
+pub fn des_le_deuxieme_tour(nom: &str) -> bool {
+    EFFETS_DE_DOFUS.iter().any(|e| e.nom == nom && e.condition == Some(PAS_TAPE))
+}
+
 const EFFETS_DE_DOFUS: &[EffetDeDofus] = &[
     // +20 % les tours impairs, −10 % les tours pairs (sort 5454).
     EffetDeDofus {

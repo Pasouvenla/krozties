@@ -339,17 +339,19 @@ fn bonus_modelises(ruleset: &dofus_ruleset::Ruleset) -> std::collections::BTreeS
 pub fn to_engine_build(request: &Request, resolved: &Resolved) -> Build {
     let ecarte = |n: &String| request.bonus_ecartes.contains(n);
     // La Puissance du Sylvestre et du Cauchemar n'est pas ici : elle se joue
-    // dans le tour, voir `avec_les_effets_de_dofus`.
+    // dans le tour, voir `avec_les_effets_de_dofus`. Le Jaune Ocre et le Rouge
+    // Vermeil non plus : ils ne jouent qu'à partir du deuxième tour.
+    let de_chaque_tour = |n: &String| !ecarte(n) && !dofus_build::des_le_deuxieme_tour(n);
     Build {
         name: format!("classe {}", request.build.class),
         profile: resolved.profile,
-        // Les PA d'un effet de Dofus, le Jaune Ocre, s'ajoutent ici : la fiche
-        // les tient à part pour rester comparable à celle de DofusBook. Un
-        // bonus que le joueur a écarté dans l'onglet Rotation ne compte pas.
+        // Les PA d'un effet de Dofus s'ajoutent ici : la fiche les tient à part
+        // pour rester comparable à celle de DofusBook. Un bonus que le joueur a
+        // écarté dans l'onglet Rotation ne compte pas.
         base_ap: resolved
             .pa_des_dofus
             .iter()
-            .filter(|(n, _)| !request.bonus_ecartes.contains(n))
+            .filter(|(n, _)| de_chaque_tour(n))
             .fold(resolved.base_ap, |pa, (_, n)| pa.saturating_add(*n)),
         // Les PM des Dofus, et ceux d'un bonus écarté qui en donne à la place :
         // l'Abyssal sans ennemi au contact.
@@ -363,7 +365,7 @@ pub fn to_engine_build(request: &Request, resolved: &Resolved) -> Build {
         modifiers: resolved
             .damage_multipliers
             .iter()
-            .filter(|(name, _)| !request.bonus_ecartes.contains(name))
+            .filter(|(name, _)| de_chaque_tour(name))
             .map(|(name, percent)| BuildModifier {
                 id: name.clone(),
                 percent: *percent,
@@ -642,6 +644,38 @@ fn avec_les_effets_de_dofus(
             "gain_per_turn": 1,
             "modifies_damage": [{ "kind": "characteristic", "amount": resolved.puissance_par_pm * i32::from(pm) }],
         }))?;
+    }
+    // Le Jaune Ocre et le Rouge Vermeil, « à chaque début de tour, s'il n'a
+    // subi aucune attaque ennemie depuis son précédent tour de jeu » : la cible
+    // passive l'assure, mais le premier tour n'a pas de tour précédent. L'état
+    // s'acquiert à la fin du premier tour.
+    let garde = |n: &String| dofus_build::des_le_deuxieme_tour(n) && !request.bonus_ecartes.contains(n);
+    let identifiant = |nom: &str| nom.to_lowercase().replace(' ', "_");
+    let mut des_le_deuxieme = Vec::new();
+    for (nom, pa) in resolved.pa_des_dofus.iter().filter(|(n, _)| garde(n)) {
+        let etat = serde_json::json!({
+            "id": identifiant(nom), "scope": "caster", "max": 1, "default": 0, "monotone": "increasing",
+            "gain_at_turn_end": 1, "grants_ap": pa,
+        });
+        if greffer(&mut ruleset, etat)? {
+            des_le_deuxieme.push(format!("{nom} (+{pa} PA)"));
+        }
+    }
+    for (nom, pourcent) in resolved.damage_multipliers.iter().filter(|(n, _)| garde(n)) {
+        let etat = serde_json::json!({
+            "id": identifiant(nom), "scope": "caster", "max": 1, "default": 0, "monotone": "increasing",
+            "gain_at_turn_end": 1,
+            "modifies_damage": [{ "kind": "final_multiplier", "percent": pourcent, "finaux": true }],
+        });
+        if greffer(&mut ruleset, etat)? {
+            des_le_deuxieme.push(format!("{nom} (+{} % de dommages finaux)", pourcent.saturating_sub(100)));
+        }
+    }
+    if !des_le_deuxieme.is_empty() {
+        notes.push(format!(
+            "{} : à partir du deuxième tour, le premier n'ayant pas de tour précédent",
+            des_le_deuxieme.join(", ")
+        ));
     }
     Ok((ruleset, notes))
 }
@@ -3157,8 +3191,9 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
 
     Ok(serde_json::json!({
         "build": {
-            // Les PA que la rotation joue : ceux de la fiche, plus ceux d'un
-            // Dofus que le joueur n'a pas écarté (le Jaune Ocre).
+            // Les PA que la rotation joue au premier tour : ceux de la fiche,
+            // plus ceux d'un Dofus que le joueur n'a pas écarté. Le Jaune Ocre
+            // n'en est pas : il s'ajoute à partir du deuxième tour.
             "ap": to_engine_build(request, &outcome.resolved).base_ap,
             "mp": outcome.resolved.base_mp,
             "crit": outcome.resolved.crit_bonus_percent,
@@ -3648,7 +3683,9 @@ mod tests {
 
     /// L'infobulle annonce les mêmes dégâts que la rotation, bonus
     /// multiplicatifs du build compris : un Rêve Nébuleux à +20 % et un Bleu
-    /// Turquoise à +10 % font 1,32.
+    /// Turquoise à +10 % font 1,32. Elle compte aussi le Rouge Vermeil, qui ne
+    /// joue qu'à partir du deuxième tour : la comparaison se fait au troisième,
+    /// impair comme le Rêve Nébuleux le veut.
     #[test]
     fn the_tooltip_agrees_with_the_rotation() {
         let request: Request = serde_json::from_str(CHARGE).expect("charge lisible");
@@ -3666,14 +3703,13 @@ mod tests {
         // lancer critique et la rotation doit tomber au milieu de la fourchette.
         let milieu = (lo + hi) / 2.0;
 
-        let joue = rotation["rotation"]["turns"]
+        let joue = rotation["rotation"]["turns"][2]["casts"]
             .as_array()
             .unwrap()
             .iter()
-            .flat_map(|t| t["casts"].as_array().unwrap())
             .find(|c| c["id"] == "gelure")
             .map(|c| c["damage"].as_f64().unwrap())
-            .expect("Gelure doit être jouée");
+            .expect("Gelure doit être jouée au troisième tour");
 
         assert!(
             (joue - milieu).abs() <= 1.0,
@@ -3710,7 +3746,9 @@ mod tests {
 
         assert_eq!(v["build"]["elements"][3]["characteristic"], 1118);
         assert_eq!(v["rotation"]["turns"].as_array().unwrap().len(), 7);
-        assert_eq!(v["rotation"]["ap_wasted"], 0);
+        // Un PA reste au deuxième tour : ses dix-huit PA, Jaune Ocre compris,
+        // ne se dépensent pas en entier avec ce deck.
+        assert_eq!(v["rotation"]["ap_wasted"], 1);
 
         // Turn one cannot generate a Telefrag from nothing: only Permutation
         // teleports unconditionally in this deck, so it is cast before anything
@@ -3856,20 +3894,78 @@ mod tests {
 
     /// Un bonus de Dofus écarté dans l'onglet Rotation sort du calcul : ce
     /// Xélor porte le Vulbis et l'Ocre, qui donnent +10 % et +1 PA contre une
-    /// cible passive ; écartés, ni l'un ni l'autre.
+    /// cible passive, en deux états acquis à la fin du premier tour, hors des
+    /// PA et des multiplicateurs de chaque tour ; écartés, ni l'un ni l'autre.
     #[test]
     fn un_bonus_de_dofus_ecarte_sort_du_calcul() {
         let request: Request = serde_json::from_str(CHARGE).expect("charge lisible");
         let resolved = resolve_build(&request.build.normalise()).expect("résolution");
         let garde = to_engine_build(&request, &resolved);
-        assert_eq!(garde.base_ap, resolved.base_ap + 1, "le PA du Jaune Ocre");
-        assert!(garde.modifiers.iter().any(|m| m.id == "Rouge Vermeil" && m.percent == 110));
+        assert_eq!(garde.base_ap, resolved.base_ap, "le Jaune Ocre n'est pas un PA de chaque tour");
+        assert!(!garde.modifiers.iter().any(|m| m.id == "Rouge Vermeil"));
+        let etats = |r: &Request| {
+            let (regles, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), r, &resolved, &[]).unwrap();
+            regles
+                .resources
+                .iter()
+                .filter(|x| ["jaune_ocre", "rouge_vermeil"].contains(&x.id.as_str()))
+                .map(|x| (x.id.clone(), x.gain_at_turn_end, x.grants_ap))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            etats(&request),
+            [("jaune_ocre".to_string(), Some(1), Some(1)), ("rouge_vermeil".to_string(), Some(1), None)]
+        );
+        // Ses 10 % rejoignent la somme des dommages finaux, comme avant.
+        let (regles, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), &request, &resolved, &[]).unwrap();
+        let vermeil = regles.resources.iter().find(|x| x.id == "rouge_vermeil").unwrap();
+        assert!(matches!(
+            vermeil.modifies_damage.as_slice(),
+            [dofus_ruleset::DamageModifier::FinalMultiplier { percent: dofus_ruleset::Maybe::Known(110), finaux: true, .. }]
+        ));
         let mut ecarte = request.clone();
         ecarte.bonus_ecartes = vec!["Rouge Vermeil".into(), "Jaune Ocre".into()];
+        assert!(etats(&ecarte).is_empty());
         let sans = to_engine_build(&ecarte, &resolved);
-        assert_eq!(sans.base_ap, resolved.base_ap);
-        assert!(!sans.modifiers.iter().any(|m| m.id == "Rouge Vermeil"));
-        assert_eq!(sans.modifiers.len(), garde.modifiers.len() - 1);
+        assert_eq!((sans.base_ap, sans.modifiers.len()), (garde.base_ap, garde.modifiers.len()));
+    }
+
+    /// L'Ocre et le Vulbis ne jouent pas au premier tour, qui n'a pas de tour
+    /// précédent : un PA de plus et 10 % de dommages finaux à partir du
+    /// deuxième. Un Xélor qui ne porte qu'eux, sur un deck d'un sort ; chacun se
+    /// mesure seul, l'autre écarté.
+    #[test]
+    fn l_ocre_et_le_vulbis_partent_du_deuxieme_tour() {
+        let jouer = |ecartes: &[&str]| -> Vec<(f64, i64)> {
+            let mut items = vec![0u32; 17];
+            (items[11], items[12]) = (6980, 7754);
+            let request: Request = serde_json::from_value(serde_json::json!({
+                "class": 5, "level": 200, "items": items, "invested": { "chance": 390 }, "deck": ["gelure"], "horizon": 3,
+                "bonus_ecartes": ecartes,
+            }))
+            .unwrap();
+            let v: serde_json::Value = serde_json::from_str(&solve_json(&request).unwrap()).unwrap();
+            v["rotation"]["turns"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|t| {
+                    let depense: i64 = t["casts"].as_array().unwrap().iter().map(|c| c["ap"].as_i64().unwrap()).sum();
+                    (t["damage"].as_f64().unwrap(), depense + t["ap_left"].as_i64().unwrap().max(0))
+                })
+                .collect()
+        };
+        // Les PA du tour, Ocre ou non : un Xélor en regagne aussi par ses sorts.
+        let ocre = jouer(&["Rouge Vermeil"]);
+        let sans_ocre = jouer(&["Rouge Vermeil", "Jaune Ocre"]);
+        let ecart: Vec<i64> = ocre.iter().zip(&sans_ocre).map(|(a, b)| a.1 - b.1).collect();
+        assert_eq!(ecart, [0, 1, 1], "{ocre:?} {sans_ocre:?}");
+        let vulbis = jouer(&["Jaune Ocre"]);
+        let sans_vulbis = jouer(&["Jaune Ocre", "Rouge Vermeil"]);
+        // Le Vulbis : rien au premier tour, puis le même gain à chaque tour.
+        assert!((vulbis[0].0 - sans_vulbis[0].0).abs() < 0.5, "{vulbis:?} {sans_vulbis:?}");
+        assert!(vulbis[1].0 > sans_vulbis[1].0 + 5.0, "{vulbis:?} {sans_vulbis:?}");
+        assert!((vulbis[2].0 - vulbis[1].0).abs() < 0.5 && (sans_vulbis[2].0 - sans_vulbis[1].0).abs() < 0.5);
     }
 
     /// L'Abyssal, le Sylvestre et le Cauchemar, portés par un Roublard : +1 PA
