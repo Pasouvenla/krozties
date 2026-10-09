@@ -248,6 +248,18 @@ try {
   await pause(300);
   resultat.orientation = [...app.etat.rotation.coches].sort();
 
+  // Votre position : trois boutons, et « Distance » dit ce qui sort de la
+  // rotation et passe dans le réglage.
+  const positions = [...document.querySelectorAll('input[name="position"]')];
+  const aDistance = positions.find((p) => p.value === 'distance');
+  aDistance.click();
+  resultat.position = {
+    choix: positions.map((p) => p.parentElement.innerText.trim()),
+    aide: texte('#aidePosition'),
+    reglage: app.etat.rotation.position,
+  };
+  positions.find((p) => p.value === 'libre').click();
+
   // Le concepteur : un réseau entier sur le damier, en deux tours de quatre
   // PA, qu'on parcourt dans les deux sens jusqu'au déclenchement et ses
   // entrées. Le joueur ne donne pas d'entrée.

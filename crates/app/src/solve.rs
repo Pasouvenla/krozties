@@ -157,6 +157,12 @@ pub struct Request {
     /// distance`; on any other build it changes nothing at all.
     #[serde(default)]
     pub reach: Option<String>,
+    /// Où le joueur se tient : `"distance"` écarte du deck ce qui ne frappe
+    /// qu'au contact, `"melee"` ce qui exige deux cases ou plus, et chacun
+    /// règle aussi `reach`. Absent ou `"libre"`, chaque sort se lance là où sa
+    /// portée le permet. Voir [`ecartes_par_la_position`].
+    #[serde(default)]
+    pub position: Option<String>,
     /// Target-side domain resistances, the mirror of the attacker's four.
     #[serde(default)]
     pub resistance_spell: Option<i32>,
@@ -403,6 +409,8 @@ pub struct Outcome {
     /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×3 ») :
     /// la frise l'écrit sur sa ligne de début de tour.
     pub jeu_des_invocations: BTreeMap<String, String>,
+    /// Les sorts du deck, par leur nom, que la position du joueur a écartés.
+    pub hors_position: Vec<String>,
     pub seconds: f64,
 }
 
@@ -1808,14 +1816,14 @@ fn preparer(
     } else {
         ruleset
     };
-    let reach = match request.reach.as_deref() {
+    let reach = match request.position.as_deref().or(request.reach.as_deref()) {
         Some("melee") => Reach::Melee,
         _ => Reach::Ranged,
     };
     // L'arme du build, un sort de plus que le joueur met au deck ou non.
     let maitrise = request.maitrise_d_arme.map_or(crate::armes::MAITRISE_PAR_DEFAUT, i32::from);
     if let Some(arme) = crate::armes::sort(&resolved, maitrise, reach) {
-        if request.deck.iter().any(|d| d == crate::armes::ID) {
+        if request.deck.iter().any(|d| d == crate::armes::ID) && !hors_de_la_position(request, &arme) {
             resolved.assumptions.extend(crate::armes::hypotheses(&resolved, maitrise, reach));
         }
         ruleset.spells.push(arme);
@@ -1891,6 +1899,42 @@ fn preparer(
     Ok((build, resolved, ruleset, scenario, remarques))
 }
 
+/// Les distances auxquelles un sort frappe : sa portée, ou, lancé sur soi, de
+/// une case au rayon de sa zone. `None` pour un sort qui ne frappe pas, ou dont
+/// la portée ou la zone ne se lisent pas : la position ne l'écarte jamais.
+fn atteinte(sort: &dofus_ruleset::SpellDef) -> Option<(u8, u8)> {
+    let mut lignes = sort.lines.iter().chain(sort.modes.iter().flat_map(|m| m.lines.iter())).peekable();
+    lignes.peek()?;
+    let (min, max) = sort.range?;
+    if max > 0 {
+        return Some((min, max));
+    }
+    let rayon = lignes.map(|l| l.area.and_then(|a| a.size)).collect::<Option<Vec<u8>>>()?;
+    Some((1, rayon.into_iter().max().unwrap_or(0).max(1)))
+}
+
+/// Les sorts du deck, arme comprise, que la position du joueur écarte, avec
+/// leur nom : à distance, ceux qui ne frappent qu'au contact ; en mêlée, ceux
+/// qui exigent deux cases ou plus. Un sort lancé sur soi dont la zone porte à
+/// deux cases (Glacier, Cri de Guerre) frappe encore à distance.
+pub fn ecartes_par_la_position(request: &Request, ruleset: &Ruleset) -> Vec<(String, String)> {
+    ruleset
+        .spells
+        .iter()
+        .filter(|s| request.deck.contains(&s.id) && hors_de_la_position(request, s))
+        .map(|s| (s.id.clone(), s.name.fr.clone()))
+        .collect()
+}
+
+/// Le sort ne peut pas frapper depuis la position du joueur.
+fn hors_de_la_position(request: &Request, sort: &dofus_ruleset::SpellDef) -> bool {
+    atteinte(sort).is_some_and(|(min, max)| match request.position.as_deref() {
+        Some("distance") => max <= 1,
+        Some("melee") => min >= 2,
+        _ => false,
+    })
+}
+
 /// Rejoue une rotation donnée, tour par tour, sur le build et le deck de la
 /// requête : voir [`Engine::replay`]. Rien n'est élagué, un sort que la
 /// recherche aurait écarté se rejoue comme un autre.
@@ -1899,6 +1943,8 @@ pub fn rejouer(request: &Request, tours: &[Vec<String>]) -> Result<dofus_engine:
     scenario.prune_spells = false;
     let mut engine_build = to_engine_build(request, &resolved);
     engine_build.name = format!("classe {}", build.class);
+    let hors = ecartes_par_la_position(request, &ruleset);
+    engine_build.deck.retain(|s| !hors.iter().any(|(id, _)| id == s));
     Engine::new(&ruleset, engine_build, scenario).map_err(|e| e.to_string())?.replay(tours)
 }
 
@@ -1920,6 +1966,8 @@ pub fn conseil_json(demande: &DemandeDeConseil) -> Result<String, String> {
     scenario.prune_spells = false;
     let mut engine_build = to_engine_build(&demande.requete, &resolved);
     engine_build.name = format!("classe {}", build.class);
+    let hors = ecartes_par_la_position(&demande.requete, &ruleset);
+    engine_build.deck.retain(|s| !hors.iter().any(|(id, _)| id == s));
     let engine = Engine::new(&ruleset, engine_build, scenario).map_err(|e| e.to_string())?;
     let remplacants = engine.remplacants(&demande.tours, demande.tour, demande.lancer)?;
     let icones: BTreeMap<&str, Option<u32>> = ruleset.spells.iter().map(|s| (s.id.as_str(), s.dofusdb_id)).collect();
@@ -1954,6 +2002,8 @@ impl Request {
 
 pub fn run(request: &Request) -> Result<Outcome, String> {
     let (build, resolved, ruleset, scenario, remarques) = preparer(request)?;
+    let hors_position = ecartes_par_la_position(request, &ruleset);
+    let dans_la_position = |s: &String| !hors_position.iter().any(|(id, _)| id == s);
     // Deux passes quand un palier est coché, sauf demande contraire. La
     // première cherche sans les mécaniques coûteuses : immédiate, elle dit quels
     // sorts portent la rotation. La seconde les rallume sur ces sorts-là, plus
@@ -1966,6 +2016,7 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
         let pauvre = ruleset.sans_mecaniques_couteuses();
         let mut build_pauvre = to_engine_build(request, &resolved);
         build_pauvre.name = format!("classe {}", build.class);
+        build_pauvre.deck.retain(dans_la_position);
         let moteur = Engine::new(&pauvre, build_pauvre, scenario.clone())
             .map_err(|e| e.to_string())?;
         let Some(premiere) = moteur.solve_annulable() else {
@@ -1984,6 +2035,7 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
     };
     let mut engine_build = to_engine_build(request, &resolved);
     engine_build.name = format!("classe {}", build.class);
+    engine_build.deck.retain(dans_la_position);
     if let Some(retenus) = &deck_affine {
         engine_build.deck.retain(|s| retenus.contains(s));
     }
@@ -2042,6 +2094,7 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
             .iter()
             .filter_map(|r| Some((r.id.strip_prefix("invocation_")?.to_string(), r.note.clone()?)))
             .collect(),
+        hors_position: hors_position.into_iter().map(|(_, nom)| nom).collect(),
         seconds: started.elapsed().as_secs_f64(),
     })
 }
@@ -3145,6 +3198,7 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
             "ecartes": outcome.ecartes.iter().map(|(s, r)| {
                 serde_json::json!({ "sort": s, "raison": r })
             }).collect::<Vec<_>>(),
+            "hors_position": outcome.hors_position,
             // L'opener et la boucle : la vraie réponse à « qu'est-ce que je
             // joue », l'horizon n'étant qu'une fenêtre arbitraire.
             "steady": {
@@ -4354,6 +4408,72 @@ mod tests {
         let (sacrifiee, frappes, _) = lancers_et_frappes(requete, "la_sacrifiee_transmutee");
         assert_eq!((gonflable.as_slice(), sacrifiee.as_slice()), ([1, 5].as_slice(), [1, 4].as_slice()));
         assert_eq!(frappes, [2, 3, 4, 5, 6, 7]);
+    }
+
+    /// La rotation d'un Cra qui porte l'Épée de Boisaille, à une position
+    /// donnée.
+    fn rotation_a(position: &str, deck: &[&str]) -> serde_json::Value {
+        let mut items = vec![0u32; 17];
+        items[8] = 44;
+        let requete: Request = serde_json::from_value(serde_json::json!({
+            "class": 9, "level": 200, "items": items, "deck": deck, "horizon": 2, "position": position,
+        }))
+        .unwrap();
+        serde_json::from_str(&solve_json(&requete).unwrap()).unwrap()
+    }
+
+    fn lance(v: &serde_json::Value, sort: &str) -> bool {
+        v["rotation"]["turns"].as_array().unwrap().iter().any(|t| t["casts"].as_array().unwrap().iter().any(|c| c["id"] == sort))
+    }
+
+    /// À distance, une arme qui ne frappe qu'au contact sort du deck, et le
+    /// résultat la nomme ; au choix, elle se lance.
+    #[test]
+    fn a_distance_l_arme_de_melee_sort_du_deck() {
+        let parle_de_l_epee = |v: &serde_json::Value| {
+            v["rotation"]["remarques"].as_array().unwrap().iter().any(|r| r.as_str().unwrap().contains("Épée de Boisaille"))
+        };
+        let libre = rotation_a("libre", &["arme"]);
+        assert!(lance(&libre, "arme"));
+        assert_eq!(libre["rotation"]["hors_position"], serde_json::json!([]));
+        assert!(parle_de_l_epee(&libre));
+        let distance = rotation_a("distance", &["arme"]);
+        assert!(!lance(&distance, "arme"));
+        assert_eq!(distance["rotation"]["hors_position"], serde_json::json!(["Épée de Boisaille"]));
+        // Écartée, l'épée ne laisse pas de remarque sur ses coups.
+        assert!(!parle_de_l_epee(&distance));
+    }
+
+    /// En mêlée, ce qui exige deux cases ou plus sort du deck : la Flèche
+    /// Perforante porte de 3 à 9 cases. L'épée, elle, reste.
+    #[test]
+    fn en_melee_les_sorts_a_distance_sortent_du_deck() {
+        let melee = rotation_a("melee", &["arme", "fleche_perforante"]);
+        assert!(lance(&melee, "arme"));
+        assert!(!lance(&melee, "fleche_perforante"));
+        assert_eq!(melee["rotation"]["hors_position"], serde_json::json!(["Flèche Perforante"]));
+    }
+
+    /// Lancé sur soi, un sort frappe aussi loin que sa zone : les huit sorts de
+    /// dégâts lancés sur soi dont la zone porte à deux cases ou plus restent au
+    /// deck à distance comme en mêlée.
+    #[test]
+    fn un_sort_sur_soi_a_grande_zone_reste_a_toute_position() {
+        for (classe, id) in [
+            (1u32, "regroupement"), (11, "afflux"), (17, "glacier"), (18, "tibia"),
+            (2, "toison_d_or"), (20, "ydra"), (20, "degagement"), (7, "cri_de_guerre"),
+        ] {
+            let regles = load_ruleset(classe).unwrap();
+            let sort = regles.spells.iter().find(|s| s.id == id).unwrap();
+            assert!(atteinte(sort).is_some_and(|(min, max)| min == 1 && max >= 2), "{id}");
+            for position in ["distance", "melee"] {
+                let requete: Request = serde_json::from_value(serde_json::json!({
+                    "class": classe, "level": 200, "items": vec![0u32; 17], "deck": [id], "position": position,
+                }))
+                .unwrap();
+                assert!(ecartes_par_la_position(&requete, &regles).is_empty(), "{id} {position}");
+            }
+        }
     }
 
     /// Le Pacte Bestial et Cortège Sauvage dans la greffe : le sacrifice des

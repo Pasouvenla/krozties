@@ -77,7 +77,17 @@ export async function rendre(cible, etat, { appeler }) {
     exhaustif: false,
     /// Ce que le joueur déclare de sa situation, par identifiant de réglage.
     etats: {},
+    /// Où il se tient : `libre`, `distance` ou `melee`.
+    position: 'libre',
   });
+  /// La position écarte du deck ce qui ne peut pas frapper de là.
+  const POSITIONS = [['libre', 'Au choix'], ['distance', 'Distance'], ['melee', 'Mêlée']];
+  const AIDE_POSITION = {
+    libre: '',
+    distance: "Les sorts et l'arme qui ne frappent qu'au contact sortent de la rotation.",
+    melee: 'Les sorts qui exigent 2 cases ou plus sortent de la rotation.',
+  };
+  const position = () => reglages.position || 'libre';
   /// Les réglages que la CLASSE fait déclarer, découverts dans ses règles :
   /// la vie restante du Sacrieur, la poussée du Steamer, le glyphe-aura du
   /// Féca. Chacun part de son défaut, et garde ce que le joueur y a mis.
@@ -178,6 +188,11 @@ export async function rendre(cible, etat, { appeler }) {
             <div><label for="cibles">Ennemis</label>
               <input type="number" id="cibles" min="1" max="${MAX_ENNEMIS}" value="${reglages.cibles}"></div>
           </div>
+          <p class="libelle-groupe">Votre position</p>
+          <div class="barre-outils">${POSITIONS.map(([v, t]) => `
+            <label class="segment"><input type="radio" name="position" value="${v}"${position() === v ? ' checked' : ''}> ${t}</label>`).join('')}
+          </div>
+          <p class="aide" id="aidePosition"${AIDE_POSITION[position()] ? '' : ' hidden'}>${AIDE_POSITION[position()]}</p>
           <details class="plus-loin" id="plusLoin" ${etat.plusLoinOuvert ? 'open' : ''}>
             <summary>Pour aller plus loin <span class="modifies" id="reglagesModifies"></span></summary>
             <div class="reglages">
@@ -370,6 +385,14 @@ export async function rendre(cible, etat, { appeler }) {
     reglages.pousseesBloquees = $('pousseesBloquees').checked;
     marquerPerime();
   });
+  cible.querySelectorAll('input[name="position"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      reglages.position = r.value;
+      $('aidePosition').textContent = AIDE_POSITION[r.value];
+      $('aidePosition').hidden = !AIDE_POSITION[r.value];
+      marquerPerime();
+    });
+  });
   if (arme) {
     $('maitrise').addEventListener('change', () => {
       reglages.maitrise = Number($('maitrise').value);
@@ -449,6 +472,7 @@ export async function rendre(cible, etat, { appeler }) {
     horizon: reglages.horizon,
     pm_depenses: reglages.pmDepenses,
     maitrise_d_arme: reglages.maitrise ?? 300,
+    position: position(),
     poussees_bloquees: Boolean(reglages.pousseesBloquees),
     targets: reglages.cibles,
     etalement: reglages.etalement,
@@ -602,6 +626,8 @@ export async function rendre(cible, etat, { appeler }) {
 
         ${alerte((r.ecartes || []).map((e) => e.sort),
           (sorts) => `Sorts jamais rentables ici : ${sorts}.`)}
+        ${alerte(r.hors_position,
+          (sorts, plusieurs) => `Écarté${plusieurs ? 's' : ''} par votre position : ${sorts}.`)}
         ${alerte(r.zones_sans_plafond,
           (sorts) => `Dégâts surestimés sur plusieurs ennemis pour ${sorts}.`)}
         ${r.targets > 1 && reglages.etalement === 0 ? alerte(r.zones_degressives,

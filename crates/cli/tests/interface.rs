@@ -165,6 +165,15 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // Deux ouvertures, deux demandes à GitHub ; la troisième, hors ligne, garde
     // le numéro lu.
     assert_eq!(r["majVerifiee"], serde_json::json!({ "demandes": 2, "derniere": "9.9.9" }), "{r}");
+    assert_eq!(
+        r["position"],
+        serde_json::json!({
+            "choix": ["Au choix", "Distance", "Mêlée"],
+            "aide": "Les sorts et l'arme qui ne frappent qu'au contact sortent de la rotation.",
+            "reglage": "distance",
+        }),
+        "{r}"
+    );
     for (outil, titre) in [
         ("equipement", "Équipement"),
         ("rotation", "Rotation"),
