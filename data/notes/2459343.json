@@ -1,0 +1,369 @@
+{
+ "id": "2459343",
+ "forum": "Patch notes",
+ "titre": "Patch notes 3.7.10.10 du 13/10/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2459343-patch-notes-3-7-10-10-13-10-2026",
+ "publie": "2026-10-13T08:47:30+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Performances / Crashs"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Il arrive parfois que le client se ferme lors de l'arrivée sur une carte."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Classes / Compagnons"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque deux pièges Sram sont superposés et doivent se déclencher en même temps, seul le premier piège de la case est compté dans la prévisualisation."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Xelor : le glyphe d'Instabilité ne se déclenche plus d'une fois par action pouvant provoquer un Téléfrag."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'animation des sorts Portail et Errance de l'Eliotrope est anormalement longue."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'animation de sortie de portail Eliotrope ne se joue plus."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Eniripsa : Les rangs des sorts Compliment et Insulte ne sont pas corrects sur la Fée Galvanisante et les Feux de Déclin, Déprimant et Décourageant."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Un portail Eliotrope fermé bloque anormalement le chemin de déplacement proposé."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'un Huppermage lance le sort Bouclier élémentaire, l'animation du sort se joue en boucle."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans l'interface des envoutements, si le joueur survole un malus lorsque celui-ci est perdu alors le joueur ne peut plus utiliser ses PM et fermer l'interface des envoutements."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'une seconde barre de sorts est ajoutée, le raccourci ² utilisé pour les armes ne fonctionne plus."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, l'état au-dessus d'une entité n'est pas affiché tant que l'entité n'est pas survolée."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'un sort est sélectionné en combat, le cadre blanc autour de lui ne s'affiche plus."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors du survol d'une marque au sol noire, la couleur dans l'infobulle est rouge au lieu d'etre noire."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certaines dispositions, il arrive que les états au-dessus des personnages passent derrière d'autres personnages."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans les combats de la zone Crocuzko, une fois qu'un monstre est tué, la prévisualisation ne fonctionne plus sur les autres monstres."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Options"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Diverses corrections sur les options en combat : le menu contextuel disparait lorsqu'on zoome, un séparateur en trop, mauvais ordre des options, mauvais picto sur l'option d'entités au premier plan."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, les raccourcis peuvent ne plus fonctionner."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, les sections du menu des options ne peuvent pas être repliées."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Quêtes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les Krobes de quête n'ont pas les mêmes modifications que les Krobes classiques."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans l'interface de quêtes, lorsqu'un objectif de quête a un texte très long, le retour à la ligne n'est pas fonctionnel."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'Idole Merydique réduit anormalement les dégâts mêlée."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Quête \"Qui nous protège des protecteurs\" : la quête est bloquée suite au remplacement des essences dans la recette."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Cartes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'effet visuel affiché sur les portails de Songes est parfois anormalement trop saturé."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Après utilisation d'une Ankre, un personnage peut se retrouver bloqué dans le donjon s'il n'a pas l'altération de la dimension."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Sur certaines cartes (ex : Supervisoeuf), les effets d'environnement sont anormalement trop prononcés."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Objets"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les ankres n'ont pas la condition de possession de l'altération pour être utilisées."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans l'infobulle au survol d'un montilier d'apparat, la mention \"Compatible avec : ???\" apparait anormalement."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans la recette de la Lance-Eclair de Menalt, la corne du Vénérable Endormi est en 4 exemplaires au lieu de 1."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Social (Amis, Guilde et Alliances)"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les percepteurs n'ont anormalement qu'un seul pod."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Il est à nouveau possible de poser des percepteurs."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Il est anormalement impossible d'éditer sa propre note de guilde."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Elevage"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "En arrivant sur l'onglet \"Accouplement\" ou \"Clonage\", les filtres ne se mettent parfois pas correctement à jour (Féconde pour Accouplement et Stérile pour Clonage)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certaines infobulles de l'interface d'élevage, les anciens noms des jauges sont encore affichés."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Monstres"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors du clic sur l'état \"Première heure\" de l'Auroraire contre Fraktale ou XLII, la description affichée est celle de la mécanique du Vortex."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les Zarbivores n'alternent pas correctement entre Apathique et Alerté tous les 2 tours."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Inventaires / Ensembles / Tenues"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les objets dans le coffre de Havre Sac et en banque ne gardent plus leur ordre."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Songes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "En Songes, il est possible que Sylargh apparaisse en combat avec Kimbo / Moon / Ombre alors qu'ils sont incompatibles."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Succès"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, le succès spécial de Vortex échoue alors qu'il ne devrait pas."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Monstres"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Le sort initial du Psikopompe n'applique plus ses effets sur les invocations au moment où il apparaît dans le combat."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Divers"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans l'interface des envoutements, les noms des états ne sont pas correctement affichés dans les autres langues que le français."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans le bestiaire, une barre de scroll apparait parfois sur les drops alors qu'il n'y en a pas besoin."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque l'interface de succès est ouverte via le raccourci dans le bestiaire, alors l'interface se bloque sur les succès recherchés."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Certaines infobulles se dupliquent (au survol des pods dans un échange, au survol du bouton \"i\" dans l'interface de changement de nom ...)."
+  },
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Modifications"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Performances / Crashs"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Amélioration du temps de chargement des transitions de cartes."
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Options"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "En combat, au survol du raccourci \"Marques au sol\" en haut à gauche, les options sont désormais centralisées en 1 seule infobulle."
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Succès"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Les succès Dungeon Rusher World Tour sont retirés du jeu."
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Kolizéum"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Mise à jour du podium Kolizéum."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
