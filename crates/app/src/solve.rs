@@ -1298,7 +1298,7 @@ fn avec_les_invocations(
         }
     }
     notes.push(format!(
-        "{plafond} invocation{} en jeu au plus, d'après l'équipement",
+        "{plafond} point{} d'invocation au plus, d'après l'équipement",
         if plafond > 1 { "s" } else { "" }
     ));
     Ok((ruleset, notes))
@@ -4277,7 +4277,7 @@ mod tests {
             .count();
         assert_eq!(invocations, 1, "{r}");
         let notes = r["build"]["assumptions"].to_string();
-        assert!(notes.contains("1 invocation en jeu au plus"), "{notes}");
+        assert!(notes.contains("1 point d'invocation au plus"), "{notes}");
         // Ce que le Tofu joue par tour, l'encart Invocations le dit, et plus les
         // remarques du calcul.
         let encart = crate::invocations::invocations_du_profil(2, 200, &profil);
@@ -4527,7 +4527,7 @@ mod tests {
             avec_les_invocations(load_ruleset(10).unwrap(), &requete, &build, &resolved).expect("greffe");
         let en_jeu = regles.resources.iter().find(|r| r.id == "invocations_en_jeu").unwrap();
         assert_eq!(en_jeu.max, 3);
-        assert!(notes.iter().any(|n| n == "3 invocations en jeu au plus, d'après l'équipement"), "{notes:#?}");
+        assert!(notes.iter().any(|n| n == "3 points d'invocation au plus, d'après l'équipement"), "{notes:#?}");
     }
 
     /// Les tours où un sort est lancé, ceux où son invocation frappe au début
@@ -4762,7 +4762,6 @@ mod tests {
         assert!(notes.iter().any(|n| n.starts_with("Cortège Sauvage :")));
     }
 
-    /// Une requête d'Osamodas sans équipement, une invocation en jeu au plus.
     /// Un Osamodas à cinq points d'invocation : la Boucle d'oreille de Kongoku,
     /// le Collier de Gargandyas et l'Anneau Lunaire en donnent quatre de plus,
     /// de quoi tenir un Craquolosse (3) et un Tofu (1).
@@ -4906,8 +4905,8 @@ mod tests {
         assert_eq!(martinet(&s, 2), martinet(&seul, 0));
     }
 
-    /// Une requête de Steamer sans équipement, une invocation en jeu au plus,
-    /// tourelles au contact de la cible ou non.
+    /// Une requête de Steamer sans équipement, tourelles au contact de la cible
+    /// ou non.
     fn steamer(deck: &[&str], au_contact: bool) -> Request {
         serde_json::from_value(serde_json::json!({
             "class": 15, "level": 200, "items": vec![0u32; 17], "horizon": 1, "deck": deck,
