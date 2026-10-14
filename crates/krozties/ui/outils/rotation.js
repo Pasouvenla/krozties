@@ -286,17 +286,25 @@ export async function rendre(cible, etat, { appeler }) {
   );
 
   function dessinerSorts() {
+    // Ce qui borne le sort, nommé sur sa ligne : rien à titrer en colonne.
+    const bornes = (s) => [
+      `${s.ap} PA`,
+      s.cooldown ? `relance ${s.cooldown} ${pluriel(s.cooldown, 'tour')}` : '',
+      s.casts_per_turn ? `${s.casts_per_turn} par tour` : '',
+      s.casts_per_target ? `${s.casts_per_target} par cible` : '',
+    ].filter(Boolean).join(' · ');
     const carte = (s) => `
       <label class="sort${reglages.coches.has(s.id) ? ' coche' : ''}" data-sort="${echapper(s.id)}">
         <input type="checkbox" value="${echapper(s.id)}" ${reglages.coches.has(s.id) ? 'checked' : ''}>
         ${imageDe(s) || '<span class="vide"></span>'}
-        <span>${echapper(s.name)}</span>
-        <span class="cout">${s.ap} PA</span>
+        <span class="quoi"><b>${echapper(s.name)}</b><small>${bornes(s)}</small></span>
       </label>`;
 
+    // Un encart par emplacement, ses variantes dedans, comme la fiche du build.
     $('listeSorts').innerHTML = paires.map((g) => {
       const conflit = g.length > 1 && g.every((s) => reglages.coches.has(s.id));
-      return `<div class="paire${conflit ? ' conflit' : ''}"
+      const actif = g.some((s) => reglages.coches.has(s.id));
+      return `<div class="paire${actif ? ' actif' : ''}${conflit ? ' conflit' : ''}"
         data-groupe="${echapper(g[0].variant_group != null ? String(g[0].variant_group) : g[0].id)}"
         ${conflit ? `title="Décochez ${echapper(g.map((s) => s.name).join(' ou '))}."` : ''}
         >${g.map(carte).join('')}</div>`;
@@ -311,6 +319,7 @@ export async function rendre(cible, etat, { appeler }) {
         const paire = i.closest('.paire');
         const cases = [...paire.querySelectorAll('input')];
         paire.classList.toggle('conflit', cases.length > 1 && cases.every((c) => c.checked));
+        paire.classList.toggle('actif', cases.some((c) => c.checked));
         majCompteur();
         marquerPerime();
         dessinerInvocations();
@@ -636,23 +645,30 @@ export async function rendre(cible, etat, { appeler }) {
         ${alerte(r.zones_sans_plafond,
           (sorts) => `Dégâts surestimés sur plusieurs ennemis pour ${sorts}.`)}
         ${r.targets > 1 && reglages.etalement === 0 ? alerte(r.zones_degressives,
-          (sorts, plusieurs) => `Avec un écart à 0, ${sorts} ${plusieurs ? 'frappent' : 'frappe'} chaque ennemi à pleine puissance.`)
+          (sorts, plusieurs) => `Avec 0 case entre les ennemis touchés, ${sorts} ${
+            plusieurs ? 'frappent' : 'frappe'} chaque ennemi à pleine puissance.`)
           : ''}
       </div>
 
       <div class="carte selectionnable${classeRepli(etat, 'repartition')}" style="margin-top:1rem">
         ${titreRepliable(etat, 'repartition', 'Répartition des dégâts par source')}
-        <table class="mini"><tbody>${(r.repartition || []).map((p) => `
+        <table class="mini">
+          <thead><tr><th></th><th>Source</th><th>Dégâts</th><th>Part</th></tr></thead>
+          <tbody>${(r.repartition || []).map((p) => `
           <tr><td style="width:1.6rem">${imageDe(p, 20)}</td>
             <td>${echapper(p.name)}</td>
             <td style="width:5rem">${nb(p.damage)}</td>
-            <td style="width:4rem">${(p.share * 100).toFixed(1)} %</td></tr>`).join('')}
+            <td style="width:4rem">${(p.share * 100).toFixed(1).replace('.', ',')} %</td></tr>`).join('')}
         </tbody></table>
       </div>
       ${(r.remarques || []).length ? `
       <div class="carte selectionnable${classeRepli(etat, 'remarques')}" style="margin-top:1rem">
         ${titreRepliable(etat, 'remarques', 'Remarques du calcul')}
-        <ul class="aide remarques">${r.remarques.map((m) => `<li>${echapper(majuscule(m))}</li>`).join('')}</ul>
+        <div class="grille-encarts">${(r.remarques_par_sujet || []).map((g) => `
+          <section class="encart"><h4>${echapper(g.sujet)}</h4>
+            <div><ul class="aide remarques">${
+              g.lignes.map((m) => `<li>${echapper(majuscule(m))}</li>`).join('')}</ul></div>
+          </section>`).join('')}</div>
       </div>` : ''}`;
 
     $('detailRotation').querySelectorAll('details.palier').forEach((d) => {

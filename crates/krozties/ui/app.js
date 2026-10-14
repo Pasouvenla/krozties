@@ -29,6 +29,8 @@ const OUTILS = {
   kroztools: () => import('./outils/kroztools.js'),
   // Les changements que la bêta annonce, avant leur sortie.
   beta: () => import('./outils/beta.js'),
+  // Un calcul faux ou une idée, vers le formulaire d'issue du dépôt.
+  retours: () => import('./outils/retours.js'),
 };
 
 /// Le catalogue des classes se charge une fois, au démarrage. C'est une promesse

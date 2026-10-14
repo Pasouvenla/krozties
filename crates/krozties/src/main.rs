@@ -117,6 +117,31 @@ fn version_de_l_application() -> Sortie {
 /// La page des versions, dans le navigateur du système.
 #[tauri::command]
 fn ouvrir_les_versions() -> Sortie {
+    ouvrir(PAGE_DES_VERSIONS)
+}
+
+/// Le formulaire d'issue du dépôt, que la page Retours remplit par l'adresse.
+const FORMULAIRE_DE_RETOUR: &str = "https://github.com/Pasouvenla/krozties/issues/new?";
+
+/// Le formulaire d'issue rempli par la page Retours, dans le navigateur du
+/// système. Seule cette adresse s'ouvre, en caractères qu'`encodeURIComponent`
+/// produit : la page ne fait rien ouvrir d'autre.
+#[tauri::command]
+fn ouvrir_un_retour(adresse: String) -> Sortie {
+    if !adresse_de_retour(&adresse) {
+        return Err("adresse de retour refusée".into());
+    }
+    ouvrir(&adresse)
+}
+
+fn adresse_de_retour(adresse: &str) -> bool {
+    adresse
+        .strip_prefix(FORMULAIRE_DE_RETOUR)
+        .is_some_and(|reste| reste.bytes().all(|b| b.is_ascii_alphanumeric() || b"-_.!~*'()%&=".contains(&b)))
+}
+
+/// Une adresse dans le navigateur du système.
+fn ouvrir(adresse: &str) -> Sortie {
     let ouvreur = if cfg!(target_os = "macos") {
         "open"
     } else if cfg!(target_os = "windows") {
@@ -125,9 +150,9 @@ fn ouvrir_les_versions() -> Sortie {
         "xdg-open"
     };
     let mut enfant = std::process::Command::new(ouvreur)
-        .arg(PAGE_DES_VERSIONS)
+        .arg(adresse)
         .spawn()
-        .map_err(|e| format!("impossible d'ouvrir {PAGE_DES_VERSIONS} : {e}"))?;
+        .map_err(|e| format!("impossible d'ouvrir {adresse} : {e}"))?;
     // L'ouvreur est attendu à part, pour ne pas laisser de processus zombie.
     std::thread::spawn(move || {
         let _ = enfant.wait();
@@ -154,7 +179,8 @@ fn main() {
             ligne_de_vue,
             importer_equipement,
             version_de_l_application,
-            ouvrir_les_versions
+            ouvrir_les_versions,
+            ouvrir_un_retour
         ])
         .run(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer");
@@ -258,6 +284,24 @@ mod tests {
     }
 
     /// Le manifeste déclare exactement les commandes que le code expose, et le pont
+    /// La page Retours ne fait ouvrir que le formulaire d'issue du dépôt, rempli
+    /// en caractères d'adresse : ni une autre page, ni un autre dépôt, ni une
+    /// adresse qui casserait la ligne de commande de l'ouvreur.
+    #[test]
+    fn seul_le_formulaire_de_retour_s_ouvre() {
+        let bonne = format!("{FORMULAIRE_DE_RETOUR}title=Calcul%20faux&body=La%20Gonflable%20(rang%201)");
+        assert!(adresse_de_retour(&bonne));
+        for mauvaise in [
+            "https://github.com/Pasouvenla/krozties/releases/latest",
+            "https://github.com/autre/depot/issues/new?title=x",
+            "https://exemple.fr/?https://github.com/Pasouvenla/krozties/issues/new?",
+            "https://github.com/Pasouvenla/krozties/issues/new?title=x y",
+            "https://github.com/Pasouvenla/krozties/issues/new?title=x\"&calc",
+        ] {
+            assert!(!adresse_de_retour(mauvaise), "{mauvaise}");
+        }
+    }
+
     /// côté page nomme les mêmes : une commande oubliée dans `generate_handler!`
     /// n'échoue qu'à l'exécution.
     #[test]

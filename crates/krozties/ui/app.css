@@ -188,6 +188,14 @@ textarea { min-height: 5rem; font-family: ui-monospace, SFMono-Regular, Menlo, m
 /* Les remarques du calcul, sous la répartition de la Rotation. */
 .remarques { margin: .4rem 0 0; padding-left: 1.1rem; }
 .remarques li + li { margin-top: .3rem; }
+.encart .remarques { margin: 0; }
+
+/* Retours : décrire, puis ouvrir le formulaire d'issue rempli. */
+.retours .sujet { border: 0; padding: 0; margin: 0 0 .8rem; display: flex; flex-wrap: wrap; gap: .4rem; }
+.retours .sujet legend { padding: 0; margin-bottom: .3rem; font-size: .8rem; color: var(--doux); }
+.retours textarea { width: 100%; font-family: inherit; }
+.retours .ouvrir { margin-top: .7rem; background: var(--cuivre); border-color: var(--cuivre); color: #fff; }
+.retours .ouvrir:hover { background: var(--cuivre-fonce); }
 .alerte { color: var(--alerte); }
 .bandeau { padding: .5rem .7rem; border-radius: 4px; font-size: .85rem; }
 .bandeau.souci { background: #fff8e6; border: 1px solid #e8c96a; color: #6b4e00; }
@@ -525,16 +533,20 @@ table.mini .attenue { color: var(--doux); }
 .paliers .bascule, .bonus-dofus .bascule { margin: .5rem 0 0; }
 .paliers .palier-aide, .bonus-dofus .palier-aide { margin: .1rem 0 .4rem 1.4rem; }
 
-.sorts { display: grid; gap: .2rem .5rem;
-         grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
-.sorts .sort { display: flex; gap: .4rem; align-items: center; margin: 0;
-               padding: .18rem .3rem; border-radius: 4px; font-weight: 400;
-               font-size: .84rem; cursor: pointer; }
+/* Un encart par emplacement de sort, ses variantes dedans, comme la fiche du
+   build ; ce qui borne chaque sort se lit sous son nom. */
+.sorts { display: grid; gap: .5rem;
+         grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+.sorts .sort { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: .45rem;
+               align-items: center; margin: 0; padding: .25rem .3rem; border-radius: 4px;
+               font-weight: 400; cursor: pointer; }
 .sorts .sort:hover { background: var(--panneau); }
 .sorts .sort.coche { background: var(--accent-clair); }
-.sorts img, .sorts .vide { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 4px; }
+.sorts img, .sorts .vide { width: 26px; height: 26px; border-radius: 4px; }
 .sorts .vide { background: var(--panneau); }
-.sorts .cout { margin-left: auto; color: var(--doux); font-size: .76rem; }
+.sorts .quoi { display: grid; }
+.sorts .quoi b { font-size: .84rem; font-weight: 600; }
+.sorts .quoi small { font-size: .72rem; color: var(--doux); }
 
 /*
  * La frise : un palier par tour, une ligne par lancer ; les colonnes de chiffres
@@ -724,9 +736,10 @@ table.mini .attenue { color: var(--doux); }
  * Deux variantes ne s'équipent pas ensemble : les paires sont dessinées comme
  * des paires, et la paire entière rougit quand les deux sont cochées.
  */
-.paire { display: grid; gap: .1rem; border: 1px solid transparent;
-         border-radius: 5px; padding: .1rem; }
-.paire.conflit { border-color: var(--alerte); background: #f8ebe7; }
+.paire { display: grid; gap: .2rem; align-content: start; border: 1px dashed var(--cheveux);
+         border-radius: var(--rayon); padding: .3rem .4rem; background: var(--fond); }
+.paire.actif { border-style: solid; }
+.paire.conflit { border: 1px solid var(--alerte); background: #f8ebe7; }
 .paire.conflit .sort.coche { background: #f0d6cf; }
 
 /* ------------------------------------------- fiche du build */

@@ -395,6 +395,9 @@ pub struct Outcome {
     /// Les remarques du calcul lui-même (voir `preparer`), que l'onglet Rotation
     /// affiche ; les hypothèses de l'équipement restent à l'onglet Équipement.
     pub remarques: Vec<String>,
+    /// Ce que chaque remarque concerne, dans le même ordre : « Invocations »,
+    /// « Équipement », « Arme »…
+    pub sujets_des_remarques: Vec<String>,
     /// Les sorts de la rotation dont la zone n'a pas de capacité connue : leur forme
     /// n'est pas décodée, et ils suivent le nombre d'ennemis annoncé sans plafond.
     /// Vide en duel. Forcer une cible serait faux à coup sûr sur un sort « en
@@ -882,6 +885,9 @@ fn avec_les_invocations(
     }
     let instantane = snapshot_for(build.class).ok();
     let mut jouees: Vec<Jouee> = Vec::new();
+    // Les invocations sans attaque à jouer (coût en PA inconnu ou PA
+    // insuffisants) : une seule remarque les nomme toutes.
+    let mut sans_attaque: Vec<String> = Vec::new();
     for (i, sort) in ruleset.spells.iter().enumerate() {
         if !request.deck.contains(&sort.id) {
             continue;
@@ -899,10 +905,7 @@ fn avec_les_invocations(
         let facteur = crate::invocations::facteur(invocation.classe, rang.pi);
         let tour = tour_de_l_invocation(rang, &resolved.profile, facteur, pa_de(rang), &[]);
         if tour.is_empty() {
-            notes.push(format!(
-                "{} : son invocation n'a pas d'attaque à jouer (coût en PA inconnu ou PA insuffisants), elle ne frappe pas",
-                sort.name.fr
-            ));
+            sans_attaque.push(sort.name.fr.clone());
             continue;
         }
         let nom = rang.nom.clone().unwrap_or_else(|| invocation.nom.clone());
@@ -923,6 +926,11 @@ fn avec_les_invocations(
         };
         let pi = rang.pi.unwrap_or(1);
         jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre, vie, pi });
+    }
+    if let Some((dernier, debut)) = sans_attaque.split_last() {
+        let noms = if debut.is_empty() { dernier.clone() } else { format!("{} et {dernier}", debut.join(", ")) };
+        let frappe = if debut.is_empty() { "ne frappe" } else { "ne frappent" };
+        notes.push(format!("{frappe} pas, faute d'attaque à jouer : {noms}"));
     }
     if jouees.is_empty() {
         return Ok((ruleset, notes));
@@ -1840,16 +1848,23 @@ pub(crate) fn duree_de_vie(instantane: &Snapshot, sort: u32, monstre: u32) -> Op
 /// classe greffées de tout ce que le build et le deck y ajoutent (Dofus,
 /// invocations, mur de bombes), le scénario, et les remarques du calcul
 /// (invocations, pièges, tourelles, arme, Dofus) que l'onglet Rotation affiche,
-/// jointes aux hypothèses du build après celles de l'équipement.
+/// jointes aux hypothèses du build après celles de l'équipement, chacune avec
+/// ce qu'elle concerne : l'onglet les range par sujet.
 fn preparer(
     request: &Request,
-) -> Result<(dofus_build::BuildInput, Resolved, Ruleset, Scenario, Vec<String>), String> {
+) -> Result<(dofus_build::BuildInput, Resolved, Ruleset, Scenario, Vec<(&'static str, String)>), String> {
     let build = request.build.normalise();
     let mut resolved = resolve_build(&build)?;
     let depart = resolved.assumptions.len();
+    let mut sujets: Vec<&'static str> = Vec::new();
+    let mut noter = |hypotheses: &mut Vec<String>, sujet: &'static str, notes: Vec<String>| {
+        sujets.extend(std::iter::repeat_n(sujet, notes.len()));
+        hypotheses.extend(notes);
+    };
     // Les objets que la dernière note de sortie change, pas encore relevés :
     // les remarques du calcul le disent aussi.
-    resolved.assumptions.extend(crate::donnees::objets_a_relever(&build.items));
+    let a_relever = crate::donnees::objets_a_relever(&build.items).into_iter().collect();
+    noter(&mut resolved.assumptions, "Équipement", a_relever);
     let mut ruleset = load_ruleset(build.class)?;
     crate::objets_de_classe::sur_les_regles(&mut ruleset, &resolved);
     let mut ruleset = if ruleset.costly.is_empty() {
@@ -1864,16 +1879,16 @@ fn preparer(
         Vec::new()
     };
     let (ruleset, places_manquees) = avec_les_effets_de_dofus(ruleset, request, &resolved, &entravants)?;
-    resolved.assumptions.extend(places_manquees);
+    noter(&mut resolved.assumptions, "Équipement", places_manquees);
     let (ruleset, notes_des_invocations) = avec_les_invocations(ruleset, request, &build, &resolved)?;
-    resolved.assumptions.extend(notes_des_invocations);
+    noter(&mut resolved.assumptions, "Invocations", notes_des_invocations);
     let (ruleset, notes_des_tourelles) = avec_les_tourelles(ruleset, request, &build, &resolved)?;
-    resolved.assumptions.extend(notes_des_tourelles);
+    noter(&mut resolved.assumptions, "Tourelles", notes_des_tourelles);
     let (ruleset, notes_des_pieges) = avec_les_pieges(ruleset, request, &build)?;
-    resolved.assumptions.extend(notes_des_pieges);
+    noter(&mut resolved.assumptions, "Pièges", notes_des_pieges);
     let mut ruleset = if build.class == crate::bombes::ROUBLARD {
         let (ruleset, notes) = avec_le_mur_de_bombes(ruleset, request, build.level, build.class)?;
-        resolved.assumptions.extend(notes);
+        noter(&mut resolved.assumptions, "Bombes", notes);
         ruleset
     } else {
         ruleset
@@ -1886,12 +1901,14 @@ fn preparer(
     let maitrise = request.maitrise_d_arme.map_or(crate::armes::MAITRISE_PAR_DEFAUT, i32::from);
     if let Some(arme) = crate::armes::sort(&resolved, maitrise, reach) {
         if request.deck.iter().any(|d| d == crate::armes::ID) && !hors_de_la_position(request, &arme) {
-            resolved.assumptions.extend(crate::armes::hypotheses(&resolved, maitrise, reach));
+            let hypotheses = crate::armes::hypotheses(&resolved, maitrise, reach);
+            noter(&mut resolved.assumptions, "Arme", hypotheses);
         }
         ruleset.spells.push(arme);
     }
     // Les sorts temporaires des objets portés, que le joueur met au deck ou non.
-    resolved.assumptions.extend(crate::sorts_d_objets::greffer(&mut ruleset, &resolved));
+    let notes = crate::sorts_d_objets::greffer(&mut ruleset, &resolved);
+    noter(&mut resolved.assumptions, "Équipement", notes);
     // Les effets spéciaux des objets portés : tour par tour, et en réponse à
     // ce que font les sorts.
     let combat = crate::effets_d_objets::Combat {
@@ -1906,7 +1923,7 @@ fn preparer(
     };
     let greffes =
         crate::effets_d_objets::greffer(&mut ruleset, &build, &request.bonus_ecartes, &combat, &lectures);
-    resolved.assumptions.extend(greffes.remarques);
+    noter(&mut resolved.assumptions, "Équipement", greffes.remarques);
     let mut scenario = Scenario {
         poussees_bloquees: request.poussees_bloquees,
         horizon: request.horizon.clamp(1, 20),
@@ -1953,11 +1970,11 @@ fn preparer(
     if greffes.poussee_subie && ruleset.resource("poussee_subie").is_some() {
         scenario.etats_declares.retain(|(id, _)| id != "poussee_subie");
         scenario.etats_declares.push(("poussee_subie".to_string(), 1));
-        resolved.assumptions.push(
-            "Bottes du Cul Botté : « La cible subit des dommages de poussée à chaque tour » compté coché".to_string(),
-        );
+        let bottes = "Bottes du Cul Botté : « La cible subit des dommages de poussée à chaque tour » compté coché";
+        noter(&mut resolved.assumptions, "Équipement", vec![bottes.to_string()]);
     }
-    let remarques = resolved.assumptions[depart..].to_vec();
+    let remarques: Vec<(&'static str, String)> =
+        sujets.into_iter().zip(resolved.assumptions[depart..].iter().cloned()).collect();
     Ok((build, resolved, ruleset, scenario, remarques))
 }
 
@@ -2138,7 +2155,8 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
         .collect();
     Ok(Outcome {
         resolved,
-        remarques,
+        sujets_des_remarques: remarques.iter().map(|(s, _)| (*s).to_string()).collect(),
+        remarques: remarques.into_iter().map(|(_, t)| t).collect(),
         steady,
         solution,
         ecartes: engine
@@ -3120,6 +3138,19 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
             .or_else(|| crate::sorts_d_objets::sort_du_releve(id))
     };
     let nom_du_releve = |id: u32| du_releve(id).map(|x| x.name.fr.clone());
+    // Les remarques rangées par sujet, dans l'ordre où chaque sujet apparaît :
+    // un encart chacun.
+    let mut groupes: Vec<(&str, Vec<&str>)> = Vec::new();
+    for (sujet, texte) in outcome.sujets_des_remarques.iter().zip(&outcome.remarques) {
+        match groupes.iter_mut().find(|(s, _)| s == sujet) {
+            Some((_, lignes)) => lignes.push(texte),
+            None => groupes.push((sujet, vec![texte])),
+        }
+    }
+    let remarques_par_sujet: Vec<serde_json::Value> = groupes
+        .into_iter()
+        .map(|(sujet, lignes)| serde_json::json!({ "sujet": sujet, "lignes": lignes }))
+        .collect();
     let effets: BTreeMap<&str, Vec<String>> = ruleset
         .spells
         .iter()
@@ -3265,6 +3296,7 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
         },
         "rotation": {
             "remarques": outcome.remarques,
+            "remarques_par_sujet": remarques_par_sujet,
             "effets": effets,
             "total": outcome.solution.total.as_f64(),
             "per_turn": outcome.solution.total.as_f64() / f64::from(request.horizon.max(1)),

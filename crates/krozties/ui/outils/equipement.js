@@ -42,7 +42,7 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
     $('etatImport').textContent = `Lecture de l'équipement n° ${id}…`;
     try {
       const r = await appeler('importer', { id });
-      await adopter(r.build, r.dofusbook, r.nom);
+      await adopter(r.build, r.dofusbook, r.nom, $('lien').value.trim());
     } catch (e) {
       $('etatImport').innerHTML = `<span class="alerte">${echapper(e.message)}</span>`;
     } finally {
@@ -56,7 +56,7 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
   /// Ce qui suit la lecture est le MÊME chemin, que la charge vienne d'un
   /// collage ou de la lecture directe. Deux chemins de résolution séparés
   /// finiraient par diverger sur ce qu'ils acceptent.
-  async function adopter(charge, dofusbook = null, nom = null) {
+  async function adopter(charge, dofusbook = null, nom = null, lien = null) {
     $('etatImport').textContent = 'Résolution de l\'équipement…';
     try {
       // La fiche de DofusBook ne reste pas dans le build : elle ne sert qu'à
@@ -65,6 +65,8 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
       if (resolu.error) throw new Error(resolu.error);
       etat.build = charge;
       etat.nomDuBuild = nom;
+      // Le lien collé, que la page Retours joint au formulaire.
+      etat.lienDuBuild = lien;
       etat.resolu = resolu;
       majIdentite();
       $('etatImport').textContent = '';

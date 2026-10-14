@@ -32,6 +32,9 @@ const ROUTES = {
   /// dans le navigateur du système.
   version: { commande: 'version_de_l_application', bureau_seulement: "seule l'application de bureau a une version installée." },
   versions: { commande: 'ouvrir_les_versions', bureau_seulement: "seule l'application de bureau ouvre la page des versions." },
+  /// Bureau seulement : le formulaire d'issue rempli par la page Retours, dans
+  /// le navigateur du système. Un navigateur l'ouvre lui-même.
+  retour: { commande: 'ouvrir_un_retour', bureau_seulement: "seule l'application de bureau passe par cette commande." },
 };
 
 export async function appeler(nom, charge) {
