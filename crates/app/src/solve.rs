@@ -1558,11 +1558,12 @@ fn avec_les_tourelles(
             })
             .collect::<Vec<_>>()
     };
-    let plafond = plafond_d_invocations(resolved);
+    // Les tourelles en jeu : elles ne sont pas des invocations, ne prennent
+    // aucune place et ne suivent pas le total « Invocations » du build.
     pousser(
         &mut ruleset,
         serde_json::json!({
-            "id": "invocations_en_jeu", "scope": "caster", "max": plafond, "default": 0, "monotone": "increasing",
+            "id": "tourelles_en_jeu", "scope": "caster", "max": tourelles.len(), "default": 0, "monotone": "increasing",
         }),
     )?;
     let en_clair = crate::invocations::en_clair;
@@ -1614,9 +1615,8 @@ fn avec_les_tourelles(
         // Une tourelle de chaque type, posée à l'Évolution I.
         let sort = &mut ruleset.spells[t.indice];
         sort.effects.push(effet(serde_json::json!({ "effect": "gain", "resource": compteur }))?);
-        sort.effects.push(effet(serde_json::json!({ "effect": "gain", "resource": "invocations_en_jeu" }))?);
+        sort.effects.push(effet(serde_json::json!({ "effect": "gain", "resource": "tourelles_en_jeu" }))?);
         sort.blocked_by.get_or_insert_with(|| compteur.clone());
-        sort.blocked_at_max.get_or_insert_with(|| "invocations_en_jeu".into());
     }
     if ancrage {
         pousser(
@@ -1707,7 +1707,7 @@ fn avec_les_tourelles(
         if offensives.len() < tourelles.len() || offensives.is_empty() {
             alternatives.push((
                 "autour d'une tourelle".to_string(),
-                serde_json::json!({ "kind": "at_least", "scope": "caster", "resource": "invocations_en_jeu", "amount": 1 }),
+                serde_json::json!({ "kind": "at_least", "scope": "caster", "resource": "tourelles_en_jeu", "amount": 1 }),
                 vec![degats.clone()],
             ));
         }
@@ -1762,7 +1762,7 @@ fn avec_les_tourelles(
                 let Some(sort) = ruleset.spells.iter_mut().find(|s| s.id == sort_id) else { continue };
                 sort.effects.push(effet(serde_json::json!({
                     "effect": "gain", "resource": "tourelle_dans_la_zone", "ap_bonus": { "amount": 1 },
-                    "requires": { "kind": "at_least", "scope": "caster", "resource": "invocations_en_jeu", "amount": 1 },
+                    "requires": { "kind": "at_least", "scope": "caster", "resource": "tourelles_en_jeu", "amount": 1 },
                 }))?);
             }
         }
@@ -1801,10 +1801,7 @@ fn avec_les_tourelles(
         ));
     }
     if !tourelles.is_empty() {
-        notes.push(format!(
-            "{plafond} invocation{} en jeu au plus, une tourelle de chaque type",
-            if plafond > 1 { "s" } else { "" }
-        ));
+        notes.push("une tourelle de chaque type, sans prendre de place d'invocation".to_string());
     }
     Ok((ruleset, notes))
 }
@@ -4898,6 +4895,17 @@ mod tests {
             "etats_declares": { "tourelles_au_contact": u8::from(au_contact) },
         }))
         .unwrap()
+    }
+
+    /// Les tourelles ne sont pas des invocations : sans aucun bonus
+    /// d'Invocations, le Steamer pose ses trois tourelles, une de chaque type,
+    /// et pas deux du même.
+    #[test]
+    fn les_tourelles_ne_prennent_pas_de_place_d_invocation() {
+        let r = steamer(&["harponneuse", "gardienne", "tactirelle"], false);
+        assert!(rejouer(&r, &tours(&[&["harponneuse"], &["gardienne"], &["tactirelle"]])).is_ok());
+        let e = rejouer(&r, &tours(&[&["harponneuse"], &["harponneuse"]])).unwrap_err();
+        assert!(e.starts_with("tour 2, lancer 1"), "{e}");
     }
 
     /// Ce que la tourelle frappe au début de chaque tour.
