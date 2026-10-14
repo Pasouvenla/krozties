@@ -183,3 +183,10 @@ mod tests {
         assert_eq!(version_du_jeu(), attendue);
     }
 }
+
+/// Le nom de chaque état, par son identifiant : « {{spell,24278,1::Infecté}} »
+/// pour un état qui renvoie à son explication.
+pub const ETATS: &str = include_str!("../../../data/snapshots/states.json");
+
+/// Les effets de chaque sous-sort, sans leurs valeurs, par son identifiant.
+pub const SOUS_SORTS: &str = include_str!("../../../data/snapshots/subspells.json");

@@ -85,6 +85,9 @@ pub struct Level {
     /// poussée quand le joueur déclare que ses poussées butent.
     #[serde(default)]
     pub other_effects: Vec<PlacedEffect>,
+    /// Les mêmes sur un coup critique : la Puissance du Iop, 300, en donne 350.
+    #[serde(default)]
+    pub critical_other_effects: Vec<PlacedEffect>,
     /// La zone de l'effet de pose : les cases sur lesquelles il faut marcher pour que
     /// le piège ou le glyphe parte. Ce n'est pas la zone des lignes posées, qui dit
     /// qui prend les dégâts : un piège du Sram peut partir d'une case et frapper sur

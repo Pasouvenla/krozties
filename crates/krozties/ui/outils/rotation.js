@@ -619,7 +619,8 @@ export async function rendre(cible, etat, { appeler }) {
               </li>`).join('')}${t.casts.map((c, k) => `
               <li class="lancer" data-sort="${echapper(c.id)}" data-tour="${i}" data-lancer="${k}" tabindex="0" role="button">
                 ${icone(c)}
-                <span class="nom">${echapper(c.name)}</span>
+                <span class="nom">${echapper(c.name)}${((r.effets || {})[c.id] || [])
+                  .map((p) => `<span class="effet-ligne">${echapper(p)}</span>`).join('')}</span>
                 <span class="degats">${nb(c.damage)}</span>
                 <span class="pa">−${c.ap} PA</span>
                 <span class="reste">Reste ${c.ap_left}</span>

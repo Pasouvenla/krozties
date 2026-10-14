@@ -3109,6 +3109,25 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
         .iter()
         .map(|s| (s.id.as_str(), s.dofusdb_id))
         .collect();
+    // Les effets de chaque sort autres que ses dégâts, que la frise écrit sous
+    // son nom : depuis l'instantané de la classe, ou le relevé des sorts
+    // d'objet.
+    let instantane = snapshot_for(request.build.normalise().class).ok();
+    let du_releve = |id: u32| {
+        instantane
+            .as_ref()
+            .and_then(|i| i.spells.iter().find(|x| x.id == id))
+            .or_else(|| crate::sorts_d_objets::sort_du_releve(id))
+    };
+    let nom_du_releve = |id: u32| du_releve(id).map(|x| x.name.fr.clone());
+    let effets: BTreeMap<&str, Vec<String>> = ruleset
+        .spells
+        .iter()
+        .filter_map(|s| {
+            let phrases = crate::effets_secondaires::du_sort(du_releve(s.dofusdb_id?)?, &nom_du_releve).phrases;
+            (!phrases.is_empty()).then_some((s.id.as_str(), phrases))
+        })
+        .collect();
     let nom_de_sort = |id: &str| -> String {
         ruleset.spells.iter().find(|s| s.id == id).map_or_else(
             || crate::effets_d_objets::source(id).map_or_else(|| id.to_string(), |(nom, _)| nom.to_string()),
@@ -3246,6 +3265,7 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
         },
         "rotation": {
             "remarques": outcome.remarques,
+            "effets": effets,
             "total": outcome.solution.total.as_f64(),
             "per_turn": outcome.solution.total.as_f64() / f64::from(request.horizon.max(1)),
             "ap_wasted": outcome.solution.turns.iter().map(|t| i32::from(t.ap_left)).sum::<i32>(),
@@ -4895,6 +4915,21 @@ mod tests {
             "etats_declares": { "tourelles_au_contact": u8::from(au_contact) },
         }))
         .unwrap()
+    }
+
+    /// La réponse porte, sort par sort, les effets autres que ses dégâts que la
+    /// frise écrit sous son nom.
+    #[test]
+    fn la_reponse_porte_les_effets_des_sorts() {
+        let requete: Request = serde_json::from_value(serde_json::json!({
+            "class": 10, "level": 200, "items": vec![0u32; 17], "deck": ["herbes_folles"], "horizon": 1,
+        }))
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        assert_eq!(
+            v["rotation"]["effets"]["herbes_folles"],
+            serde_json::json!(["Retire 3 PM aux ennemis en zone, pendant 1 tour"])
+        );
     }
 
     /// Les tourelles ne sont pas des invocations : sans aucun bonus

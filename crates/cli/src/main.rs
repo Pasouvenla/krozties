@@ -85,6 +85,8 @@ fn usage() {
     eprintln!("  dofus <build.json>     résout une rotation et l'affiche");
     eprintln!("  dofus serve [port]     ouvre l'interface locale (7878 par défaut)");
     eprintln!("  dofus gaps [classe]    ce qu'il reste à écrire, en tableau ou en détail");
+    eprintln!("  dofus effets [classe] [--tout]");
+    eprintln!("                         les effets que la frise ne sait pas écrire, ou toutes ses phrases");
     eprintln!("  dofus note <note.json> [--json]");
     eprintln!("                         une note de patch confrontée à la donnée, à blanc");
     eprintln!("  dofus note <note.json> --appliquer [--donnees data]");
@@ -234,6 +236,38 @@ fn print_gaps(classe: Option<&str>) -> Result<(), String> {
     Ok(())
 }
 
+/// Les effets que la frise ne sait pas écrire, sort par sort et classe par
+/// classe ; avec `--tout`, aussi les phrases qu'elle écrit.
+fn print_effets(classe: Option<&str>, tout: bool) -> Result<(), String> {
+    let (mut sorts, mut incomplets) = (0usize, 0usize);
+    for (id, nom, _) in solve::CLASSES {
+        if classe.is_some_and(|c| c != *nom) {
+            continue;
+        }
+        let instantane = solve::snapshot_for(*id)?;
+        let nom_de_sort =
+            |s: u32| instantane.spells.iter().find(|x| x.id == s).map(|x| x.name.fr.clone());
+        let mut lignes = Vec::new();
+        for sort in &instantane.spells {
+            let e = dofus_app::effets_secondaires::du_sort(sort, &nom_de_sort);
+            sorts += 1;
+            if !e.manques.is_empty() {
+                incomplets += 1;
+                lignes.push(format!("  {} : {}", sort.name.fr, e.manques.join(" ; ")));
+            }
+            if tout {
+                lignes.extend(e.phrases.iter().map(|p| format!("    · {} : {p}", sort.name.fr)));
+            }
+        }
+        if !lignes.is_empty() {
+            println!("{nom}");
+            lignes.iter().for_each(|l| println!("{l}"));
+        }
+    }
+    println!("\n{incomplets} sorts aux effets incomplets sur {sorts}");
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let result = match args.get(1).map(String::as_str) {
@@ -241,6 +275,10 @@ fn main() -> ExitCode {
         // nom de classe il détaille ce qui manque à chacun de ses sorts.
         Some("gaps") => print_gaps(args.get(2).map(String::as_str)),
         Some("beta") if args.len() > 2 => print_beta(&args[2..]),
+        Some("effets") => print_effets(
+            args.get(2).map(String::as_str).filter(|a| !a.starts_with("--")),
+            args.iter().any(|a| a == "--tout"),
+        ),
         Some("note") => match args.get(2) {
             Some(chemin) if args.iter().any(|a| a == "--appliquer") => {
                 let dossier = args

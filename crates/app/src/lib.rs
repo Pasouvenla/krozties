@@ -7,6 +7,7 @@ pub mod bombes;
 pub mod cartes;
 pub mod donnees;
 pub mod effets_d_objets;
+pub mod effets_secondaires;
 pub mod fiche;
 pub mod grille;
 pub mod invocations;
