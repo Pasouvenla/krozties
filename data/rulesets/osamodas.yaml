@@ -15,8 +15,9 @@ resources:
     max: 1
     default: 0
     monotone: increasing
-    # Effet 111, duree 3 dans l'instantane, cible « C ».
-    duration: { turns: 3, refresh: on_apply, on_expire: reset_to_default }
+    # Effet 111, duree 3 dans l'instantane, cible « C » : le tour du lancer
+    # (`ap_bonus` du gain) puis les deux suivants.
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
     dofusdb_source: 31141
     grants_ap: 2
     note: |
@@ -775,8 +776,8 @@ spells:
       La durée de l'état et du bonus PA est prolongée si le lanceur invoque une créature Osamodas.
       Le temps de relance des sorts d'invocation Osamodas est réinitialisé et les effets du sort sont retirés à la perte de l'état ou si le sort est relancé.
     assumptions:
-      - "Effet 111, +2 PA au lanceur pendant trois tours, sur l'état `pacte_bestial_pa` : cible « C », « applique l'état Bestial sur le lanceur : augmente ses PA », sans condition. Une invocation lancée sous l'état les fait repartir pour trois tours."
-      - "D'après le sous-sort 32557 : l'état Bestial (`bestial`), le sacrifice des invocations Osamodas et leurs dommages finaux (`pacte_bestial_finaux`, 3 % par palier de PI et par invocation, trois tours chacun). Relancé sous l'état, il retire tout et remet la relance des sorts d'invocation à zéro. Le sacrifice et ses dommages finaux se branchent dans la Rotation, avec les invocations du deck. À vérifier en jeu : Tofu (palier 1) et Craquolosse (palier 3) sacrifiés, +12 % de dommages finaux pendant trois tours ?"
+      - "Effet 111, +2 PA au lanceur pendant trois tours, dès le tour du lancer (vérifié en jeu) : rendus au lancer, puis sur l'état `pacte_bestial_pa` aux deux tours suivants. Cible « C », « applique l'état Bestial sur le lanceur : augmente ses PA », sans condition. Une invocation lancée sous l'état les fait repartir pour trois tours."
+      - "D'après le sous-sort 32557 : l'état Bestial (`bestial`), le sacrifice des invocations Osamodas et leurs dommages finaux (`pacte_bestial_finaux`, 3 % par palier de PI et par invocation, trois tours chacun). Relancé sous l'état, il retire tout et remet la relance des sorts d'invocation à zéro. Le sacrifice et ses dommages finaux se branchent dans la Rotation, avec les invocations du deck. Vérifié en jeu : un Tofu (palier 1) et un Craquolosse (palier 3) sacrifiés donnent +3 % et +9 %."
       - "Effets 950, 111, 1171, 2971 et 90 du sort lui-meme : `forClientOnly`, l'infobulle. Le sort agit par son sous-sort 32557."
       - "Effets 2971 (soins finaux) et 90 (transfert de vie des invocations sacrifiees) : pas des degats."
     lines: []
@@ -806,6 +807,7 @@ spells:
       # s'insere ici, depuis la Rotation.
       - effect: gain
         resource: pacte_bestial_pa
+        ap_bonus: { amount: 2 }
         requires: { kind: exactly, resource: bestial, amount: 0 }
       - effect: toggle
         resource: bestial

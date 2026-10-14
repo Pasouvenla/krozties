@@ -817,6 +817,8 @@ struct Spell {
     bloque_au_plafond: Option<usize>,
     /// `(a, b)` : n'est permis que tant que `a` dépasse `b`.
     exige_surplus: Option<(usize, usize)>,
+    /// Voir `SpellDef::places`.
+    places: i32,
     effects: Vec<Eff>,
     lines: Vec<Line>,
     /// Resources whose value changes this spell's damage. Almost always empty:
@@ -3808,6 +3810,7 @@ fn compile_spell(
             .requires_more_than
             .as_ref()
             .map(|s| (res_index[&s.resource], res_index[&s.than])),
+        places: i32::from(def.places),
         effects,
         lines,
         damage_deps: Vec::new(),
@@ -6096,12 +6099,12 @@ impl Engine {
         // Plus de cible pour ce mode : tous les ennemis portent déjà ce
         // que le sort pose.
         if let Some(r) = spell.bloque_au_plafond {
-            if res[r] >= self.resources[r].max {
+            if i32::from(res[r]) + spell.places > i32::from(self.resources[r].max) {
                 return false;
             }
         }
         if let Some((a, b)) = spell.exige_surplus {
-            if res[a] <= res[b] {
+            if i32::from(res[a]) < i32::from(res[b]) + spell.places {
                 return false;
             }
         }

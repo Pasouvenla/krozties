@@ -876,6 +876,9 @@ fn avec_les_invocations(
         /// Les tours qu'elle joue avant que le sort ne la retire, quand il le
         /// fait : voir [`duree_de_vie`].
         vie: Option<u8>,
+        /// Son coût en points d'invocation : les places qu'elle prend, 3 pour
+        /// le Craquolosse, aucune pour une invocation statique.
+        pi: u8,
     }
     let instantane = snapshot_for(build.class).ok();
     let mut jouees: Vec<Jouee> = Vec::new();
@@ -918,7 +921,8 @@ fn avec_les_invocations(
         } else {
             sort.dofusdb_id.zip(invocation.monstre).and_then(|(id, monstre)| duree_de_vie(instantane.as_ref()?, id, monstre))
         };
-        jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre, vie });
+        let pi = rang.pi.unwrap_or(1);
+        jouees.push(Jouee { i, nom, rang, facteur, tour, palier, commune: invocation.classe == 0, autre, vie, pi });
     }
     if jouees.is_empty() {
         return Ok((ruleset, notes));
@@ -1005,12 +1009,36 @@ fn avec_les_invocations(
     // pour trois tours.
     let hors_bestial = serde_json::json!({ "kind": "exactly", "resource": "bestial", "amount": 0 });
     let sous_bestial = serde_json::json!({ "kind": "caster_has", "resource": "bestial" });
+    // Les charges différées des règles : le moteur en tient `MAX_SCHEDULES`.
+    let mut charges = ruleset
+        .spells
+        .iter()
+        .flat_map(|s| &s.effects)
+        .filter(|e| matches!(e, dofus_ruleset::Effect::Schedule { .. } | dofus_ruleset::Effect::ScheduleGain { .. }))
+        .count();
     for j in &jouees {
         let id = format!("invocation_{}", ruleset.spells[j.i].id);
+        // Une attaque à relance, sur une invocation qui vit un nombre connu de
+        // tours, part à ses tours de lancer : au premier, puis tous les
+        // `relance` tours, chacun une charge différée posée au lancer du sort.
+        // Faute de place pour ces charges, chaque tour porte sa part.
+        let lancers_differes: Vec<(&AttaqueJouee, u8)> = match (j.vie, &j.autre) {
+            (Some(v), None) if !(pacte && !j.commune) => j
+                .tour
+                .iter()
+                .filter(|a| a.relance >= 2)
+                .flat_map(|a| (0..v.div_ceil(a.relance)).map(move |k| (a, 1 + k * a.relance)))
+                .collect(),
+            _ => Vec::new(),
+        };
+        let differes =
+            !lancers_differes.is_empty() && charges + lancers_differes.len() <= dofus_engine::MAX_SCHEDULES;
+        let a_chaque_tour: Vec<AttaqueJouee> =
+            j.tour.iter().filter(|a| !differes || a.relance < 2).cloned().collect();
         // Un sort commun tire l'un de deux monstres : le tour de chacun, en
         // tirage, à sa chance.
         let lignes = match &j.autre {
-            None => lignes_du_tour(&j.tour, j.facteur, Some(&id), j.vie),
+            None => lignes_du_tour(&a_chaque_tour, j.facteur, Some(&id), j.vie),
             Some((chance, _, facteur_autre, tour_autre)) => {
                 let issues = [(0, 100 - *chance, &j.tour, j.facteur), (1, *chance, tour_autre, *facteur_autre)];
                 let mut lignes = Vec::new();
@@ -1033,7 +1061,11 @@ fn avec_les_invocations(
         };
         let mut compteur = serde_json::json!({
             "id": id, "scope": "caster", "max": en_jeu_au_plus, "default": 0, "monotone": "increasing",
-            "while_present": [{ "trigger": "turn_start", "lines": lignes }],
+            "while_present": if lignes.is_empty() {
+                serde_json::json!([])
+            } else {
+                serde_json::json!([{ "trigger": "turn_start", "lines": lignes }])
+            },
             "note": joue,
         });
         // Elle joue `vie` tours, au début de ceux qui suivent son invocation,
@@ -1053,13 +1085,27 @@ fn avec_les_invocations(
         if j.vie.is_some() {
             sort.blocked_by.get_or_insert_with(|| id.clone());
         }
-        for r in [id.as_str(), "invocations_en_jeu"] {
-            let mut g = serde_json::json!({ "effect": "gain", "resource": r });
+        if differes {
+            for (n, (a, delai)) in lancers_differes.iter().enumerate() {
+                let payload: Vec<_> = (0..a.coups).flat_map(|_| lignes_d_attaque(a, j.facteur, None, None)).collect();
+                sort.effects.push(effet(serde_json::json!({
+                    "effect": "schedule", "id": format!("{id}_lancer_{n}"), "delay": delai, "payload": payload,
+                }))?);
+            }
+            charges += lancers_differes.len();
+        }
+        // Elle prend autant de places que son coût en points d'invocation.
+        for (r, n) in [(id.as_str(), 1), ("invocations_en_jeu", j.pi)] {
+            if n == 0 {
+                continue;
+            }
+            let mut g = serde_json::json!({ "effect": "gain", "resource": r, "amount": n });
             if pacte && !j.commune {
                 g["requires"] = hors_bestial.clone();
             }
             sort.effects.push(effet(g)?);
         }
+        sort.places = j.pi;
         if let (true, Some(p)) = (pacte, j.palier) {
             for (r, n) in [
                 ("pacte_bestial_finaux", p),
@@ -1072,12 +1118,13 @@ fn avec_les_invocations(
                 }))?);
             }
         }
-        if cortege {
+        // Une invocation statique ne prend pas de place.
+        if j.pi > 0 && cortege {
             sort.requires_more_than = Some(dofus_ruleset::Surplus {
                 resource: "places_d_invocation".into(),
                 than: "invocations_en_jeu".into(),
             });
-        } else if sort.blocked_at_max.is_none() {
+        } else if j.pi > 0 && sort.blocked_at_max.is_none() {
             sort.blocked_at_max = Some("invocations_en_jeu".into());
         }
         // Ce que l'invocation joue par tour, l'encart Invocations le dit : voir
@@ -4491,19 +4538,20 @@ mod tests {
     }
 
     /// La Gonflable Transmutée « est remplacée par un Arbre 3 tours après son
-    /// invocation » : elle frappe trois débuts de tour, puis rend sa place, et se
-    /// relance au terme de ses 4 tours de relance. Une seule place
+    /// invocation » : elle joue trois débuts de tour, puis rend sa place, et se
+    /// relance au terme de ses 4 tours de relance. Brise Automnale, à relance 2,
+    /// ne part qu'à son premier et à son troisième tour. Une seule place
     /// d'invocation : la relance prouve que la place s'est libérée.
     #[test]
     fn une_poupee_transmutee_joue_trois_tours_puis_rend_sa_place() {
         let (lancers, frappes, details) = lancers_et_frappes(
             serde_json::json!({
-                "class": 10, "level": 200, "items": vec![0u32; 17], "deck": ["la_gonflable_transmutee"], "horizon": 7,
+                "class": 10, "level": 200, "items": vec![0u32; 17], "deck": ["la_gonflable_transmutee"], "horizon": 8,
             }),
             "la_gonflable_transmutee",
         );
         assert_eq!(lancers, [1, 5]);
-        assert_eq!(frappes, [2, 3, 4, 6, 7]);
+        assert_eq!(frappes, [2, 4, 6, 8]);
         // Sa ligne de début de tour dit ce qu'elle a joué.
         assert_eq!(details, ["Brise Automnale ×1, un tour sur 2"]);
     }
@@ -4698,9 +4746,14 @@ mod tests {
     }
 
     /// Une requête d'Osamodas sans équipement, une invocation en jeu au plus.
+    /// Un Osamodas à cinq points d'invocation : la Boucle d'oreille de Kongoku,
+    /// le Collier de Gargandyas et l'Anneau Lunaire en donnent quatre de plus,
+    /// de quoi tenir un Craquolosse (3) et un Tofu (1).
     fn osamodas(deck: &[&str]) -> Request {
+        let mut items = vec![0u32; 17];
+        (items[0], items[1], items[2]) = (17107, 31789, 21228);
         serde_json::from_value(serde_json::json!({
-            "class": 2, "level": 200, "items": vec![0u32; 17], "horizon": 1, "deck": deck,
+            "class": 2, "level": 200, "items": items, "horizon": 1, "deck": deck,
             "invested": { "strength": 100, "intelligence": 100, "chance": 100, "agility": 100 },
         }))
         .unwrap()
@@ -4798,8 +4851,13 @@ mod tests {
     #[test]
     fn cortege_sauvage_fait_mourir_les_invocations_apres_leur_tour() {
         let r = osamodas(&["tofu", "dragoune", "craquolosse", "cortege_sauvage", "fouet", "martinet"]);
-        // Sans le Cortège, une seule place.
-        let e = rejouer(&r, &tours(&[&["craquolosse"], &["tofu"]])).unwrap_err();
+        // Sans équipement ni Cortège, un seul point d'invocation : le
+        // Craquolosse, qui en coûte trois, ne part pas, et un Tofu le prend.
+        let mut nu = r.clone();
+        nu.build.items = vec![0; 17];
+        let e = rejouer(&nu, &tours(&[&["craquolosse"]])).unwrap_err();
+        assert!(e.starts_with("tour 1, lancer 1"), "{e}");
+        let e = rejouer(&nu, &tours(&[&["tofu"], &["dragoune"]])).unwrap_err();
         assert!(e.starts_with("tour 2, lancer 1"), "{e}");
         let s = rejouer(
             &r,

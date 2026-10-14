@@ -1287,6 +1287,11 @@ pub struct SpellDef {
     /// Tribal vise un ennemi peint pas encore visé dans le tour.
     #[serde(default)]
     pub requires_more_than: Option<Surplus>,
+    /// Les places qu'un lancer prend sous [`SpellDef::blocked_at_max`] et
+    /// [`SpellDef::requires_more_than`] : le coût en points d'invocation d'une
+    /// créature de l'Osamodas, 3 pour le Craquolosse. Une par défaut.
+    #[serde(default = "one_u8_plain")]
+    pub places: u8,
     /// Ce que la case visée doit porter pour que ce sort parte, lu seulement avec un
     /// placement : le Javelot-foudre ne plante sa Lance que sur une case vide, et ne
     /// rebondit que visé sur un monstre.

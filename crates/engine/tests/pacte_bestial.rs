@@ -1,9 +1,9 @@
-//! Un état qui donne des PA à chaque tour, et non un remboursement au lancer.
+//! Un état qui donne des PA à chaque tour, après ceux rendus au lancer.
 //!
 //! Le Pacte Bestial de l'Osamodas « applique l'état Bestial sur le lanceur :
 //! augmente ses PA », effet 111, deux points, trois tours, cible « C » : il
-//! ouvre les tours suivants avec deux PA de plus, là où `ap_bonus` rend des PA
-//! dans le tour du lancer.
+//! rend ses deux PA dès le tour du lancer (`ap_bonus`), puis ouvre les deux
+//! tours suivants avec deux PA de plus (`grants_ap`).
 //!
 //! Le plafond d'élagage en dépend : `prune_dominated` ne laisse tomber un sort
 //! que si d'autres peuvent absorber tout le budget du tour, et un budget
@@ -89,8 +89,9 @@ const AVEC: &[&str] = &[
     "pacte_bestial",
 ];
 
-/// Le Pacte ouvre les tours suivants avec deux PA de plus. Il a un délai
-/// initial d'un tour : il ne peut pas partir au premier tour du combat.
+/// Le Pacte rend ses deux PA dès le tour du lancer, puis ouvre les deux tours
+/// suivants avec deux PA de plus. Il a un délai initial d'un tour : il ne peut
+/// pas partir au premier tour du combat.
 #[test]
 fn les_pa_du_pacte_ouvrent_les_tours_d_apres() {
     let sans = lancers_par_tour(SANS);
@@ -105,12 +106,12 @@ fn les_pa_du_pacte_ouvrent_les_tours_d_apres() {
         avec[0], sans[0],
         "le premier tour ne connaît pas le Pacte, {sans:?} contre {avec:?}"
     );
-    // Tour 2 : il part, et ses deux PA sont pris sur ce tour-là sans rien lui
-    // rendre. Le tour du lancer PERD un sort.
+    // Tour 2 : il part, et rend aussitôt les deux PA qu'il coûte. Le tour du
+    // lancer ne perd rien.
     assert_eq!(
         avec[1],
-        sans[1] - 1,
-        "le tour du lancer paie le Pacte, {sans:?} contre {avec:?}"
+        sans[1],
+        "le Pacte se paie dans le tour de son lancer, {sans:?} contre {avec:?}"
     );
     // Tours 3 et 4 : les deux PA arrivent au début du tour.
     for t in 2..4 {
@@ -132,15 +133,15 @@ fn le_pacte_paie_malgre_les_deux_pa_qu_il_coute() {
         avec > sans,
         "le Pacte doit rapporter plus qu'il ne coûte, {sans:.0} contre {avec:.0}"
     );
-    // Un lancer perdu au tour du lancer, un lancer gagné aux tours 3 et 4 :
-    // net d'un lancer sur les vingt du scénario, soit environ quatre points.
+    // Rien de perdu au tour du lancer, un lancer gagné aux tours 3 et 4 : net
+    // de deux lancers sur les vingt du scénario, soit environ huit points.
     // L'écart est encadré des deux côtés : `> 0` passerait avec un Pacte qui ne
     // rendrait qu'un PA sur deux, et la borne haute attrape un état trop
     // généreux.
     let ecart = (avec - sans) / sans;
     assert!(
-        (0.02..0.06).contains(&ecart),
-        "un lancer net sur vingt vaut environ quatre points, mesuré {:.1} %",
+        (0.06..0.10).contains(&ecart),
+        "deux lancers nets sur vingt valent environ huit points, mesuré {:.1} %",
         ecart * 100.0
     );
 }
