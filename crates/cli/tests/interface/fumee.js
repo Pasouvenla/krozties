@@ -523,6 +523,13 @@ try {
     sorts: lignesComparees[1] ? lignesComparees[1].querySelectorAll('tbody tr').length > 0 : false,
     barres: document.querySelectorAll('#resultatComparaison rect.g-barre').length === 2 * toursCompares,
   };
+  // Un build importé sans être enregistré se compare aussi : il vient en
+  // tête, choisi d'office pour A.
+  P.oublierCourant();
+  app.etat.build = { ...app.etat.build };
+  await app.afficher('comparaison');
+  const premierA = document.querySelector('#persoA option');
+  resultat.comparaison.charge = premierA ? `${premierA.textContent}${premierA.selected ? ' (choisi)' : ''}` : null;
   localStorage.removeItem(CLE_PERSOS);
 } catch (e) {
   erreurs.push(`exception : ${e.message}`);

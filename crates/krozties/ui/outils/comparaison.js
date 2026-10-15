@@ -8,6 +8,7 @@ import { CLASSES, courant, lire } from '../commun/personnages.js';
 import { decrire, versMoteur } from '../commun/resistances.js';
 
 const ROUBLARD = 13;
+const CHARGE = '__charge';
 const POSITIONS = { libre: 'au choix', distance: 'à distance', melee: 'en mêlée' };
 
 /// L'écart de B sur A, en pourcentage signé.
@@ -34,7 +35,17 @@ export async function rendre(cible, etat, { appeler, afficher }) {
   const d = lire();
   const nomDeClasse = (id) => (((etat.classes && etat.classes.classes) || [])
     .find((c) => c.id === id) || {}).label || CLASSES[id] || '';
-  const builds = d.personnages.flatMap((p) => p.builds.map((b) => ({ p, b })));
+  // Le build chargé sans être enregistré compte comme un personnage de plus, en
+  // tête : c'est lui qu'on confronte à un build enregistré.
+  const charge = etat.build && etat.resolu && !courant(d) ? {
+    id: CHARGE,
+    nom: 'Build chargé',
+    classe: etat.resolu.class,
+    niveau: etat.resolu.level,
+    builds: [{ id: CHARGE, nom: etat.nomDuBuild || 'non enregistré', charge: etat.build }],
+  } : null;
+  const personnages = [...(charge ? [charge] : []), ...d.personnages];
+  const builds = personnages.flatMap((p) => p.builds.map((b) => ({ p, b })));
   const deLaClasse = (c) => builds.filter((x) => x.p.classe === c);
   const classes = [...new Set(builds.map((x) => x.p.classe))].filter((c) => deLaClasse(c).length >= 2);
   if (!classes.length) {
@@ -49,14 +60,21 @@ export async function rendre(cible, etat, { appeler, afficher }) {
   }
 
   // Le choix tient pour la session : A, le build chargé s'il compte, sinon le
-  // premier ; B, un autre build de la même classe.
+  // premier ; B, un autre build de la même classe. Un build chargé depuis rend
+  // le résultat caduc et, non enregistré, devient A.
   const choix = etat.comparaison || (etat.comparaison = {});
+  if (choix.resultat && choix.resultat.charge !== etat.build) choix.resultat = null;
+  if (choix.vu !== etat.build) {
+    choix.vu = etat.build;
+    if (charge) choix.a = null;
+  }
   const trouver = (c) => c && builds.find((x) => x.p.id === c.perso && x.b.id === c.build);
   const premierAutre = (a) => deLaClasse(a.p.classe).find((x) => x.b.id !== a.b.id);
   let a = trouver(choix.a);
   if (!a || !classes.includes(a.p.classe)) {
     const c = courant(d);
-    a = (c && classes.includes(c.perso.classe) && trouver({ perso: c.perso.id, build: c.build.id }))
+    a = (charge && classes.includes(charge.classe) && trouver({ perso: CHARGE, build: CHARGE }))
+      || (c && classes.includes(c.perso.classe) && trouver({ perso: c.perso.id, build: c.build.id }))
       || deLaClasse(classes[0])[0];
   }
   let b = trouver(choix.b);
@@ -71,7 +89,7 @@ export async function rendre(cible, etat, { appeler, afficher }) {
   const contre = decrire(versMoteur(reglages.resistances, true));
   const memesSorts = reglages.classe === a.p.classe && reglages.coches;
   const nom = (x) => `${x.p.nom} · ${x.b.nom}`;
-  const persos = (classe) => d.personnages.filter((p) => p.builds.length && (classe
+  const persos = (classe) => personnages.filter((p) => p.builds.length && (classe
     ? p.classe === classe : classes.includes(p.classe)));
   const selecteur = (lettre, x, liste, exclu) => `
     <section class="encart choix-build"><h4>Build ${lettre}</h4><div>
@@ -105,7 +123,7 @@ export async function rendre(cible, etat, { appeler, afficher }) {
   const $ = (id) => cible.querySelector(`#${id}`);
   const redessiner = () => rendre(cible, etat, { appeler, afficher });
   $('persoA').addEventListener('change', () => {
-    const p = d.personnages.find((x) => x.id === $('persoA').value);
+    const p = personnages.find((x) => x.id === $('persoA').value);
     choix.a = { perso: p.id, build: p.builds[0].id };
     choix.resultat = null;
     redessiner();
@@ -116,7 +134,7 @@ export async function rendre(cible, etat, { appeler, afficher }) {
     redessiner();
   });
   $('persoB').addEventListener('change', () => {
-    const p = d.personnages.find((x) => x.id === $('persoB').value);
+    const p = personnages.find((x) => x.id === $('persoB').value);
     choix.b = { perso: p.id, build: (p.builds.find((x) => x.id !== a.b.id) || p.builds[0]).id };
     choix.resultat = null;
     redessiner();
@@ -205,7 +223,7 @@ export async function rendre(cible, etat, { appeler, afficher }) {
       const ra = await calculer(a);
       $('etatComparaison').textContent = `Calcul de B, ${nom(b)}…`;
       const rb = await calculer(b);
-      choix.resultat = { a: ra, b: rb };
+      choix.resultat = { a: ra, b: rb, charge: etat.build };
       $('etatComparaison').textContent = '';
       dessiner(ra, rb);
     } catch (e) {

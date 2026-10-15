@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "La Comparaison accepte aussi le build que vous venez d'importer, même non enregistré : il se place d'office en A, face à vos builds enregistrés de la même classe."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2026-10-15",
       "rubriques": [

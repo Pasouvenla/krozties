@@ -297,7 +297,10 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // signés, les sorts joués et deux colonnes par tour.
     assert_eq!(
         r["comparaison"],
-        serde_json::json!({ "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true }),
+        serde_json::json!({
+            "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true,
+            "charge": "Build chargé · Crâ 200 (choisi)",
+        }),
         "{r}"
     );
     // L'exemple de KrozPortal : deux portails à huit cases, 2 % par case ; et
