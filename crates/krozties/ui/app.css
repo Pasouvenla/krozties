@@ -1077,3 +1077,15 @@ table.comparaison thead th { font-size: .72rem; text-transform: uppercase; lette
   color: var(--doux); font-weight: 600; }
 table.comparaison .moins { color: var(--alerte); }
 table.comparaison .plus { color: var(--succes); }
+.resultat-comparaison { max-width: 36rem; }
+/* Les dégâts par sort : deux barres sur la même échelle, le chiffre à côté. */
+table.par-sort th.degats, table.par-sort td.barres { text-align: left; }
+table.par-sort td.barres { width: 55%; min-width: 12rem; }
+table.par-sort .ligne { display: grid; grid-template-columns: 1fr 3.4rem; gap: .4rem; align-items: center;
+  height: 1.05rem; }
+table.par-sort .piste { height: .55rem; }
+table.par-sort .barre { height: 100%; border-radius: 2px; }
+table.par-sort .barre.a { background: var(--accent); }
+table.par-sort .barre.b { background: var(--accent-doux); }
+table.par-sort .ligne span { font-size: .76rem; text-align: right; }
+table.par-sort .absent { color: var(--doux); }

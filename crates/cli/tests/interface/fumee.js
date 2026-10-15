@@ -518,9 +518,11 @@ try {
   resultat.comparaison = {
     builds: [...document.querySelectorAll('#buildA option:checked, #buildB option:checked')].map((o) => o.textContent),
     lignes: lignesComparees[0] ? lignesComparees[0].querySelectorAll('tbody tr').length >= 3 : false,
-    ecarts: [...document.querySelectorAll('#resultatComparaison td.moins, #resultatComparaison td.plus')]
-      .every((td) => /^[+\u2212]\d+,\d %$/.test(td.textContent)),
-    sorts: lignesComparees[1] ? lignesComparees[1].querySelectorAll('tbody tr').length > 0 : false,
+    ecarts: lignesComparees[0] ? [...lignesComparees[0].querySelectorAll('td.moins, td.plus')]
+      .every((td) => /^[+\u2212]\d+,\d %$/.test(td.textContent)) : false,
+    sorts: lignesComparees[1] ? lignesComparees[1].querySelectorAll('tbody tr').length > 0
+      && [...lignesComparees[1].querySelectorAll('tbody tr')].every((tr) => tr.querySelectorAll('.ligne').length === 2
+        && /^([+\u2212][\d\s\u202f]+|0)$/.test(tr.lastElementChild.textContent)) : false,
     barres: document.querySelectorAll('#resultatComparaison rect.g-barre').length === 2 * toursCompares,
   };
   // Un build importé sans être enregistré se compare aussi : il vient en

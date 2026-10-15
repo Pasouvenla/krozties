@@ -23,12 +23,15 @@ function ecart(a, b) {
 /// Combien de fois chaque sort est lancé dans une rotation.
 function lancers(r) {
   const n = new Map();
-  r.turns.forEach((t) => t.casts.forEach((c) => {
-    const e = n.get(c.id) || { nom: c.name, fois: 0 };
-    e.fois += 1;
-    n.set(c.id, e);
-  }));
+  r.turns.forEach((t) => t.casts.forEach((c) => n.set(c.id, (n.get(c.id) || 0) + 1)));
   return n;
+}
+
+/// L'écart de B sur A, en points de dégâts signés.
+function ecartEnPoints(a, b) {
+  const v = Math.round(b) - Math.round(a);
+  if (!v) return { texte: '0', classe: '' };
+  return { texte: `${v < 0 ? '−' : '+'}${nb(Math.abs(v))}`, classe: v < 0 ? 'moins' : 'plus' };
 }
 
 export async function rendre(cible, etat, { appeler, afficher }) {
@@ -187,26 +190,42 @@ export async function rendre(cible, etat, { appeler, afficher }) {
         ? [['Sur la durée', ra.steady.per_turn, rb.steady.per_turn, true]] : []),
       ['PA perdus', ra.ap_wasted || 0, rb.ap_wasted || 0, false],
     ];
-    const na = lancers(ra);
-    const nbb = lancers(rb);
-    const ids = [...new Set([...na.keys(), ...nbb.keys()])].sort((x, y) => Math.max(
-      (na.get(y) || {}).fois || 0, (nbb.get(y) || {}).fois || 0,
-    ) - Math.max((na.get(x) || {}).fois || 0, (nbb.get(x) || {}).fois || 0));
+    // Les sources de la Répartition des deux rotations, alignées par
+    // identifiant : sorts, poisons et invocations.
+    const la = lancers(ra);
+    const lb = lancers(rb);
+    const sources = new Map();
+    [[ra, 'a'], [rb, 'b']].forEach(([r, cote]) => (r.repartition || []).forEach((p) => {
+      const s = sources.get(p.id) || { nom: p.name, a: null, b: null };
+      s[cote] = p.damage;
+      sources.set(p.id, s);
+    }));
+    const lignesParSort = [...sources.entries()]
+      .sort(([, x], [, y]) => Math.max(y.a || 0, y.b || 0) - Math.max(x.a || 0, x.b || 0));
+    const plusFort = Math.max(1, ...lignesParSort.map(([, s]) => Math.max(s.a || 0, s.b || 0)));
+    const barre = (v, cote) => (v == null
+      ? '<div class="ligne"><div class="piste"></div><span class="absent">·</span></div>'
+      : `<div class="ligne"><div class="piste"><div class="barre ${cote}" style="width:${
+        ((v / plusFort) * 100).toFixed(1)}%"></div></div><span>${nb(v)}</span></div>`);
     $('resultatComparaison').innerHTML = `
-      <div class="grille-encarts">
-        <section class="encart"><h4>Résultat</h4><div>
-          <table class="comparaison"><thead><tr><th></th><th>A</th><th>B</th><th>Écart</th></tr></thead><tbody>
-          ${lignes.map(([titre, va, vb, enPourcent]) => {
-            const e = enPourcent ? ecart(va, vb) : { texte: '', classe: '' };
-            return `<tr><td>${titre}</td><td>${nb(va)}</td><td>${nb(vb)}</td><td class="${e.classe}">${e.texte}</td></tr>`;
-          }).join('')}
-          </tbody></table></div></section>
-        <section class="encart"><h4>Sorts joués</h4><div>
-          <table class="comparaison"><thead><tr><th>Sort</th><th>A</th><th>B</th></tr></thead><tbody>
-          ${ids.map((id) => `<tr><td>${echapper((na.get(id) || nbb.get(id)).nom)}</td><td>${(na.get(id) || {}).fois || 0}</td><td>${
-            (nbb.get(id) || {}).fois || 0}</td></tr>`).join('')}
-          </tbody></table></div></section>
-      </div>
+      <section class="encart resultat-comparaison"><h4>Résultat</h4><div>
+        <table class="comparaison"><thead><tr><th></th><th>A</th><th>B</th><th>Écart</th></tr></thead><tbody>
+        ${lignes.map(([titre, va, vb, enPourcent]) => {
+          const e = enPourcent ? ecart(va, vb) : { texte: '', classe: '' };
+          return `<tr><td>${titre}</td><td>${nb(va)}</td><td>${nb(vb)}</td><td class="${e.classe}">${e.texte}</td></tr>`;
+        }).join('')}
+        </tbody></table></div></section>
+      <section class="encart"><h4>Dégâts par sort</h4><div>
+        <div class="g-legende"><span><i class="g-puce g-p-a"></i>A · ${echapper(nom(a))}</span>
+          <span><i class="g-puce g-p-b"></i>B · ${echapper(nom(b))}</span></div>
+        <table class="comparaison par-sort"><thead><tr><th>Source</th><th>Lancers A / B</th><th class="degats">Dégâts</th>
+          <th>Écart</th></tr></thead><tbody>
+        ${lignesParSort.map(([id, s]) => {
+          const e = ecartEnPoints(s.a || 0, s.b || 0);
+          return `<tr><td>${echapper(s.nom)}</td><td>${la.get(id) || 0} / ${lb.get(id) || 0}</td>
+            <td class="barres">${barre(s.a, 'a')}${barre(s.b, 'b')}</td><td class="${e.classe}">${e.texte}</td></tr>`;
+        }).join('')}
+        </tbody></table></div></section>
       <section class="encart"><h4>Dégâts par tour</h4><div>
         ${deuxBuilds(ra.turns.map((t) => t.damage), rb.turns.map((t) => t.damage), nom(a), nom(b))}
       </div></section>`;
