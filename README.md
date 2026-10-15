@@ -23,10 +23,15 @@ le niveau, le lien DofusBook de l'équipement, le sort ou la rotation en cause,
 ce que Krozties affiche et ce que le jeu donne. Une capture du jeu aide
 beaucoup.
 
+Dans l'application, la page Retours (menu Aide) ouvre ce formulaire déjà
+rempli avec la version, la classe et le niveau, le lien de l'équipement et les
+réglages de la rotation : il reste à décrire le problème et à coller la
+capture.
+
 ## Vie privée
 
 Krozties n'a ni télémétrie, ni mesure d'audience, ni compte : rien ne part sur
-votre utilisation. L'application ne contacte le réseau que dans trois cas :
+votre utilisation. L'application ne contacte le réseau que dans quatre cas :
 
 - **Nouvelle version** : à chaque ouverture, l'application de bureau
   demande à l'API de GitHub (`api.github.com`) le numéro de la dernière version
@@ -38,9 +43,16 @@ votre utilisation. L'application ne contacte le réseau que dans trois cas :
   charge elle-même.
 - **Téléchargement** : le bouton « Télécharger » de la mini fenêtre ouvre la
   page des versions dans votre navigateur.
+- **Retours** : le bouton de la page Retours ouvre dans votre navigateur le
+  formulaire d'issue de GitHub, rempli avec ce que la page affiche. Rien ne
+  part tant que vous ne l'envoyez pas vous-même.
 
-Sur votre machine, Krozties ne garde que la date de sa dernière vérification de
-version et le numéro qu'il a vu. L'équipement importé n'est pas conservé.
+Sur votre machine, Krozties garde la date de sa dernière vérification de
+version et le numéro qu'il a vu, ainsi que les personnages et les builds que
+vous enregistrez (l'équipement importé, son lien et sa fiche DofusBook), pour
+les retrouver à l'ouverture suivante. Ils ne quittent cet ordinateur que si
+vous exportez la liste dans un fichier. Un équipement importé sans être
+enregistré n'est pas conservé.
 
 ## DofusBook
 
@@ -48,7 +60,8 @@ Krozties ne cherche pas à remplacer DofusBook : c'est toujours là qu'on monte
 son stuff, et Krozties prend le relais pour les rotations. Quand vous lui donnez
 le lien de votre équipement, il ouvre la page, comme vous le feriez dans votre
 navigateur, et regarde ce que porte votre personnage. C'est tout : il ne lit
-rien d'autre, ne garde rien et n'envoie rien ailleurs.
+rien d'autre et n'envoie rien ailleurs, et ne garde l'équipement que si vous
+l'enregistrez sous un personnage.
 
 ## Installation
 
