@@ -397,6 +397,28 @@ try {
   // Les remarques du calcul, dans leur carte sous la répartition.
   resultat.remarques = [...document.querySelectorAll('#detailRotation .remarques li')].map((li) => li.textContent);
 
+  // Les résistances de la cible : le moteur range ses éléments dans un autre
+  // ordre que l'affichage, et 50 % Feu divisent par deux cette rotation Feu.
+  const { versMoteur } = await import('/commun/resistances.js');
+  resultat.ordreDesResistances = versMoteur(
+    { mode: 'elements', elements: { Neutral: 5, Earth: 4, Fire: 1, Water: 3, Air: 2 } }, false,
+  ).resistance_percent;
+  const totalSans = texte('#resumeRotation .chiffre');
+  document.querySelector('input[name="resistances"][value="elements"]').click();
+  const feu = document.getElementById('res-Fire');
+  feu.value = '50';
+  feu.dispatchEvent(new Event('input', { bubbles: true }));
+  document.getElementById('calculer').click();
+  await attendre(() => !document.getElementById('panneau').classList.contains('perime')
+    && texte('#resumeRotation .chiffre') !== totalSans, 60000);
+  const contre = [...document.querySelectorAll('#resumeRotation dt')].find((dt) => dt.textContent === 'Contre');
+  resultat.resistances = {
+    sans: totalSans,
+    avec: texte('#resumeRotation .chiffre'),
+    contre: contre ? contre.nextElementSibling.textContent : null,
+  };
+  document.querySelector('input[name="resistances"][value="aucune"]').click();
+
   // Le sort qu'un objet ajoute à la barre, au deck de la Rotation : la Pelle
   // Fantomatique de l'Épée Nécronyx, chez un Crâ Feu.
   const objetsCra = Array(17).fill(0);

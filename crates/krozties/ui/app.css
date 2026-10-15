@@ -592,6 +592,17 @@ table.mini .attenue { color: var(--doux); }
 }
 .reglages { display: grid; gap: .4rem .6rem; grid-template-columns: 1fr 1fr;
             margin-top: .7rem; }
+/* Un bloc de réglages caché le reste, malgré sa grille. */
+.reglages[hidden], .resistances-elements[hidden] { display: none; }
+/* Les résistances de la cible, une colonne par élément. */
+.resistances-elements { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem;
+  margin-top: .45rem; }
+.resistances-elements label { display: grid; gap: .15rem; margin: 0; font-size: .72rem; color: var(--doux);
+  text-align: center; }
+.resistances-elements input { padding: .3rem .15rem; text-align: center; appearance: textfield;
+  -moz-appearance: textfield; }
+.resistances-elements input::-webkit-inner-spin-button,
+.resistances-elements input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* La case « calcul rapide », dans le panneau des réglages. Même grain que les
    cartes de sorts : une case, un mot, et le détail sous un dépliant. */

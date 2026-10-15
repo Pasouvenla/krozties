@@ -242,6 +242,15 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "{r}"
     );
     assert!(r["arme"]["lancee"].as_u64().unwrap_or(0) >= 1, "l'arme doit frapper : {r}");
+    // Les résistances de la cible : l'ordre du moteur (Feu, Terre, Air, Eau,
+    // Neutre), et 50 % Feu qui divisent par deux une rotation Feu.
+    assert_eq!(r["ordreDesResistances"], serde_json::json!([1, 4, 2, 3, 5]), "{r}");
+    let entier = |v: &serde_json::Value| -> i64 {
+        v.as_str().unwrap_or("").chars().filter(char::is_ascii_digit).collect::<String>().parse().unwrap_or(0)
+    };
+    let (sans, avec) = (entier(&r["resistances"]["sans"]), entier(&r["resistances"]["avec"]));
+    assert!(sans > 0 && (avec * 2 - sans).abs() <= sans / 50, "50 % Feu : {sans} puis {avec}");
+    assert_eq!(r["resistances"]["contre"], "Feu 50 %", "{r}");
     // Les remarques du calcul ont leur carte dans la Rotation.
     let remarques: Vec<&str> = r["remarques"].as_array().map_or_else(Vec::new, |v| v.iter().filter_map(|x| x.as_str()).collect());
     assert!(

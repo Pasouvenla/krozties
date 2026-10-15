@@ -4,6 +4,7 @@
 
 import { appeler, hote } from '../pont.js';
 import { echapper } from '../commun/format.js';
+import { decrire, versMoteur } from '../commun/resistances.js';
 
 /// Le formulaire d'issue du dépôt, rempli par son adresse.
 const FORMULAIRE = 'https://github.com/Pasouvenla/krozties/issues/new';
@@ -16,12 +17,14 @@ const POSITIONS = { libre: 'au choix', distance: 'à distance', melee: 'en mêl�
 function contexte(etat, version) {
   const r = etat.resolu;
   const reglages = etat.rotation;
+  const cible = reglages ? decrire(versMoteur(reglages.resistances, true)) : '';
   return [
     version ? `Krozties ${version}` : 'Krozties (navigateur)',
     r ? `${r.class_name || 'Classe inconnue'} niveau ${r.level || '?'}` : 'Aucun équipement chargé',
     etat.lienDuBuild ? `Build : ${etat.lienDuBuild}` : '',
     reglages ? `Rotation : ${reglages.horizon} tours, ${reglages.cibles} ennemi${reglages.cibles > 1 ? 's' : ''}, `
       + `position ${POSITIONS[reglages.position] || POSITIONS.libre}` : '',
+    cible ? `Résistances de la cible : ${cible}` : '',
   ].filter(Boolean);
 }
 

@@ -3,6 +3,7 @@
 import { COULEUR_ELEMENT, echapper, FR_ELEMENT, majuscule, nb, pluriel } from '../commun/format.js';
 import { parTour, selonCibles } from '../commun/graphique.js';
 import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
+import { borne, decrire, DOMAINES, ELEMENTS, neutres, versMoteur } from '../commun/resistances.js';
 
 /// Le moteur n'accepte pas plus de trente-deux sorts (masques en `u32`) : le
 /// bouton se ferme avant.
@@ -79,7 +80,11 @@ export async function rendre(cible, etat, { appeler }) {
     etats: {},
     /// Où il se tient : `libre`, `distance` ou `melee`.
     position: 'libre',
+    /// Les résistances de la cible, les mêmes pour tous les ennemis.
+    resistances: neutres(),
   });
+  const res = () => reglages.resistances || (reglages.resistances = neutres());
+  const MODES_DE_RESISTANCE = [['aucune', 'Aucune'], ['uniformes', 'Uniformes'], ['elements', 'Par élément']];
   /// La position écarte du deck ce qui ne peut pas frapper de là.
   const POSITIONS = [['libre', 'Au choix'], ['distance', 'Distance'], ['melee', 'Mêlée']];
   const AIDE_POSITION = {
@@ -193,6 +198,19 @@ export async function rendre(cible, etat, { appeler }) {
             <label class="segment"><input type="radio" name="position" value="${v}"${position() === v ? ' checked' : ''}> ${t}</label>`).join('')}
           </div>
           <p class="aide" id="aidePosition"${AIDE_POSITION[position()] ? '' : ' hidden'}>${AIDE_POSITION[position()]}</p>
+          <p class="libelle-groupe">Résistances de la cible</p>
+          <div class="barre-outils">${MODES_DE_RESISTANCE.map(([v, t]) => `
+            <label class="segment"><input type="radio" name="resistances" value="${v}"${res().mode === v ? ' checked' : ''}> ${t}</label>`).join('')}
+          </div>
+          <div class="reglages" id="resUniformes"${res().mode === 'uniformes' ? '' : ' hidden'}>
+            <div><label for="resUniforme">% à tous les éléments</label>
+              <input type="number" id="resUniforme" min="-100" max="100" value="${res().uniforme}"></div>
+          </div>
+          <div class="resistances-elements" id="resElements"${res().mode === 'elements' ? '' : ' hidden'}>${ELEMENTS.map(([e, nom]) => `
+            <label for="res-${e}">${nom}<input type="number" id="res-${e}" data-res-element="${e}" min="-100" max="100"
+              value="${res().elements[e] || 0}"></label>`).join('')}
+          </div>
+          <p class="aide" id="aideResistances"${res().mode === 'aucune' ? ' hidden' : ''}>En %, pour tous les ennemis.</p>
           <details class="plus-loin" id="plusLoin" ${etat.plusLoinOuvert ? 'open' : ''}>
             <summary>Pour aller plus loin <span class="modifies" id="reglagesModifies"></span></summary>
             <div class="reglages">
@@ -207,6 +225,11 @@ export async function rendre(cible, etat, { appeler }) {
                   ${[[0, 'Aucune'], [300, 'Normale (300)'], [360, 'Critique (360)']]
                     .map(([v, t]) => `<option value="${v}"${(reglages.maitrise ?? 300) === v ? ' selected' : ''}>${t}</option>`).join('')}
                 </select></div>` : ''}
+            </div>
+            <h4 class="groupe">La cible</h4>
+            <div class="reglages">${DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d, nom]) => `
+              <div><label for="res-${d}">% Résist. ${nom}</label>
+                <input type="number" id="res-${d}" data-res-domaine="${d}" min="-100" max="100" value="${res()[d] || 0}"></div>`).join('')}
             </div>
             <h4 class="groupe">Votre combat</h4>
             ${declares.filter((d) => Number(d.max) > 1).length ? `<div class="reglages">${
@@ -373,6 +396,7 @@ export async function rendre(cible, etat, { appeler }) {
       Boolean(reglages.pousseesBloquees),
       Boolean(reglages.exhaustif),
       estRoublard && Boolean(reglages.mur),
+      ...DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d]) => Boolean(res()[d])),
       ...declares.map((d) => Number(reglages.etats[d.id]) !== (Number(d.defaut) || 0)),
       ...bonusDofus.map((b) => cochee(b) !== (b.coche !== false)),
     ].filter(Boolean).length;
@@ -397,6 +421,31 @@ export async function rendre(cible, etat, { appeler }) {
   $('pousseesBloquees').addEventListener('change', () => {
     reglages.pousseesBloquees = $('pousseesBloquees').checked;
     marquerPerime();
+  });
+  cible.querySelectorAll('input[name="resistances"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      res().mode = r.value;
+      $('resUniformes').hidden = r.value !== 'uniformes';
+      $('resElements').hidden = r.value !== 'elements';
+      $('aideResistances').hidden = r.value === 'aucune';
+      marquerPerime();
+    });
+  });
+  $('resUniforme').addEventListener('input', () => {
+    res().uniforme = borne($('resUniforme').value);
+    marquerPerime();
+  });
+  cible.querySelectorAll('[data-res-element]').forEach((i) => {
+    i.addEventListener('input', () => {
+      res().elements[i.dataset.resElement] = borne(i.value);
+      marquerPerime();
+    });
+  });
+  cible.querySelectorAll('[data-res-domaine]').forEach((i) => {
+    i.addEventListener('input', () => {
+      res()[i.dataset.resDomaine] = borne(i.value);
+      marquerPerime();
+    });
   });
   cible.querySelectorAll('input[name="position"]').forEach((r) => {
     r.addEventListener('change', () => {
@@ -494,6 +543,7 @@ export async function rendre(cible, etat, { appeler }) {
     bonus_ecartes: ecartes(),
     bonus_inclus: inclus(),
     ...(estRoublard ? { mur_de_bombes: mur() } : {}),
+    ...versMoteur(res(), Boolean(arme)),
     ...extra,
   });
 
@@ -569,6 +619,7 @@ export async function rendre(cible, etat, { appeler }) {
     // qui peut critiquer : la règle se dit sous le total qu'elle fait monter.
     const certain = etat.classes && etat.classes.limites && etat.classes.limites.critique_certain;
     const toutCritique = certain != null && critiqueDuResultat != null && critiqueDuResultat >= certain;
+    const contre = decrire(chargeDuResultat);
     // « Résultat » : « Rotation » est le nom de l'encart des tours, à gauche.
     $('resumeRotation').innerHTML = `
       <h3 style="margin-top:.9rem">Résultat</h3>
@@ -577,6 +628,7 @@ export async function rendre(cible, etat, { appeler }) {
         nb(r.per_turn)} par tour</div>
       ${toutCritique ? `<p class="aide">Dès ${certain} de critique, tous les sorts sont comptés en coup critique.</p>` : ''}
       <dl>
+        ${contre ? `<dt>Contre</dt><dd>${echapper(contre)}</dd>` : ''}
         ${st.cycle_length ? `<dt title="La rotation se répète tous les ${st.cycle_length} ${
           pluriel(st.cycle_length, 'tour')}">Sur la durée</dt><dd>${nb(st.per_turn)} par tour</dd>` : ''}
         ${r.ap_wasted > 0 ? `<dt>PA perdus</dt><dd class="alerte">${r.ap_wasted}</dd>` : ''}
