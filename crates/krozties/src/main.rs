@@ -336,6 +336,19 @@ mod tests {
     /// côté page nomme les mêmes : une commande oubliée dans `generate_handler!`
     /// n'échoue qu'à l'exécution.
     #[test]
+    fn les_notes_de_version_suivent_la_version_de_l_application() {
+        let notes: serde_json::Value =
+            serde_json::from_str(include_str!("../ui/notes-de-version.json")).expect("notes lisibles");
+        let conf: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).expect("configuration lisible");
+        let derniere = notes["versions"]
+            .as_array()
+            .and_then(|v| v.iter().find(|e| e["version"] != "prochaine"))
+            .and_then(|e| e["version"].as_str());
+        assert_eq!(derniere, conf["version"].as_str(), "la version publiée doit avoir ses notes");
+    }
+
+    #[test]
     fn le_pont_et_le_manifeste_nomment_les_memes_commandes() {
         let source = include_str!("main.rs");
         let debut = source.find("generate_handler![").expect("le manifeste");

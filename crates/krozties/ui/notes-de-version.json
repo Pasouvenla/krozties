@@ -1,0 +1,216 @@
+{
+  "versions": [
+    {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Ajout de la page « Notes de mise à jour », dans le menu Aide : les nouveautés de chaque version, lisibles même hors connexion.",
+            "Au premier lancement d'une nouvelle version, une fenêtre présente ses nouveautés."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2026-10-15",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Les résistances de la cible se renseignent désormais dans la Rotation : aucune, le même pourcentage pour tous les éléments, ou un pourcentage par élément.",
+            "Les résistances fixes, critiques, aux sorts, aux armes, en mêlée et à distance se règlent dans « Pour aller plus loin ».",
+            "Le résultat de la Rotation rappelle contre quelles résistances il a été calculé, et la page Retours le joint au signalement."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.4.2",
+      "date": "2026-10-15",
+      "rubriques": [
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La frise décrit désormais l'effet de la Barrière : de la Résistance distance pour les alliés en zone."
+          ]
+        },
+        {
+          "titre": "Données du jeu",
+          "lignes": [
+            "Cerbère, Affection et Tromperie décrivent désormais tous leurs effets dans la frise, et Marée en décrit un de plus."
+          ]
+        },
+        {
+          "titre": "Documentation",
+          "lignes": [
+            "La section Vie privée du README détaille ce que les personnages enregistrés gardent sur l'ordinateur."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.4.1",
+      "date": "2026-10-15",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "L'export de la liste des personnages ouvre désormais une fenêtre pour choisir où enregistrer le fichier."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "date": "2026-10-15",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Ajout des personnages : créez-les et rangez-y vos builds DofusBook.",
+            "Un sélecteur dans la barre du haut charge un personnage, puis l'un de ses builds ; le dernier build chargé revient à l'ouverture suivante.",
+            "Ajout de la page « Gestion des personnages » : créer, modifier, supprimer, importer un build, exporter et importer la liste."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "date": "2026-10-14",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Les sorts de la Rotation se présentent par emplacement, et les remarques du calcul par sujet.",
+            "Ajout de la page Retours, dans le menu Aide, qui prépare un signalement sur GitHub."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "Le plafond d'invocations s'exprime désormais en points d'invocation."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2026-10-14",
+      "rubriques": [
+        {
+          "titre": "Données du jeu",
+          "lignes": [
+            "Les données du jeu suivent le patch 3.7.10.10 du 13/10/2026."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.2",
+      "date": "2026-10-14",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "La frise de la Rotation décrit, sous chaque sort, ses effets autres que les dégâts."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "Chaque invocation compte désormais son coût en points d'invocation.",
+            "La Gonflable Transmutée ne lance plus Brise Automnale qu'un tour sur deux.",
+            "Le Pacte Bestial donne ses PA dès le tour de son lancer.",
+            "Les tourelles du Steamer ne prennent plus de place d'invocation."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-10-09",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "L'encart des invocations se présente en grille.",
+            "« Écart entre ennemis » devient « Cases entre les ennemis touchés »."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La Gonflable Transmutée ne lance plus qu'une Brise Automnale par tour.",
+            "Les poupées Transmutées du Sadida sont invoquées au grade de leur sort."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-10-09",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Ajout du choix de votre position dans la Rotation : au choix, à distance ou en mêlée."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La recherche d'une nouvelle version se fait à chaque ouverture de l'application.",
+            "Le Jaune Ocre et le Rouge Vermeil ne jouent qu'à partir du deuxième tour."
+          ]
+        },
+        {
+          "titre": "Données du jeu",
+          "lignes": [
+            "Les données du jeu suivent le patch 3.7.5 du 08/10/2026.",
+            "Les poupées Transmutées du Sadida sont désormais modélisées."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.1.1",
+      "date": "2026-10-08",
+      "rubriques": [
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "Les invocations ont désormais une durée de vie, et leur nombre maximal se lit sur l'équipement."
+          ]
+        },
+        {
+          "titre": "Documentation",
+          "lignes": [
+            "Le README explique comment Krozties est fait, comment signaler une erreur et ce qu'il fait de vos données.",
+            "Liens de téléchargement directs pour chaque système."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-10-08",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Première version publique de Krozties, pour macOS, Windows et Linux.",
+            "Une fenêtre annonce chaque nouvelle version."
+          ]
+        },
+        {
+          "titre": "Documentation",
+          "lignes": [
+            "Installation détaillée pour chaque système."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -66,6 +66,28 @@ try {
     localStorage.removeItem(CLE_MAJ);
   }
 
+  // Les notes de mise à jour : les versions à présenter après une mise à jour,
+  // la fenêtre, puis la page, une ligne par version, la plus récente ouverte,
+  // sans la documentation.
+  const nouveautes = await import('/commun/nouveautes.js');
+  const versionsLues = await nouveautes.charger();
+  const fenNotes = nouveautes.fenetre(versionsLues.slice(0, 2), { fermer: () => {}, toutes: () => {} });
+  resultat.nouveautes = {
+    depuis040: nouveautes.entre(versionsLues, '0.4.0', '0.5.0').map((v) => v.version),
+    aJour: nouveautes.entre(versionsLues, '0.5.0', '0.5.0').length,
+    fenetre: fenNotes.innerText.startsWith(`Mise à jour ${versionsLues[0].version}`),
+    boutons: [...fenNotes.querySelectorAll('button')].map((b) => b.textContent),
+  };
+  fenNotes.remove();
+  await app.afficher('notes');
+  const lignesDeVersion = document.querySelectorAll('#contenu details.version');
+  resultat.nouveautes.page = {
+    uneParVersion: versionsLues.length > 10 && lignesDeVersion.length === versionsLues.length,
+    premiereOuverte: lignesDeVersion[0].open && !lignesDeVersion[1].open,
+    premiere: texte('#contenu details.version summary b') === `Mise à jour ${versionsLues[0].version}`,
+    sansDocumentation: !document.getElementById('contenu').innerText.includes('README'),
+  };
+
   // Un Sram de niveau 200, comme les tests du moteur : la Rotation exige un
   // équipement pour s'ouvrir.
   const build = {

@@ -36,9 +36,12 @@ jobs:
       || (github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'note/'))
     runs-on: ubuntu-24.04
     steps:
+      # Tout l'historique : les notes de version partent de l'étiquette
+      # précédente.
       - uses: actions/checkout@v7
         with:
           ref: master
+          fetch-depth: 0
 
       # La version de Rust est celle de `rust-toolchain.toml` ; `cargo update -w`
       # reporte le nouveau numéro dans `Cargo.lock`.
@@ -69,9 +72,15 @@ jobs:
           PY
           cargo update -w
 
+      # Les notes de la version, ajoutées au fichier que l'application affiche.
+      - name: Notes de version
+        env:
+          NUMERO: ${{ steps.version.outputs.numero }}
+        run: python3 tools/notes_de_version.py --ajouter "v${NUMERO}"
+
       - name: Ce que l'essai changerait
         if: inputs.essai
-        run: git diff --stat && git diff -- Cargo.toml crates/krozties/tauri.conf.json
+        run: git diff --stat && git diff -- Cargo.toml crates/krozties/tauri.conf.json crates/krozties/ui/notes-de-version.json
 
       # Une étiquette poussée par ce jeton ne déclenche aucun workflow : la
       # release est donc lancée explicitement.

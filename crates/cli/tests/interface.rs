@@ -165,6 +165,18 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // Deux ouvertures, deux demandes à GitHub ; la troisième, hors ligne, garde
     // le numéro lu.
     assert_eq!(r["majVerifiee"], serde_json::json!({ "demandes": 2, "derniere": "9.9.9" }), "{r}");
+    // Les notes de mise à jour : les versions sautées, la fenêtre et la page.
+    assert_eq!(
+        r["nouveautes"],
+        serde_json::json!({
+            "depuis040": ["0.5.0", "0.4.2", "0.4.1"],
+            "aJour": 0,
+            "fenetre": true,
+            "boutons": ["Compris", "Toutes les notes"],
+            "page": { "uneParVersion": true, "premiereOuverte": true, "premiere": true, "sansDocumentation": true },
+        }),
+        "{r}"
+    );
     assert_eq!(
         r["position"],
         serde_json::json!({

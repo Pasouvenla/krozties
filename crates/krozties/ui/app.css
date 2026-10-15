@@ -1033,3 +1033,28 @@ table.mini .attenue { color: var(--doux); }
 .maj .telecharger { padding: .4rem .8rem; background: var(--cuivre); color: #fff; }
 .maj .telecharger:hover { background: var(--cuivre-fonce); }
 .maj .plus-tard { padding: .4rem .3rem; color: var(--doux); font-weight: 500; }
+/* Les nouveautés d'une version, à son premier lancement. */
+.maj.nouveautes { width: 21rem; }
+.maj .date { color: var(--doux); font-size: .78rem; }
+.maj .notes { max-height: 15rem; overflow-y: auto; border-top: 1px solid var(--trait); margin-top: .35rem;
+  padding-top: .35rem; }
+.maj .version-sautee { margin: .4rem 0 0; font-weight: 600; font-size: .8rem; }
+.maj .compris { padding: .4rem .8rem; background: var(--accent); color: #fff; }
+.maj .toutes { padding: .4rem .2rem; color: var(--accent); font-weight: 500; text-decoration: underline; }
+.rubrique { margin: .2rem 0 0; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--doux); font-weight: 600; }
+.maj ul, .notes-de-version ul { margin: .2rem 0 .5rem; padding-left: 1.1rem; font-size: .84rem; }
+.maj li + li, .notes-de-version li + li { margin-top: .15rem; }
+
+/* Les notes de mise à jour : une ligne par version, la plus récente ouverte. */
+.liste-versions { display: grid; gap: .6rem; max-width: 52rem; }
+details.version { border: 1px solid var(--cheveux); border-radius: var(--rayon); background: var(--fond); }
+details.version > summary { cursor: pointer; padding: .45rem .7rem; display: flex; gap: .6rem;
+  align-items: baseline; list-style: none; }
+details.version > summary::-webkit-details-marker { display: none; }
+details.version > summary b { font-size: .9rem; }
+details.version > summary small { color: var(--doux); font-size: .78rem; }
+details.version > summary .nb { margin-left: auto; font-size: .74rem; color: var(--doux); }
+details.version[open] > summary { border-bottom: 1px solid var(--trait); background: var(--panneau); }
+details.version > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.version > div { padding: .5rem .8rem .2rem; }

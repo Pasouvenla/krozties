@@ -36,3 +36,6 @@ jobs:
 
       - name: Outils Python
         run: python3 tools/test_import_items.py
+
+      - name: Notes de version
+        run: python3 tools/test_notes_de_version.py

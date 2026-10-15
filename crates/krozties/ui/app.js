@@ -35,6 +35,7 @@ const OUTILS = {
   beta: () => import('./outils/beta.js'),
   // Un calcul faux ou une idée, vers le formulaire d'issue du dépôt.
   retours: () => import('./outils/retours.js'),
+  notes: () => import('./outils/notes.js'),
 };
 
 /// Le catalogue des classes se charge une fois, au démarrage. C'est une promesse
@@ -151,8 +152,14 @@ if (dernier) {
     });
 }
 
-// Une nouvelle version : seule l'application de bureau la cherche, et une
-// vérification qui échoue ne gêne rien.
+// Les nouveautés de la version qu'on vient d'installer, puis une version plus
+// récente : seule l'application de bureau les cherche, et une lecture qui
+// échoue ne gêne rien.
 if (hote === 'bureau') {
-  import('./commun/mise-a-jour.js').then((m) => m.verifier()).catch(() => {});
+  import('./commun/nouveautes.js')
+    .then((m) => m.montrer(appeler, afficher))
+    .catch(() => {})
+    .then(() => import('./commun/mise-a-jour.js'))
+    .then((m) => m.verifier())
+    .catch(() => {});
 }
