@@ -501,6 +501,28 @@ try {
   await pause(300);
   resultat.personnages.cartes = document.querySelectorAll('.carte-perso').length;
   resultat.personnages.builds = [...document.querySelectorAll('.build-perso .quoi b')].map((b) => b.textContent);
+
+  // La comparaison : un second build du même Crâ, puis les deux calculés avec
+  // les réglages de la Rotation, côte à côte.
+  const P = await import('/commun/personnages.js');
+  const donneesPersos = P.lire();
+  P.ajouterBuild(donneesPersos.personnages[0], {
+    nom: 'Agilité', charge: { class: 9, level: 200, invested: { agility: 400 } },
+  });
+  P.ecrire(donneesPersos);
+  await app.afficher('comparaison');
+  document.getElementById('comparer').click();
+  await attendre(() => document.querySelector('#resultatComparaison table'), 60000);
+  const lignesComparees = [...document.querySelectorAll('#resultatComparaison table.comparaison')];
+  const toursCompares = (app.etat.rotation && app.etat.rotation.horizon) || 7;
+  resultat.comparaison = {
+    builds: [...document.querySelectorAll('#buildA option:checked, #buildB option:checked')].map((o) => o.textContent),
+    lignes: lignesComparees[0] ? lignesComparees[0].querySelectorAll('tbody tr').length >= 3 : false,
+    ecarts: [...document.querySelectorAll('#resultatComparaison td.moins, #resultatComparaison td.plus')]
+      .every((td) => /^[+\u2212]\d+,\d %$/.test(td.textContent)),
+    sorts: lignesComparees[1] ? lignesComparees[1].querySelectorAll('tbody tr').length > 0 : false,
+    barres: document.querySelectorAll('#resultatComparaison rect.g-barre').length === 2 * toursCompares,
+  };
   localStorage.removeItem(CLE_PERSOS);
 } catch (e) {
   erreurs.push(`exception : ${e.message}`);

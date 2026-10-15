@@ -36,6 +36,7 @@ const OUTILS = {
   // Un calcul faux ou une idée, vers le formulaire d'issue du dépôt.
   retours: () => import('./outils/retours.js'),
   notes: () => import('./outils/notes.js'),
+  comparaison: () => import('./outils/comparaison.js'),
 };
 
 /// Le catalogue des classes se charge une fois, au démarrage. C'est une promesse

@@ -1,13 +1,10 @@
 // Rotation : quels sorts lancer, dans quel ordre.
 
-import { COULEUR_ELEMENT, echapper, FR_ELEMENT, majuscule, nb, pluriel } from '../commun/format.js';
+import { COULEUR_ELEMENT, echapper, majuscule, nb, pluriel } from '../commun/format.js';
 import { parTour, selonCibles } from '../commun/graphique.js';
 import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
-
-/// Le moteur n'accepte pas plus de trente-deux sorts (masques en `u32`) : le
-/// bouton se ferme avant.
-const MAX_SORTS = 32;
+import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 
 const ROUBLARD = 13;
 const NOMS_DES_BOMBES = { feu: 'Explobombes', air: 'Tornabombes', eau: 'Bombes à Eau', terre: 'Sismobombes' };
@@ -24,13 +21,9 @@ export async function rendre(cible, etat, { appeler }) {
   /// Les sorts que des objets du build ajoutent à la barre, avec l'icône de leur
   /// objet.
   const sortsDObjets = (etat.resolu && etat.resolu.sorts_d_objets) || [];
-  /// Ce que les objets de classe du build changent aux sorts : leur coût en PA
-  /// d'abord, que le deck affiche et classe.
-  const modifs = (etat.resolu && etat.resolu.sorts_modifies) || {};
-  const sorts = classe
-    ? [...classe.spells.map((s) => (modifs[s.id] ? { ...s, ...modifs[s.id] } : s)),
-      ...(arme ? [arme] : []), ...sortsDObjets]
-    : [];
+  /// Les sorts du build, avec ce que ses objets de classe leur changent : leur
+  /// coût en PA d'abord, que le deck affiche et classe.
+  const sorts = sortsDuBuild(classe, etat.resolu);
   /// L'image d'un sort ou de l'arme, à la taille demandée.
   const imageDe = (x, taille) => {
     const dim = taille ? ` width="${taille}" height="${taille}"` : '';
@@ -41,27 +34,6 @@ export async function rendre(cible, etat, { appeler }) {
   /// que la case du calcul exhaustif, seule recherche qui les essaie sur tous les
   /// sorts.
   const couteuses = (classe && classe.couteuses) || [];
-  /// `resolu.dominant` rend « Eau », les sorts portent « Water » : ne pas les
-  /// comparer directement.
-  ///
-  /// Les sorts de l'orientation : ceux qui frappent dans un élément dominant du
-  /// build ou dans son meilleur élément, pièges et invocations compris, puis ceux qui
-  /// agissent sans frapper. Les sorts de l'élément d'abord : dans une paire, la
-  /// variante gardée est la première venue.
-  const orientation = () => {
-    const dominants = (etat.resolu && etat.resolu.dominant) || [];
-    const o = (s) => s.orientation || { elements: s.elements || [], meilleur: false, agit: true };
-    const vaut = (s) => o(s).meilleur || o(s).elements.some((e) => dominants.includes(FR_ELEMENT[e] || e));
-    const neutre = (s) => !vaut(s) && !o(s).elements.length && o(s).agit;
-    // Deux sorts de l'élément dans une paire : celui qui rend le plus par PA
-    // sur ce build passe devant, Poisse plutôt que Cruauté sur un Sram Eau.
-    const tables = (etat.resolu && etat.resolu.damage_tables) || {};
-    const parPa = (s) => {
-      const t = tables[s.id] && tables[s.id][0];
-      return t && s.ap ? (t.normal[0] + t.normal[1]) / 2 / s.ap : 0;
-    };
-    return [...sorts.filter(vaut).sort((a, b) => parPa(b) - parPa(a)), ...sorts.filter(neutre)];
-  };
 
   const reglages = etat.rotation || (etat.rotation = {
     coches: null,
@@ -131,22 +103,8 @@ export async function rendre(cible, etat, { appeler }) {
   for (const d of declares) {
     if (!(d.id in reglages.etats)) reglages.etats[d.id] = Number(d.defaut) || 0;
   }
-  /// Un défaut ne peut pas être injouable : on garde la première variante de
-  /// chaque paire, et le joueur change celle qu'il veut.
-  const uneParPaire = (liste) => {
-    const vus = new Set();
-    return liste.filter((s) => {
-      const clef = s.variant_group != null ? `g${s.variant_group}` : `s${s.id}`;
-      if (vus.has(clef)) return false;
-      vus.add(clef);
-      return true;
-    });
-  };
-
   if (!reglages.coches) {
-    // Par défaut, ce que le build sait vraiment faire : les sorts de son
-    // orientation, une seule variante par paire, bornés au plafond du moteur.
-    reglages.coches = new Set(uneParPaire(orientation()).slice(0, MAX_SORTS).map((s) => s.id));
+    reglages.coches = cochesParDefaut(sorts, etat.resolu);
   }
   let resultat = null;
   // Le critique du build que le calcul a pris, Dofus compris : c'est lui qui
@@ -539,7 +497,7 @@ export async function rendre(cible, etat, { appeler }) {
     reglages.coches.clear(); dessinerSorts(); marquerPerime();
   });
   $('orientation').addEventListener('click', () => {
-    reglages.coches = new Set(uneParPaire(orientation()).slice(0, MAX_SORTS).map((s) => s.id));
+    reglages.coches = cochesParDefaut(sorts, etat.resolu);
     dessinerSorts(); marquerPerime();
   });
 

@@ -150,6 +150,38 @@ export function parTour(st, tours, cibles) {
 }
 
 // ---------------------------------------------------------------------
+// Deux builds, tour par tour
+// ---------------------------------------------------------------------
+// Deux colonnes par tour, une couleur par build, sur la même échelle et la
+// même grille que les dégâts par tour.
+export function deuxBuilds(a, b, nomA, nomB) {
+  const n = Math.max(a.length, b.length);
+  if (!n) return '';
+  const m = { h: 14, b: 26, g: 46, d: 12 };
+  const aire = aireDe(m);
+  const ech = echelle(Math.max(...a, ...b));
+  const y = (v) => m.h + aire.h - (v / ech.haut) * aire.h;
+  const bande = aire.w / n;
+  const epaisseur = Math.min(18, (bande - 6) / 2);
+  const colonne = (v, i, k, classe, nom) => {
+    if (v == null) return '';
+    const x = m.g + i * bande + bande / 2 - epaisseur + k * epaisseur;
+    const t = y(v);
+    return `<rect class="g-barre ${classe}" x="${x.toFixed(1)}" y="${t.toFixed(1)}" width="${(epaisseur - 1).toFixed(1)}"`
+      + ` height="${Math.max(2, m.h + aire.h - t).toFixed(1)}" tabindex="0">`
+      + `<title>Tour ${i + 1} · ${echapper(nom)} · ${nb(v)} dégâts</title></rect>`;
+  };
+  const barres = Array.from({ length: n }, (_, i) => colonne(a[i], i, 0, 'g-serie-a', nomA)
+    + colonne(b[i], i, 1, 'g-serie-b', nomB)).join('');
+  const axeX = Array.from({ length: n }, (_, i) => `<text class="g-axe" x="${(m.g + i * bande + bande / 2).toFixed(1)}"`
+    + ` y="${H - 8}" text-anchor="middle">${i + 1}</text>`).join('');
+  const legende = '<div class="g-legende">'
+    + `<span><i class="g-puce g-p-a"></i>A · ${echapper(nomA)}</span>`
+    + `<span><i class="g-puce g-p-b"></i>B · ${echapper(nomB)}</span></div>`;
+  return enveloppe('', fond(m, aire, ech) + barres + axeX, legende);
+}
+
+// ---------------------------------------------------------------------
 // Dégâts selon le nombre d'ennemis
 // ---------------------------------------------------------------------
 // Une courbe : chaque point est une résolution complète. La droite pointillée

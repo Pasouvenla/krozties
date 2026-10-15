@@ -293,6 +293,13 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert!(persos["barre"][0].as_str().unwrap_or("").starts_with("Pyrus · "), "{r}");
     assert_eq!(persos["barre"][1], "Essai", "{r}");
     assert_eq!((&persos["cartes"], &persos["builds"]), (&serde_json::json!(1), &serde_json::json!(["Essai"])), "{r}");
+    // La comparaison de deux builds du même Crâ : le tableau, les écarts
+    // signés, les sorts joués et deux colonnes par tour.
+    assert_eq!(
+        r["comparaison"],
+        serde_json::json!({ "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true }),
+        "{r}"
+    );
     // L'exemple de KrozPortal : deux portails à huit cases, 2 % par case ; et
     // les dix-neuf classes au choix du lanceur.
     assert_eq!(r["portail"]["bonus"], "+16 % de dommages finaux", "{r}");

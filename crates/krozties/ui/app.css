@@ -736,6 +736,8 @@ table.mini .attenue { color: var(--doux); }
 .g-p-boucle { background: var(--accent); }
 .g-p-ouverture { background: var(--accent-doux); }
 .g-p-moyenne { background: var(--encre); height: 2px; border-radius: 1px; }
+.g-serie-a, .g-p-a { fill: var(--accent); background: var(--accent); }
+.g-serie-b, .g-p-b { fill: var(--accent-doux); background: var(--accent-doux); }
 
 /* --------------------------------------------------- fiche du build */
 
@@ -1058,3 +1060,20 @@ details.version > summary .nb { margin-left: auto; font-size: .74rem; color: var
 details.version[open] > summary { border-bottom: 1px solid var(--trait); background: var(--panneau); }
 details.version > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 details.version > div { padding: .5rem .8rem .2rem; }
+
+/* La comparaison de deux builds : les deux choix et le bouton sur une ligne,
+   puis les tableaux et le graphique. */
+.choix-builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .8rem;
+  align-items: end; margin-bottom: .5rem; }
+.choix-build select { margin-bottom: .45rem; }
+.choix-builds .lancer { display: grid; gap: .4rem; }
+#resultatComparaison > .encart { margin-top: .8rem; }
+table.comparaison { width: 100%; border-collapse: collapse; font-size: .85rem; }
+table.comparaison th, table.comparaison td { padding: .3rem .5rem; border-bottom: 1px solid var(--trait);
+  text-align: right; font-variant-numeric: tabular-nums; }
+table.comparaison td:not(:first-child) { white-space: nowrap; }
+table.comparaison th:first-child, table.comparaison td:first-child { text-align: left; }
+table.comparaison thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--doux); font-weight: 600; }
+table.comparaison .moins { color: var(--alerte); }
+table.comparaison .plus { color: var(--succes); }

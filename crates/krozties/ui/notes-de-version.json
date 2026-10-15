@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Ajout de la page « Comparaison », dans le menu Combat : deux builds enregistrés d'une même classe, calculés avec les réglages de la Rotation, côte à côte, avec les sorts joués par chacun et les dégâts tour par tour."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2026-10-15",
       "rubriques": [
