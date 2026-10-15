@@ -244,7 +244,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert!(r["arme"]["lancee"].as_u64().unwrap_or(0) >= 1, "l'arme doit frapper : {r}");
     // Les résistances de la cible : l'ordre du moteur (Feu, Terre, Air, Eau,
     // Neutre), et 50 % Feu qui divisent par deux une rotation Feu.
-    assert_eq!(r["ordreDesResistances"], serde_json::json!([1, 4, 2, 3, 5]), "{r}");
+    assert_eq!(r["ordreDesResistances"], serde_json::json!([[1, 4, 2, 3, 5], [10, 40, 20, 30, 50]]), "{r}");
     let entier = |v: &serde_json::Value| -> i64 {
         v.as_str().unwrap_or("").chars().filter(char::is_ascii_digit).collect::<String>().parse().unwrap_or(0)
     };

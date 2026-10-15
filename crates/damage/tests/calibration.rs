@@ -281,7 +281,8 @@ fn expectation_lies_between_the_normal_and_critical_values() {
 
 /// Flat resistance is subtracted per line, so it hurts a four-line spell four
 /// times as much as a one-line spell of the same total damage. This is the
-/// concrete reason a solver that ignores resistance overvalues Glas.
+/// concrete reason a solver that ignores resistance overvalues Glas. It is taken
+/// before the final-damage factor, which then scales it: 20 under 1.15 is 23.
 #[test]
 fn flat_resistance_penalises_multi_line_spells() {
     let profile = DamageProfile {
@@ -312,9 +313,55 @@ fn flat_resistance_penalises_multi_line_spells() {
 
     assert_eq!(
         four_line_bare - four_line,
-        80,
+        92,
         "four lines pay the flat four times"
     );
+}
+
+/// The flat resistance comes off the raw damage before the percentage: 259
+/// Water against 12 flat and -7 % takes (259 - 12) x 1.07 = 264.29, so 264.
+#[test]
+fn flat_resistance_comes_before_the_percentage() {
+    let mut elements = [ElementStats::default(); 5];
+    elements[Element::Water.index()] = ElementStats {
+        characteristic: 257,
+        flat_damage: 26,
+    };
+    let profile = DamageProfile {
+        power: 100,
+        elements,
+        ..Default::default()
+    };
+    let mut res = Resistance::NONE;
+    res.percent[Element::Water.index()] = -7;
+    res.flat[Element::Water.index()] = 12;
+    assert_eq!(resolve(51, Element::Water, &profile, FinalMultiplier::NEUTRAL, false, &Resistance::NONE), 259);
+    assert_eq!(resolve(51, Element::Water, &profile, FinalMultiplier::NEUTRAL, false, &res), 264);
+}
+
+/// On a critical hit the critical resistance joins the flat one: 245 Fire
+/// against 15 flat, -20 critical and 10 % takes (245 - 15 + 20) x 0.9 = 225.
+#[test]
+fn critical_resistance_joins_the_flat_one_on_a_critical_hit() {
+    let mut elements = [ElementStats::default(); 5];
+    elements[Element::Fire.index()] = ElementStats {
+        characteristic: 777,
+        flat_damage: 87,
+    };
+    let profile = DamageProfile {
+        power: 100,
+        flat_crit_damage: 41,
+        elements,
+        ..Default::default()
+    };
+    let mut res = Resistance::NONE;
+    res.percent[Element::Fire.index()] = 10;
+    res.flat[Element::Fire.index()] = 15;
+    res.critical = -20;
+    assert_eq!(resolve(12, Element::Fire, &profile, FinalMultiplier::NEUTRAL, true, &Resistance::NONE), 245);
+    assert_eq!(resolve(12, Element::Fire, &profile, FinalMultiplier::NEUTRAL, true, &res), 225);
+    // Without a critical hit, the critical resistance stays out: (204 - 15) x 0.9.
+    assert_eq!(resolve(12, Element::Fire, &profile, FinalMultiplier::NEUTRAL, false, &res), 170);
 }
 
 #[test]

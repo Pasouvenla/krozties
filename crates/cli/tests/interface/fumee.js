@@ -400,9 +400,12 @@ try {
   // Les résistances de la cible : le moteur range ses éléments dans un autre
   // ordre que l'affichage, et 50 % Feu divisent par deux cette rotation Feu.
   const { versMoteur } = await import('/commun/resistances.js');
-  resultat.ordreDesResistances = versMoteur(
-    { mode: 'elements', elements: { Neutral: 5, Earth: 4, Fire: 1, Water: 3, Air: 2 } }, false,
-  ).resistance_percent;
+  const versLeMoteur = versMoteur({
+    mode: 'elements',
+    elements: { Neutral: 5, Earth: 4, Fire: 1, Water: 3, Air: 2 },
+    fixes: { Neutral: 50, Earth: 40, Fire: 10, Water: 30, Air: 20 },
+  }, false);
+  resultat.ordreDesResistances = [versLeMoteur.resistance_percent, versLeMoteur.resistance_flat];
   const totalSans = texte('#resumeRotation .chiffre');
   document.querySelector('input[name="resistances"][value="elements"]').click();
   const feu = document.getElementById('res-Fire');

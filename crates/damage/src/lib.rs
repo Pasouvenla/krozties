@@ -3,8 +3,9 @@
 //! ```text
 //!   scaled = floor(base * (100 + characteristic + power) / 100)
 //!   inner  = scaled + flat_elemental [+ flat_critical, on a critical hit]
-//!   final  = floor(inner * product(multiplicative final-damage modifiers))
-//!   after  = max(0, floor(final * (100 - res_percent) / 100) - res_flat)
+//!   taken  = floor(max(0, inner - res_flat [- res_critical, on a critical hit])
+//!                  * max(0, 100 - res_percent) / 100)
+//!   final  = floor(taken * product(multiplicative final-damage modifiers))
 //! ```
 //!
 //! * `flat_elemental` already includes all-element flat damage: adding it again
@@ -13,8 +14,8 @@
 //! * The final-damage percentages add up into one factor (see [`FinalMultiplier`]).
 //!
 //! Every stage is integer arithmetic, so a floor never lands on the wrong side
-//! of an integer. Not verified in game: the order of the percentage and flat
-//! resistance components, and the clamp.
+//! of an integer. Not measured in game: the resistance stage, flat before
+//! percentage and both before the multiplicative modifiers.
 
 #![forbid(unsafe_code)]
 
@@ -119,9 +120,9 @@ pub fn degats_de_poussee(
 
 /// Des dégâts bruts, ceux en pourcentage de vie du lanceur : ni caractéristique,
 /// ni Puissance, ni dommages fixes, ni multiplicateur, ni critique. Seules les
-/// résistances de l'élément les réduisent, en pourcentage puis en fixe.
+/// résistances de l'élément les réduisent, en fixe puis en pourcentage.
 pub fn raw_line(value: i32, element: Element, resistance: &Resistance) -> Damage {
-    Damage(resistance.apply(i64::from(value), element) * SCALE)
+    Damage(resistance.apply(i64::from(value), element, false) * SCALE)
 }
 
 /// What is being cast, which decides whether `% spell` or `% weapon` applies.
@@ -316,9 +317,9 @@ pub struct Resistance {
     pub percent_melee: i32,
     /// `% Résistance distance`. Effect 2807 (2806 negative).
     pub percent_ranged: i32,
-    /// Critical damage resistance, subtracted from the flat critical bonus of each
-    /// line. Whether it applies per line or per cast is not verified in game;
-    /// modelled per line, like the bonus.
+    /// Critical damage resistance, subtracted with the flat resistance of each
+    /// line on a critical hit. Whether it applies per line or per cast is not
+    /// verified in game; modelled per line, like the bonus.
     pub critical: i32,
 }
 
@@ -333,14 +334,17 @@ impl Resistance {
         percent_ranged: 0,
     };
 
+    /// The flat resistance first, the critical one with it on a critical hit,
+    /// then the percentage; each bracket clamps at zero.
     #[inline]
-    fn apply(&self, value: i64, element: Element) -> i64 {
+    fn apply(&self, value: i64, element: Element, critical: bool) -> i64 {
         let i = element.index();
-        if self.percent[i] == 0 && self.flat[i] == 0 {
+        let flat = i64::from(self.flat[i]) + if critical { i64::from(self.critical) } else { 0 };
+        if self.percent[i] == 0 && flat == 0 {
             return value;
         }
-        let reduced = floor_div(i128::from(value) * i128::from(100 - self.percent[i]), 100);
-        (reduced - i64::from(self.flat[i])).max(0)
+        let left = (value - flat).max(0);
+        floor_div(i128::from(left) * i128::from((100 - self.percent[i]).max(0)), 100)
     }
 }
 
@@ -460,11 +464,10 @@ pub fn resolve(
     let scaled = floor_div(i128::from(base) * i128::from(scale), 100);
     let mut inner = scaled + i64::from(stats.flat_damage);
     if critical {
-        inner += i64::from((profile.flat_crit_damage - resistance.critical).max(0));
+        inner += i64::from(profile.flat_crit_damage.max(0));
     }
 
-    let after_multiplier = multiplier.apply(inner);
-    resistance.apply(after_multiplier, element)
+    multiplier.apply(resistance.apply(inner, element, critical))
 }
 
 /// Expected damage for one line, over the base roll and the crit outcome. Every

@@ -3,7 +3,7 @@
 import { COULEUR_ELEMENT, echapper, FR_ELEMENT, majuscule, nb, pluriel } from '../commun/format.js';
 import { parTour, selonCibles } from '../commun/graphique.js';
 import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
-import { borne, decrire, DOMAINES, ELEMENTS, neutres, versMoteur } from '../commun/resistances.js';
+import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 
 /// Le moteur n'accepte pas plus de trente-deux sorts (masques en `u32`) : le
 /// bouton se ferme avant.
@@ -227,7 +227,14 @@ export async function rendre(cible, etat, { appeler }) {
                 </select></div>` : ''}
             </div>
             <h4 class="groupe">La cible</h4>
-            <div class="reglages">${DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d, nom]) => `
+            <p class="libelle-groupe">Résistances fixes</p>
+            <div class="resistances-elements">${ELEMENTS.map(([e, nom]) => `
+              <label for="fixe-${e}">${nom}<input type="number" id="fixe-${e}" data-res-fixe="${e}"
+                value="${(res().fixes && res().fixes[e]) || 0}"></label>`).join('')}
+            </div>
+            <div class="reglages">
+              <div><label for="res-critiques">Résist. critiques</label>
+                <input type="number" id="res-critiques" value="${res().critiques || 0}"></div>${DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d, nom]) => `
               <div><label for="res-${d}">% Résist. ${nom}</label>
                 <input type="number" id="res-${d}" data-res-domaine="${d}" min="-100" max="100" value="${res()[d] || 0}"></div>`).join('')}
             </div>
@@ -397,6 +404,8 @@ export async function rendre(cible, etat, { appeler }) {
       Boolean(reglages.exhaustif),
       estRoublard && Boolean(reglages.mur),
       ...DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d]) => Boolean(res()[d])),
+      ...ELEMENTS.map(([e]) => Boolean(res().fixes && res().fixes[e])),
+      Boolean(res().critiques),
       ...declares.map((d) => Number(reglages.etats[d.id]) !== (Number(d.defaut) || 0)),
       ...bonusDofus.map((b) => cochee(b) !== (b.coche !== false)),
     ].filter(Boolean).length;
@@ -440,6 +449,17 @@ export async function rendre(cible, etat, { appeler }) {
       res().elements[i.dataset.resElement] = borne(i.value);
       marquerPerime();
     });
+  });
+  cible.querySelectorAll('[data-res-fixe]').forEach((i) => {
+    i.addEventListener('input', () => {
+      if (!res().fixes) res().fixes = {};
+      res().fixes[i.dataset.resFixe] = fixe(i.value);
+      marquerPerime();
+    });
+  });
+  $('res-critiques').addEventListener('input', () => {
+    res().critiques = fixe($('res-critiques').value);
+    marquerPerime();
   });
   cible.querySelectorAll('[data-res-domaine]').forEach((i) => {
     i.addEventListener('input', () => {

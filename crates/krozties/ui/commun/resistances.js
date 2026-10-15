@@ -1,6 +1,7 @@
 // Les résistances de la cible, telles que la Rotation les règle : aucune, le
-// même pourcentage partout, ou un par élément ; plus celles aux sorts, aux
-// armes, en mêlée et à distance. Les mêmes pour tous les ennemis.
+// même pourcentage partout, ou un par élément ; plus les fixes, la critique et
+// celles aux sorts, aux armes, en mêlée et à distance. Les mêmes pour tous les
+// ennemis.
 
 import { FR_ELEMENT } from './format.js';
 
@@ -13,11 +14,14 @@ export const ELEMENTS = ['Neutral', 'Earth', 'Fire', 'Water', 'Air'].map((e) => 
 export const DOMAINES = [['sorts', 'aux sorts'], ['armes', 'aux armes'], ['melee', 'mêlée'], ['distance', 'distance']];
 
 export const neutres = () => ({
-  mode: 'aucune', uniforme: 0, elements: {}, sorts: 0, armes: 0, melee: 0, distance: 0,
+  mode: 'aucune', uniforme: 0, elements: {}, fixes: {}, critiques: 0, sorts: 0, armes: 0, melee: 0, distance: 0,
 });
 
 /// Un pourcentage saisi, entier, entre -100 et 100.
 export const borne = (v) => Math.max(-100, Math.min(100, Math.round(Number(v) || 0)));
+
+/// Une résistance fixe saisie, entière.
+export const fixe = (v) => Math.max(-9999, Math.min(9999, Math.round(Number(v) || 0)));
 
 /// Les champs de la demande de rotation.
 export function versMoteur(r, avecArmes) {
@@ -28,6 +32,8 @@ export function versMoteur(r, avecArmes) {
   };
   return {
     resistance_percent: ORDRE_DU_MOTEUR.map(parElement),
+    resistance_flat: ORDRE_DU_MOTEUR.map((e) => (res.fixes && res.fixes[e]) || 0),
+    resistance_critical: res.critiques || 0,
     resistance_spell: res.sorts || 0,
     resistance_weapon: avecArmes ? (res.armes || 0) : 0,
     resistance_melee: res.melee || 0,
@@ -52,6 +58,12 @@ export function decrire(demande) {
       .map(([nom, v]) => `${nom} ${signe(v)} %`);
     parties.push(...els);
   }
+  const fixes = demande.resistance_flat || [0, 0, 0, 0, 0];
+  ELEMENTS
+    .map(([e, nom]) => [nom, fixes[ORDRE_DU_MOTEUR.indexOf(e)]])
+    .filter(([, v]) => v)
+    .forEach(([nom, v]) => parties.push(`${nom} ${signe(v)} fixes`));
+  if (demande.resistance_critical) parties.push(`${signe(demande.resistance_critical)} critiques`);
   const domaine = { sorts: 'resistance_spell', armes: 'resistance_weapon', melee: 'resistance_melee', distance: 'resistance_ranged' };
   DOMAINES.forEach(([d, nom]) => {
     const v = demande[domaine[d]];
