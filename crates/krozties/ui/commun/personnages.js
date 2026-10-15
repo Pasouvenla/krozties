@@ -47,8 +47,13 @@ export function creerPersonnage(d, { nom, classe, niveau }) {
   return p;
 }
 
-export function ajouterBuild(p, { nom, lien, charge, dofusbook, elements }) {
-  const b = { id: nouvelId(), nom, lien: lien || null, charge, dofusbook: dofusbook || null, elements: elements || [] };
+/// `lu_le` : quand l'équipement a été lu sur DofusBook, en ISO ; nul pour un
+/// build collé à la main.
+export function ajouterBuild(p, { nom, lien, charge, dofusbook, elements, lu_le: luLe }) {
+  const b = {
+    id: nouvelId(), nom, lien: lien || null, charge, dofusbook: dofusbook || null, elements: elements || [],
+    lu_le: luLe || null,
+  };
   p.builds.push(b);
   return b;
 }

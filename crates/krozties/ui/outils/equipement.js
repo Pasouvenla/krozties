@@ -69,6 +69,7 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
       // Le lien collé, que la page Retours joint au formulaire, et la fiche
       // DofusBook, que garde un build enregistré.
       etat.lienDuBuild = lien;
+      etat.luLe = lien ? new Date().toISOString() : null;
       etat.ficheDofusbook = dofusbook;
       // Un build importé ici n'est à aucun personnage tant qu'on ne l'a pas
       // enregistré.

@@ -7,7 +7,8 @@
           "titre": "Nouveautés",
           "lignes": [
             "Les réglages de la Rotation se gardent d'un lancement à l'autre : tours, ennemis, position, résistances de la cible et ceux de « Pour aller plus loin ».",
-            "Les fichiers à télécharger portent désormais le numéro de leur version, par exemple Krozties_0.9.0_x64-setup.exe."
+            "Les fichiers à télécharger portent désormais le numéro de leur version, par exemple Krozties_0.9.0_x64-setup.exe.",
+            "Un build enregistré se met à jour depuis DofusBook en un clic, dans la gestion des personnages : son équipement suit vos retouches, son nom reste le vôtre, et la date de la dernière lecture s'affiche sous son nom."
           ]
         }
       ]

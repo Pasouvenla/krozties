@@ -115,6 +115,7 @@ export function dessinerSelecteur(conteneur, etat, outils) {
         : creerPersonnage(donnees, { nom: nomPerso, classe: r.class, niveau: r.level });
       const b = ajouterBuild(p, {
         nom, lien: etat.lienDuBuild, charge: etat.build, dofusbook: etat.ficheDofusbook, elements: elementsDe(r),
+        lu_le: etat.luLe,
       });
       donnees.courant = { perso: p.id, build: b.id };
       p.dernier = b.id;

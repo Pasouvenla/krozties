@@ -182,6 +182,11 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "{r}"
     );
     assert_eq!(r["copierRotation"], true, "{r}");
+    assert_eq!(
+        r["miseAJourBuild"],
+        serde_json::json!({ "date": "lu sur DofusBook le 15/10 à 21:40", "boutons": 0 }),
+        "{r}"
+    );
     assert_eq!(r["reglagesGardes"], 2, "les réglages de la Rotation se gardent : {r}");
     // Les notes de mise à jour : les versions sautées, la fenêtre et la page.
     assert_eq!(

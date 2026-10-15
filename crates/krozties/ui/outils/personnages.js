@@ -21,6 +21,14 @@ export async function rendre(cible, etat, { appeler, majIdentite }) {
   const puces = (b) => (b.elements || []).map((e) => `<span class="puce-element" style="background:${
     COULEUR_ELEMENT[e] || 'var(--doux)'}">${echapper(e)}</span>`).join('');
 
+  /// « le 15/10 à 21:40 », à l'heure de cet ordinateur.
+  const lu = (iso) => {
+    const d = new Date(iso);
+    if (!iso || Number.isNaN(d.getTime())) return '';
+    const deux = (n) => String(n).padStart(2, '0');
+    return `le ${deux(d.getDate())}/${deux(d.getMonth() + 1)} à ${deux(d.getHours())}:${deux(d.getMinutes())}`;
+  };
+
   const supprimer = (cle, texte) => `<button type="button" class="action discret petit supprimer${
     aConfirmer === cle ? ' confirmer' : ''}" data-supprimer="${echapper(cle)}">${
     aConfirmer === cle ? 'Confirmer la suppression' : texte}</button>`;
@@ -32,10 +40,13 @@ export async function rendre(cible, etat, { appeler, majIdentite }) {
           aria-label="Nouveau nom du build">`
       : `<b>${echapper(b.nom)}</b>`;
     return `<div class="build-perso${charge ? ' charge' : ''}">
-      <div class="quoi">${nom}<small>${puces(b)}${b.lien ? `<span class="lien">${echapper(b.lien)}</span>` : ''}</small></div>
+      <div class="quoi">${nom}<small>${puces(b)}${b.lien ? `<span class="lien">${echapper(b.lien)}</span>` : ''}${
+        b.lu_le ? `<span class="date-import">lu sur DofusBook ${lu(b.lu_le)}</span>` : ''}</small></div>
       <div class="actions">
         ${charge ? '<span class="etat-charge">Chargé</span>'
           : `<button type="button" class="action discret petit" data-charger="${echapper(b.id)}">Charger</button>`}
+        ${hote === 'bureau' && b.lien
+          ? `<button type="button" class="action discret petit" data-maj="${echapper(b.id)}">Mettre à jour</button>` : ''}
         ${renomme === b.id
           ? `<button type="button" class="action petit" data-valider-nom="${echapper(b.id)}">Valider</button>`
           : `<button type="button" class="action discret petit" data-renommer-build="${echapper(b.id)}">Renommer</button>`}
@@ -202,6 +213,7 @@ export async function rendre(cible, etat, { appeler, majIdentite }) {
       }
     }));
 
+    tous('[data-maj]').forEach((b) => b.addEventListener('click', () => mettreAJour(b.dataset.maj)));
     tous('[data-importer]').forEach((b) => b.addEventListener('click', () => importer(b.dataset.importer)));
     tous('[data-lien]').forEach((champ) => champ.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') importer(champ.dataset.lien);
@@ -230,11 +242,41 @@ export async function rendre(cible, etat, { appeler, majIdentite }) {
       if (resolu.error) throw new Error(resolu.error);
       const b = P.ajouterBuild(p, {
         nom: r.nom || `Build ${p.builds.length + 1}`, lien, charge: r.build, dofusbook: r.dofusbook,
-        elements: P.elementsDe(resolu),
+        elements: P.elementsDe(resolu), lu_le: new Date().toISOString(),
       });
       if (!P.ecrire(d)) { redessiner("Cet ordinateur refuse l'enregistrement."); return; }
       await P.chargerBuild(etat, p, b, { appeler, majIdentite });
       redessiner(`« ${b.nom} » importé et chargé.`);
+    } catch (e) {
+      redessiner(e.message);
+    }
+  }
+
+  /// Relit un build sur DofusBook par son lien : son équipement change, son
+  /// nom reste celui du joueur ; chargé, il se recharge aussitôt.
+  async function mettreAJour(buildId) {
+    const d = P.lire();
+    const p = d.personnages.find((x) => x.builds.some((y) => y.id === buildId));
+    const b = p && p.builds.find((y) => y.id === buildId);
+    const id = b && decoderLienCourt(b.lien || '');
+    if (!id) { redessiner('Lien du build non reconnu.'); return; }
+    message = `Lecture de « ${b.nom} » sur DofusBook…`;
+    cible.querySelector('#etatPersos').textContent = message;
+    try {
+      const r = await appeler('importer', { id });
+      if (r.build.class !== p.classe) {
+        redessiner(`Ce build est devenu ${nomDeClasse(r.build.class)} sur DofusBook : importez-le sur un personnage de cette classe.`);
+        return;
+      }
+      const resolu = await appeler('resoudre', r.dofusbook ? { ...r.build, dofusbook: r.dofusbook } : r.build);
+      if (resolu.error) throw new Error(resolu.error);
+      Object.assign(b, {
+        charge: r.build, dofusbook: r.dofusbook, elements: P.elementsDe(resolu), lu_le: new Date().toISOString(),
+      });
+      if (!P.ecrire(d)) { redessiner("Cet ordinateur refuse l'enregistrement."); return; }
+      const c = P.courant(d);
+      if (c && c.build.id === b.id) await P.chargerBuild(etat, p, b, { appeler, majIdentite });
+      redessiner(`« ${b.nom} » mis à jour depuis DofusBook.`);
     } catch (e) {
       redessiner(e.message);
     }

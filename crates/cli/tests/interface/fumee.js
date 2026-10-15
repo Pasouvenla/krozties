@@ -559,6 +559,20 @@ try {
   await app.afficher('comparaison');
   const premierA = document.querySelector('#persoA option');
   resultat.comparaison.charge = premierA ? `${premierA.textContent}${premierA.selected ? ' (choisi)' : ''}` : null;
+
+  // La date de lecture sur DofusBook, sous le nom du build ; la mise à jour,
+  // qui relit DofusBook, n'existe que dans l'application de bureau.
+  const datees = P.lire();
+  Object.assign(datees.personnages[0].builds[0], {
+    lien: 'https://d-bk.net/fr/d/XXXXX', lu_le: new Date(2026, 9, 15, 21, 40).toISOString(),
+  });
+  P.ecrire(datees);
+  await app.afficher('personnages');
+  await pause(200);
+  resultat.miseAJourBuild = {
+    date: texte('.build-perso .date-import'),
+    boutons: document.querySelectorAll('[data-maj]').length,
+  };
   localStorage.removeItem(CLE_PERSOS);
 } catch (e) {
   erreurs.push(`exception : ${e.message}`);

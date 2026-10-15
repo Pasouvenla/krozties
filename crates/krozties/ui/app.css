@@ -253,6 +253,7 @@ button.action.petit, .action.petit { padding: .2rem .55rem; font-size: .76rem; }
 .build-perso .quoi small { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; font-size: .72rem;
                            color: var(--doux); }
 .build-perso .lien { overflow-wrap: anywhere; }
+.build-perso .date-import { color: var(--doux); }
 .build-perso .actions { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; justify-content: flex-end; }
 .build-perso .renommer { font: inherit; font-weight: 600; }
 .etat-charge { font-size: .74rem; font-weight: 600; color: var(--succes); }
