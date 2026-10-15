@@ -139,6 +139,7 @@ fn caracteristique(id: u32) -> Option<(Sens, &'static str)> {
         2804 => (Donne, "% de Dommages distance"),
         2812 => (Donne, "% de Dommages aux sorts"),
         2803 => (Donne, "% de Résistance mêlée"),
+        2807 => (Donne, "% de Résistance distance"),
         210 => (Donne, "% de Résistance Terre"),
         211 => (Donne, "% de Résistance Eau"),
         212 => (Donne, "% de Résistance Air"),
@@ -207,12 +208,12 @@ fn modificateur(id: u32) -> Option<&'static str> {
 /// La mécanique du sort, que son nom dit ou que ses dégâts comptent déjà :
 /// invocations, poses de piège ou de glyphe (leurs effets s'écrivent depuis
 /// `placed_effects`), portails, apparence, dégâts sans ligne. La téléportation
-/// (4) aussi : son masque ne dit pas qui se déplace, le lanceur (Transhumance)
-/// ou l'invocation (Rempotage).
+/// (4, et 1101 au tour suivant) aussi : son masque ne dit pas qui se déplace,
+/// le lanceur (Transhumance) ou l'invocation (Rempotage).
 const MECANIQUE: &[u32] = &[
     4, 82, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 141, 180, 181, 279, 333, 335, 400, 401, 402,
     405, 406, 666, 1008, 1009, 1011, 1013, 1016, 1017, 1026, 1031, 1091, 1092, 1097,
-    1118, 1165, 1181, 1182, 1183, 2018, 2022, 2023, 2184, 2796, 2822, 2828, 2832, 2935,
+    1101, 1118, 1165, 1181, 1182, 1183, 2018, 2022, 2023, 2184, 2796, 2822, 2828, 2832, 2935,
 ];
 
 /// Les effets qui lancent un sous-sort : la donnée ne porte que la liste de
@@ -710,6 +711,14 @@ mod tests {
     fn ribote_ne_retire_la_fuite_que_saoul() {
         let p = phrases(12, "Ribote");
         let attendue = "Lanceur sous Saoul\u{a0}: retire 40 Fuite à la cible, pendant 1 tour";
+        assert!(p.iter().any(|x| x == attendue), "{p:?}");
+    }
+
+    /// Le glyphe de la Barrière : les effets qu'il pose s'écrivent aussi.
+    #[test]
+    fn barriere_donne_de_la_resistance_distance_en_zone() {
+        let p = phrases(1, "Barrière");
+        let attendue = "Donne 30 % de Résistance distance aux alliés en zone, pendant 1 tour";
         assert!(p.iter().any(|x| x == attendue), "{p:?}");
     }
 
