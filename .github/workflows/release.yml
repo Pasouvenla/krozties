@@ -113,10 +113,19 @@ jobs:
     if: inputs.etiquette != '' || github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     steps:
+      # Tout l'historique : les notes partent de l'étiquette précédente.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.ETIQUETTE }}
+          fetch-depth: 0
+
+      - name: Notes de version
+        run: python3 tools/notes_de_version.py "$ETIQUETTE" > notes.md
+
       - name: Publier la version
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$ETIQUETTE" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+        run: gh release edit "$ETIQUETTE" --repo "$GITHUB_REPOSITORY" --notes-file notes.md --draft=false --latest
 
   cask:
     needs: publier
