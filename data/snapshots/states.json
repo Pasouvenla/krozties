@@ -93,6 +93,10 @@
     "drapeaux": [],
     "nom": "Perception"
   },
+  "244": {
+    "drapeaux": [],
+    "nom": "Téléfrag"
+  },
   "2499": {
     "drapeaux": [],
     "nom": "Casemate"
@@ -104,6 +108,10 @@
   "2504": {
     "drapeaux": [],
     "nom": "Cadence"
+  },
+  "251": {
+    "drapeaux": [],
+    "nom": "Téléfrag"
   },
   "2511": {
     "drapeaux": [],
@@ -409,9 +417,21 @@
     "drapeaux": [],
     "nom": "{{spell,24036,1::Saoul}}"
   },
+  "513": {
+    "drapeaux": [],
+    "nom": "Rage"
+  },
+  "514": {
+    "drapeaux": [],
+    "nom": "Raage"
+  },
   "516": {
     "drapeaux": [],
     "nom": "Proie"
+  },
+  "517": {
+    "drapeaux": [],
+    "nom": "Forme Bestiale"
   },
   "5179": {
     "drapeaux": [],
@@ -464,6 +484,10 @@
   "5314": {
     "drapeaux": [],
     "nom": "Écume"
+  },
+  "5317": {
+    "drapeaux": [],
+    "nom": "Marée cible"
   },
   "5372": {
     "drapeaux": [],
@@ -592,6 +616,70 @@
   "5496": {
     "drapeaux": [],
     "nom": "Coup de Grisou"
+  },
+  "5538": {
+    "drapeaux": [],
+    "nom": "Tromperie Air 2 PA"
+  },
+  "5539": {
+    "drapeaux": [],
+    "nom": "Tromperie Air 3 PA"
+  },
+  "5540": {
+    "drapeaux": [],
+    "nom": "Tromperie Air 4 PA"
+  },
+  "5541": {
+    "drapeaux": [],
+    "nom": "Tromperie Air 5 PA"
+  },
+  "5542": {
+    "drapeaux": [],
+    "nom": "Tromperie Eau 2 PA"
+  },
+  "5543": {
+    "drapeaux": [],
+    "nom": "Tromperie Eau 3 PA"
+  },
+  "5544": {
+    "drapeaux": [],
+    "nom": "Tromperie Eau 4 PA"
+  },
+  "5545": {
+    "drapeaux": [],
+    "nom": "Tromperie Eau 5 PA"
+  },
+  "5546": {
+    "drapeaux": [],
+    "nom": "Tromperie Feu 2 PA"
+  },
+  "5547": {
+    "drapeaux": [],
+    "nom": "Tromperie Feu 3 PA"
+  },
+  "5548": {
+    "drapeaux": [],
+    "nom": "Tromperie Feu 4 PA"
+  },
+  "5549": {
+    "drapeaux": [],
+    "nom": "Tromperie Feu 5 PA"
+  },
+  "5550": {
+    "drapeaux": [],
+    "nom": "Tromperie Terre 2 PA"
+  },
+  "5551": {
+    "drapeaux": [],
+    "nom": "Tromperie Terre 3 PA"
+  },
+  "5552": {
+    "drapeaux": [],
+    "nom": "Tromperie Terre 4 PA"
+  },
+  "5553": {
+    "drapeaux": [],
+    "nom": "Tromperie Terre 5 PA"
   },
   "5595": {
     "drapeaux": [],

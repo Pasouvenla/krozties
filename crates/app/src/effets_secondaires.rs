@@ -722,6 +722,15 @@ mod tests {
         assert!(p.iter().any(|x| x == attendue), "{p:?}");
     }
 
+    /// La condition nomme l'état : le bouclier de Cerbère tombe sous Forme
+    /// Bestiale.
+    #[test]
+    fn cerbere_ne_protege_que_hors_de_la_forme_bestiale() {
+        let p = phrases(18, "Cerbère");
+        let attendue = "Lanceur sans Forme Bestiale\u{a0}: applique un bouclier au lanceur, pendant 1 tour";
+        assert!(p.iter().any(|x| x == attendue), "{p:?}");
+    }
+
     /// Un effet au sens inconnu ne s'écrit pas : il va dans les manques.
     #[test]
     fn un_effet_inconnu_ne_s_ecrit_pas() {
