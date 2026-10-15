@@ -66,6 +66,27 @@ try {
     localStorage.removeItem(CLE_MAJ);
   }
 
+  // Le message pour Discord : les tours identiques qui se suivent réunis, la
+  // répartition et le lien.
+  const discord = await import('/commun/discord.js');
+  resultat.discord = discord.rotation({
+    r: {
+      total: 900,
+      per_turn: 300,
+      steady: { per_turn: 310 },
+      turns: [
+        { damage: 300, casts: [{ name: 'Arnaque' }, { name: 'Arnaque' }, { name: 'Épidémie' }] },
+        { damage: 300, casts: [{ name: 'Arnaque' }, { name: 'Arnaque' }, { name: 'Épidémie' }] },
+        { damage: 300, casts: [{ name: 'Injection Toxique' }] },
+      ],
+      repartition: [{ id: 'a', name: 'Arnaque', share: 0.6, damage: 540 }, { id: 'e', name: 'Épidémie', share: 0.4, damage: 360 }],
+    },
+    demande: { horizon: 3, targets: 1, position: 'distance', resistance_percent: [20, 20, 20, 20, 20] },
+    build: 'Sram 200 · Agilité',
+    version: '0.8.0',
+    lien: 'https://d-bk.net/fr/d/XXXX',
+  }).split('\n');
+
   // Les notes de mise à jour : les versions à présenter après une mise à jour,
   // la fenêtre, puis la page, une ligne par version, la plus récente ouverte,
   // sans la documentation.
@@ -416,6 +437,7 @@ try {
   document.getElementById('calculer').click();
   await attendre(() => document.querySelector('#detailRotation .lancer[data-tour]'), 60000);
   resultat.arme.lancee = document.querySelectorAll('#detailRotation .lancer[data-sort="arme"]').length;
+  resultat.copierRotation = Boolean(document.getElementById('copierDiscord'));
   // Les remarques du calcul, dans leur carte sous la répartition.
   resultat.remarques = [...document.querySelectorAll('#detailRotation .remarques li')].map((li) => li.textContent);
 
@@ -524,6 +546,7 @@ try {
       && [...lignesComparees[1].querySelectorAll('tbody tr')].every((tr) => tr.querySelectorAll('.ligne').length === 2
         && /^([+\u2212][\d\s\u202f]+|0)$/.test(tr.lastElementChild.textContent)) : false,
     barres: document.querySelectorAll('#resultatComparaison rect.g-barre').length === 2 * toursCompares,
+    copier: Boolean(document.getElementById('copierComparaison')),
   };
   // Un build importé sans être enregistré se compare aussi : il vient en
   // tête, choisi d'office pour A.

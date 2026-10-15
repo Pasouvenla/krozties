@@ -1089,3 +1089,9 @@ table.par-sort .barre.a { background: var(--accent); }
 table.par-sort .barre.b { background: var(--accent-doux); }
 table.par-sort .ligne span { font-size: .76rem; text-align: right; }
 table.par-sort .absent { color: var(--doux); }
+
+/* Copier pour Discord, sous un résultat ; la réponse à côté. */
+.copie-discord { display: grid; gap: .25rem; margin-top: .7rem; }
+.copie-discord .copie { font-size: .78rem; font-weight: 600; }
+.copie-discord .copie.ok { color: var(--succes); }
+.copie-discord .copie.refus { color: var(--alerte); }

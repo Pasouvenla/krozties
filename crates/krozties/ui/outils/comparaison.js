@@ -3,6 +3,7 @@
 
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import { echapper, nb, pluriel } from '../commun/format.js';
+import * as discord from '../commun/discord.js';
 import { deuxBuilds } from '../commun/graphique.js';
 import { CLASSES, courant, lire } from '../commun/personnages.js';
 import { decrire, versMoteur } from '../commun/resistances.js';
@@ -214,7 +215,11 @@ export async function rendre(cible, etat, { appeler, afficher }) {
           const e = enPourcent ? ecart(va, vb) : { texte: '', classe: '' };
           return `<tr><td>${titre}</td><td>${nb(va)}</td><td>${nb(vb)}</td><td class="${e.classe}">${e.texte}</td></tr>`;
         }).join('')}
-        </tbody></table></div></section>
+        </tbody></table>
+        <div class="copie-discord">
+          <button type="button" class="action discret" id="copierComparaison">Copier pour Discord</button>
+          <span class="copie" id="copieComparaison" role="status"></span>
+        </div></div></section>
       <section class="encart"><h4>Dégâts par sort</h4><div>
         <div class="g-legende"><span><i class="g-puce g-p-a"></i>A · ${echapper(nom(a))}</span>
           <span><i class="g-puce g-p-b"></i>B · ${echapper(nom(b))}</span></div>
@@ -229,6 +234,20 @@ export async function rendre(cible, etat, { appeler, afficher }) {
       <section class="encart"><h4>Dégâts par tour</h4><div>
         ${deuxBuilds(ra.turns.map((t) => t.damage), rb.turns.map((t) => t.damage), nom(a), nom(b))}
       </div></section>`;
+    $('copierComparaison').addEventListener('click', async () => {
+      const texte = discord.comparaison({
+        ra,
+        rb,
+        demande: { horizon, targets: cibles, position, ...versMoteur(reglages.resistances, true) },
+        titre: `Comparaison ${nomDeClasse(a.p.classe)} ${a.p.niveau}`,
+        nomA: nom(a),
+        nomB: nom(b),
+        version: await discord.version(appeler),
+      });
+      const ok = await discord.copier(texte);
+      $('copieComparaison').className = `copie ${ok ? 'ok' : 'refus'}`;
+      $('copieComparaison').textContent = ok ? 'Copié.' : 'Le système refuse la copie.';
+    });
   }
 
   if (choix.resultat) dessiner(choix.resultat.a, choix.resultat.b);

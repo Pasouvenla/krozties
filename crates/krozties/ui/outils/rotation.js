@@ -5,6 +5,7 @@ import { parTour, selonCibles } from '../commun/graphique.js';
 import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
+import * as discord from '../commun/discord.js';
 
 const ROUBLARD = 13;
 const NOMS_DES_BOMBES = { feu: 'Explobombes', air: 'Tornabombes', eau: 'Bombes à Eau', terre: 'Sismobombes' };
@@ -611,7 +612,24 @@ export async function rendre(cible, etat, { appeler }) {
           pluriel(st.cycle_length, 'tour')}">Sur la durée</dt><dd>${nb(st.per_turn)} par tour</dd>` : ''}
         ${r.ap_wasted > 0 ? `<dt>PA perdus</dt><dd class="alerte">${r.ap_wasted}</dd>` : ''}
       </dl>
-      ${st.too_large ? '<p class="aide">Moyenne sur la durée non calculée avec autant de sorts.</p>' : ''}`;
+      ${st.too_large ? '<p class="aide">Moyenne sur la durée non calculée avec autant de sorts.</p>' : ''}
+      <div class="copie-discord">
+        <button type="button" class="action discret" id="copierDiscord">Copier pour Discord</button>
+        <span class="copie" id="copieDiscord" role="status"></span>
+      </div>`;
+    $('copierDiscord').addEventListener('click', async () => {
+      const b = etat.resolu || {};
+      const texte = discord.rotation({
+        r,
+        demande: chargeDuResultat,
+        build: `${b.class_name || 'Build'} ${b.level || ''}`.trim() + (etat.nomDuBuild ? ` · ${etat.nomDuBuild}` : ''),
+        version: await discord.version(appeler),
+        lien: etat.lienDuBuild,
+      });
+      const ok = await discord.copier(texte);
+      $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
+      $('copieDiscord').textContent = ok ? 'Copié.' : 'Le système refuse la copie.';
+    });
   }
 
   function dessinerDetail() {

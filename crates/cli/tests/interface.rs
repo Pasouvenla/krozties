@@ -165,6 +165,23 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // Deux ouvertures, deux demandes à GitHub ; la troisième, hors ligne, garde
     // le numéro lu.
     assert_eq!(r["majVerifiee"], serde_json::json!({ "demandes": 2, "derniere": "9.9.9" }), "{r}");
+    // Le message pour Discord, et son bouton sous un vrai résultat.
+    assert_eq!(
+        r["discord"],
+        serde_json::json!([
+            "**Sram 200 · Agilité** (Krozties 0.8.0)",
+            "3 tours, 1 ennemi, position à distance, contre 20 % partout",
+            "**900** dégâts · 300 par tour · 310 sur la durée",
+            "",
+            "Tours 1 à 2 : Arnaque ×2, Épidémie (≈ 300 par tour)",
+            "Tour 3 : Injection Toxique (300)",
+            "",
+            "Répartition : Arnaque 60,0 % · Épidémie 40,0 %",
+            "https://d-bk.net/fr/d/XXXX",
+        ]),
+        "{r}"
+    );
+    assert_eq!(r["copierRotation"], true, "{r}");
     // Les notes de mise à jour : les versions sautées, la fenêtre et la page.
     assert_eq!(
         r["nouveautes"],
@@ -298,7 +315,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert_eq!(
         r["comparaison"],
         serde_json::json!({
-            "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true,
+            "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true, "copier": true,
             "charge": "Build chargé · Crâ 200 (choisi)",
         }),
         "{r}"

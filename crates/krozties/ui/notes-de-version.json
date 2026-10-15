@@ -7,7 +7,8 @@
           "titre": "Nouveautés",
           "lignes": [
             "La Comparaison accepte aussi le build que vous venez d'importer, même non enregistré : il se place d'office en A, face à vos builds enregistrés de la même classe.",
-            "La Comparaison détaille les dégâts de chaque sort pour les deux builds, en barres sur la même échelle, avec l'écart de B sur A."
+            "La Comparaison détaille les dégâts de chaque sort pour les deux builds, en barres sur la même échelle, avec l'écart de B sur A.",
+            "Ajout du bouton « Copier pour Discord » sous les résultats de la Rotation et de la Comparaison : le message se colle tel quel dans un salon."
           ]
         }
       ]
