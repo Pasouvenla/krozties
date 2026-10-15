@@ -62,7 +62,7 @@ def test() -> int:
     echecs = 0
     cas = [
         ('la version sans le v', m['version'], '0.10.0'),
-        ('dix entrées', sorted(m['platforms']), sorted(c for _, cles in PAQUETS for c in cles)),
+        ('onze entrées', sorted(m['platforms']), sorted(c for _, cles in PAQUETS for c in cles)),
         ('le Mac prend le .app.tar.gz', m['platforms']['darwin-aarch64-app']['url'],
          'https://github.com/Pasouvenla/krozties/releases/download/v0.10.0/Krozties_0.10.0_universal.app.tar.gz'),
         ('Windows par défaut : l’installateur NSIS', m['platforms']['windows-x86_64']['url'].rsplit('/', 1)[1],
