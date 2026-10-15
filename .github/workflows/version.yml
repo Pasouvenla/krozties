@@ -72,15 +72,18 @@ jobs:
           PY
           cargo update -w
 
-      # Les notes de la version, ajoutées au fichier que l'application affiche.
-      - name: Notes de version
+      # Les notes de la version, ajoutées au fichier que l'application affiche,
+      # et les liens du README vers ses paquets.
+      - name: Notes de version et liens du README
         env:
           NUMERO: ${{ steps.version.outputs.numero }}
-        run: python3 tools/notes_de_version.py --ajouter "v${NUMERO}"
+        run: |
+          python3 tools/notes_de_version.py --ajouter "v${NUMERO}"
+          python3 tools/liens_du_readme.py "v${NUMERO}"
 
       - name: Ce que l'essai changerait
         if: inputs.essai
-        run: git diff --stat && git diff -- Cargo.toml crates/krozties/tauri.conf.json crates/krozties/ui/notes-de-version.json
+        run: git diff --stat && git diff -- Cargo.toml crates/krozties/tauri.conf.json crates/krozties/ui/notes-de-version.json README.md
 
       # Une étiquette poussée par ce jeton ne déclenche aucun workflow : la
       # release est donc lancée explicitement.

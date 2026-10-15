@@ -6,9 +6,9 @@ name: Release
 # lancé à la main sans étiquette, il construit sans rien publier et garde les
 # paquets dans les artefacts du run.
 #
-# Les paquets ne portent pas de numéro de version (`Krozties_x64-setup.exe`,
-# `Krozties_universal.dmg`…) : un lien `releases/latest/download/<paquet>`
-# mène toujours à la dernière version.
+# Les paquets portent le numéro de leur version (`Krozties_0.9.0_x64-setup.exe`,
+# `Krozties_0.9.0_universal.dmg`…) : un fichier téléchargé dit lequel il est.
+# Le workflow `version` fait suivre les liens directs du README.
 
 on:
   push:
@@ -112,7 +112,7 @@ jobs:
           tauriScript: tauri
           args: ${{ matrix.args }}
           releaseId: ${{ needs.version.outputs.brouillon }}
-          releaseAssetNamePattern: '[name]_[arch][setup][ext]'
+          releaseAssetNamePattern: '[name]_[version]_[arch][setup][ext]'
 
       - name: Paquets de l'essai
         if: env.ETIQUETTE == ''
@@ -173,8 +173,9 @@ jobs:
           cask = open(sys.argv[2]).read()
           cask = re.sub(r'^  version ".*"$', f'  version "{numero}"', cask, count=1, flags=re.M)
           cask = re.sub(r'^  sha256 ".*"$', f'  sha256 "{empreinte}"', cask, count=1, flags=re.M)
+          nom = dmg["name"].replace(numero, "#{version}")
           cask = re.sub(r'^  url ".*"$', '  url "https://github.com/Pasouvenla/krozties/releases/download/'
-                        f'v#{{version}}/{dmg["name"]}"', cask, count=1, flags=re.M)
+                        f'v#{{version}}/{nom}"', cask, count=1, flags=re.M)
           open(sys.argv[2], "w").write(cask)
           PY
           rm version.json

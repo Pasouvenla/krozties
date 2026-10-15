@@ -39,3 +39,6 @@ jobs:
 
       - name: Notes de version
         run: python3 tools/test_notes_de_version.py
+
+      - name: Liens du README
+        run: python3 tools/liens_du_readme.py --test
