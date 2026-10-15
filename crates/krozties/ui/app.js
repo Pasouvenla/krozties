@@ -6,6 +6,8 @@
 import { appeler, hote } from './pont.js';
 import { nb } from './commun/format.js';
 import { brancherInfobulles, ficheDeSort, ficheDObjet } from './commun/infobulle.js';
+import { chargerBuild, courant, lire, oublierCourant } from './commun/personnages.js';
+import { dessinerSelecteur } from './commun/selecteur-perso.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,6 +24,8 @@ export const etat = {
 /// Les outils connus. Chargés à la demande : tant qu'on ne va pas dans le
 /// réseau de pièges, son code n'est pas lu.
 const OUTILS = {
+  // Les personnages enregistrés et leurs builds.
+  personnages: () => import('./outils/personnages.js'),
   equipement: () => import('./outils/equipement.js'),
   rotation: () => import('./outils/rotation.js'),
   // KrozZone (les zones de sorts) et KrozTrap (les pièges) vivent dans KrozTools,
@@ -95,9 +99,13 @@ export async function afficher(nom) {
   await mod.rendre(contenu, etat, { appeler, majIdentite, afficher });
 }
 
-/// L'entête dit toujours sur quel personnage on travaille.
+/// L'entête dit toujours sur quel personnage on travaille : le personnage et
+/// le build enregistrés, ou la classe d'un build importé sans l'être.
 export function majIdentite() {
   const r = etat.resolu;
+  dessinerSelecteur($('selecteurPerso'), etat, { appeler, majIdentite, afficher });
+  // Un build enregistré dit déjà qui l'on calcule, chargé ou en chargement.
+  $('identite').hidden = Boolean(courant(lire()));
   if (!r) {
     $('identite').innerHTML = '<span class="vide">Aucun équipement chargé</span>';
     $('changerEquipement').hidden = true;
@@ -130,6 +138,18 @@ $('hote').textContent = hote === 'bureau' ? '' : 'Navigateur';
 
 majIdentite();
 afficher('equipement');
+
+// Le dernier build enregistré chargé l'est de nouveau à l'ouverture.
+const dernier = courant(lire());
+if (dernier) {
+  catalogue
+    .then(() => chargerBuild(etat, dernier.perso, dernier.build, { appeler, majIdentite }))
+    .then(() => afficher(etat.outil))
+    .catch(() => {
+      oublierCourant();
+      majIdentite();
+    });
+}
 
 // Une nouvelle version : seule l'application de bureau la cherche, et une
 // vérification qui échoue ne gêne rien.

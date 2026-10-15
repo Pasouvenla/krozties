@@ -115,6 +115,44 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
 #entete .titre { font-weight: 600; font-size: .95rem; }
 #entete .vide { color: var(--doux); }
 
+/* Le personnage puis son build, en deux listes ouvrantes ; et l'enregistrement
+   d'un build importé. Une liste est un <details> : clavier et lecteur d'écran
+   la lisent sans rien de plus. */
+.selecteur-perso { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.selecteur-perso:empty { display: none; }
+.choix { position: relative; }
+.choix > summary { list-style: none; display: inline-flex; align-items: center; gap: .45rem; cursor: pointer; }
+.choix > summary::-webkit-details-marker { display: none; }
+.choix .etiquette { font-size: .76rem; color: var(--doux); }
+.choix .valeur { padding: .25rem .6rem; border: 1px solid var(--cheveux); border-radius: var(--rayon);
+                 background: var(--fond); font-size: .86rem; font-weight: 600; }
+.choix .valeur::after { content: ' ▾'; color: var(--doux); font-weight: 400; }
+.choix > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--rayon); }
+.panneau-choix { position: absolute; z-index: 30; top: calc(100% + .3rem); left: 0; min-width: 17rem;
+                 display: grid; gap: .15rem; padding: .3rem; background: var(--fond);
+                 border: 1px solid var(--cheveux); border-radius: var(--rayon);
+                 box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+.panneau-choix > button { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .35rem .45rem;
+                          border: 0; border-radius: 4px; background: none; font: inherit; text-align: left;
+                          cursor: pointer; }
+.panneau-choix > button:hover:not([disabled]) { background: var(--panneau); }
+.panneau-choix > button.choisi { background: var(--accent-clair); }
+.panneau-choix > button[disabled] { opacity: .5; cursor: default; }
+.panneau-choix > button span, .option-build { display: grid; line-height: 1.2; }
+.panneau-choix small { color: var(--doux); font-size: .72rem; }
+.option-build { display: grid !important; gap: .05rem; }
+.option-gerer { color: var(--accent); font-weight: 600; border-top: 1px solid var(--trait) !important;
+                border-radius: 0 0 4px 4px !important; margin-top: .2rem; }
+.choix.enregistrer > summary { padding: .3rem .7rem; border: 1px solid var(--accent); border-radius: var(--rayon);
+                               color: var(--accent); background: var(--fond); font-size: .84rem; }
+.panneau-choix.formulaire { gap: .3rem; padding: .7rem; width: 19rem; }
+.panneau-choix.formulaire label { font-size: .76rem; color: var(--doux); }
+.panneau-choix.formulaire > button { justify-content: center; margin-top: .3rem; background: var(--accent);
+                                     color: #fff; }
+.badge-perso { display: inline-grid; place-items: center; flex: none; width: 1.8rem; height: 1.8rem;
+               border-radius: 50%; background: var(--accent); color: var(--rail-texte);
+               font-size: .62rem; font-weight: 700; }
+
 #contenu { grid-area: contenu; overflow: auto; padding: 1.1rem; }
 .outil { max-width: 100rem; margin: 0 auto; }
 .outil > h2 { margin: 0 0 .2rem; font-size: 1.15rem; letter-spacing: -.01em; }
@@ -189,6 +227,42 @@ textarea { min-height: 5rem; font-family: ui-monospace, SFMono-Regular, Menlo, m
 .remarques { margin: .4rem 0 0; padding-left: 1.1rem; }
 .remarques li + li { margin-top: .3rem; }
 .encart .remarques { margin: 0; }
+
+/* Gestion des personnages : un encart par personnage, ses builds dedans. */
+.personnages .barre-page { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+.personnages .espace, .carte-perso h4 .espace { flex: 1; }
+.personnages .pile-encarts { display: grid; gap: .8rem; margin-top: .6rem; }
+button.action.petit, .action.petit { padding: .2rem .55rem; font-size: .76rem; }
+.personnages button.action.supprimer { color: var(--alerte); border-color: var(--alerte); }
+.personnages button.action.supprimer.confirmer { background: var(--alerte); color: #fff; }
+.personnages label.fichier { display: inline-flex; align-items: center; margin: 0; font-weight: 600;
+                             border: 1px solid var(--accent); border-radius: var(--rayon);
+                             background: var(--fond); color: var(--accent); }
+.personnages .fichier { cursor: pointer; position: relative; }
+.personnages .fichier input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.personnages .fichier:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.carte-perso > h4 { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .82rem; }
+.carte-perso > h4 .rang { font-weight: 500; color: var(--doux); }
+.carte-perso.actuel { border-color: var(--accent); }
+.build-perso { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .5rem;
+               padding: .4rem .5rem; border-radius: 4px; }
+.build-perso + .build-perso { margin-top: .2rem; }
+.build-perso.charge { background: var(--accent-clair); }
+.build-perso .quoi { display: grid; gap: .1rem; }
+.build-perso .quoi b { font-size: .86rem; }
+.build-perso .quoi small { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; font-size: .72rem;
+                           color: var(--doux); }
+.build-perso .lien { overflow-wrap: anywhere; }
+.build-perso .actions { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; justify-content: flex-end; }
+.build-perso .renommer { font: inherit; font-weight: 600; }
+.etat-charge { font-size: .74rem; font-weight: 600; color: var(--succes); }
+.puce-element { padding: 0 .35rem; border-radius: 3px; color: #fff; font-size: .66rem; }
+.champs-perso { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: .4rem; }
+.champs-perso label { display: grid; gap: .2rem; font-size: .76rem; color: var(--doux); }
+.champs-perso input[type=number] { width: 5rem; }
+.import-build { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem;
+                border-top: 1px dashed var(--trait); }
+.import-build input { flex: 1 1 14rem; min-width: 0; }
 
 /* Retours : décrire, puis ouvrir le formulaire d'issue rempli. */
 .retours .sujet { border: 0; padding: 0; margin: 0 0 .8rem; display: flex; flex-wrap: wrap; gap: .4rem; }

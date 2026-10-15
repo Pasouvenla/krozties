@@ -2,6 +2,7 @@
 // rappelle sur qui l'on travaille, et « Changer » y ramène.
 
 import { decoderLienCourt } from '../commun/import-dofusbook.js';
+import { oublierCourant } from '../commun/personnages.js';
 import { COULEUR_ELEMENT, echapper, majuscule, nb } from '../commun/format.js';
 
 /// Un lien, et rien d'autre : l'application lit l'équipement elle-même (voir
@@ -65,8 +66,13 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
       if (resolu.error) throw new Error(resolu.error);
       etat.build = charge;
       etat.nomDuBuild = nom;
-      // Le lien collé, que la page Retours joint au formulaire.
+      // Le lien collé, que la page Retours joint au formulaire, et la fiche
+      // DofusBook, que garde un build enregistré.
       etat.lienDuBuild = lien;
+      etat.ficheDofusbook = dofusbook;
+      // Un build importé ici n'est à aucun personnage tant qu'on ne l'a pas
+      // enregistré.
+      oublierCourant();
       etat.resolu = resolu;
       majIdentite();
       $('etatImport').textContent = '';

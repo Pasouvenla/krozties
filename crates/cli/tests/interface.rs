@@ -266,6 +266,12 @@ fn chaque_outil_s_affiche_sans_erreur() {
         serde_json::json!({ "titre": "Dofus Ocre", "statut": "compté dans la Rotation", "aussi": "Attitude : Dofus Ocre" }),
         "{r}"
     );
+    // Un build enregistré sous un nouveau personnage depuis la barre du haut :
+    // la barre le nomme, la page de gestion le range.
+    let persos = &r["personnages"];
+    assert!(persos["barre"][0].as_str().unwrap_or("").starts_with("Pyrus · "), "{r}");
+    assert_eq!(persos["barre"][1], "Essai", "{r}");
+    assert_eq!((&persos["cartes"], &persos["builds"]), (&serde_json::json!(1), &serde_json::json!(["Essai"])), "{r}");
     // L'exemple de KrozPortal : deux portails à huit cases, 2 % par case ; et
     // les dix-neuf classes au choix du lanceur.
     assert_eq!(r["portail"]["bonus"], "+16 % de dommages finaux", "{r}");

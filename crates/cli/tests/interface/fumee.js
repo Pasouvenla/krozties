@@ -435,6 +435,26 @@ try {
     statut: (bulle.querySelector('.statut') || {}).textContent || null,
     aussi: [...bulle.querySelectorAll('.section p')].map((p) => p.textContent).pop() || null,
   };
+
+  // Les personnages : le build chargé, enregistré sous un nouveau personnage
+  // depuis la barre du haut ; la barre le nomme, la page de gestion le range.
+  const CLE_PERSOS = 'krozties.personnages';
+  localStorage.removeItem(CLE_PERSOS);
+  app.majIdentite();
+  document.querySelector('#selecteurPerso .choix.enregistrer summary').click();
+  await pause(100);
+  document.getElementById('nomBuildNeuf').value = 'Essai';
+  document.getElementById('nomPersoNeuf').value = 'Pyrus';
+  document.getElementById('validerBuild').click();
+  await pause(200);
+  resultat.personnages = {
+    barre: [...document.querySelectorAll('#selecteurPerso .valeur')].map((v) => v.textContent),
+  };
+  await app.afficher('personnages');
+  await pause(300);
+  resultat.personnages.cartes = document.querySelectorAll('.carte-perso').length;
+  resultat.personnages.builds = [...document.querySelectorAll('.build-perso .quoi b')].map((b) => b.textContent);
+  localStorage.removeItem(CLE_PERSOS);
 } catch (e) {
   erreurs.push(`exception : ${e.message}`);
 }
