@@ -140,17 +140,31 @@ fn adresse_de_retour(adresse: &str) -> bool {
         .is_some_and(|reste| reste.bytes().all(|b| b.is_ascii_alphanumeric() || b"-_.!~*'()%&=".contains(&b)))
 }
 
-/// La liste des personnages, écrite dans le dossier Téléchargements : un
-/// fichier à garder, ou à importer sur un autre ordinateur. Rend son chemin.
+/// La liste des personnages, dans le fichier que le joueur choisit : une copie
+/// à garder, ou à importer sur un autre ordinateur. Rend son chemin, ou `null`
+/// s'il renonce. La fenêtre d'enregistrement attend le joueur : elle s'ouvre
+/// hors du fil de l'interface.
 #[tauri::command]
-fn exporter_les_personnages(contenu: String) -> Sortie {
+async fn exporter_les_personnages(app: tauri::AppHandle, contenu: String) -> Sortie {
+    use tauri_plugin_dialog::DialogExt;
     if contenu.len() > 20_000_000 {
         return Err("liste trop lourde pour être exportée".into());
     }
     serde_json::from_str::<serde_json::Value>(&contenu).map_err(|_| "liste illisible".to_string())?;
-    let maison = std::env::var_os(if cfg!(target_os = "windows") { "USERPROFILE" } else { "HOME" })
-        .ok_or("dossier personnel introuvable")?;
-    let chemin = std::path::Path::new(&maison).join("Downloads").join("krozties-personnages.json");
+    let choisi = tauri::async_runtime::spawn_blocking(move || {
+        app.dialog()
+            .file()
+            .set_title("Exporter la liste des personnages")
+            .set_file_name("krozties-personnages.json")
+            .add_filter("Liste de personnages Krozties", &["json"])
+            .blocking_save_file()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let Some(choisi) = choisi else {
+        return Ok("null".into());
+    };
+    let chemin = choisi.into_path().map_err(|e| e.to_string())?;
     std::fs::write(&chemin, contenu).map_err(|e| format!("impossible d'écrire {} : {e}", chemin.display()))?;
     serde_json::to_string(&chemin.display().to_string()).map_err(|e| e.to_string())
 }
@@ -177,6 +191,7 @@ fn ouvrir(adresse: &str) -> Sortie {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             classes,
             resoudre_build,

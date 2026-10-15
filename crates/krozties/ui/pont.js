@@ -35,8 +35,8 @@ const ROUTES = {
   /// Bureau seulement : le formulaire d'issue rempli par la page Retours, dans
   /// le navigateur du système. Un navigateur l'ouvre lui-même.
   retour: { commande: 'ouvrir_un_retour', bureau_seulement: "seule l'application de bureau passe par cette commande." },
-  /// Bureau seulement : la liste des personnages, écrite dans Téléchargements.
-  /// Un navigateur la télécharge lui-même.
+  /// Bureau seulement : la liste des personnages, dans le fichier que le joueur
+  /// choisit. Un navigateur la télécharge lui-même.
   exporter: { commande: 'exporter_les_personnages', bureau_seulement: "seule l'application de bureau passe par cette commande." },
 };
 

@@ -245,7 +245,7 @@ export async function rendre(cible, etat, { appeler, majIdentite }) {
     try {
       if (hote === 'bureau') {
         const chemin = await appeler('exporter', { contenu });
-        redessiner(`Liste exportée : ${chemin}`);
+        redessiner(chemin ? `Liste exportée : ${chemin}` : '');
       } else {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([contenu], { type: 'application/json' }));
