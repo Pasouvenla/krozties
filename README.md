@@ -36,13 +36,16 @@ votre utilisation. L'application ne contacte le réseau que dans quatre cas :
 - **Nouvelle version** : à chaque ouverture, l'application de bureau
   demande à l'API de GitHub (`api.github.com`) le numéro de la dernière version
   publiée. GitHub voit alors votre adresse IP, comme pour toute page web. Si une
-  version plus récente existe, une mini fenêtre l'annonce en bas à droite.
+  version plus récente existe, l'application lit aussi sa fiche de mise à jour
+  sur GitHub, et une mini fenêtre l'annonce en bas à droite.
 - **Import d'un équipement** : quand vous donnez un lien DofusBook,
   l'application ouvre la page de cet équipement dans une vue invisible pour le
   lire, comme le ferait votre navigateur, avec ce que la page de DofusBook
   charge elle-même.
-- **Téléchargement** : le bouton « Télécharger » de la mini fenêtre ouvre la
-  page des versions dans votre navigateur.
+- **Mise à jour** : le bouton « Mettre à jour » de la mini fenêtre télécharge
+  la nouvelle version depuis GitHub, vérifie sa signature et l'installe. Quand
+  une version ne propose pas cette mise à jour, le bouton « Télécharger » ouvre
+  la page des versions dans votre navigateur.
 - **Retours** : le bouton de la page Retours ouvre dans votre navigateur le
   formulaire d'issue de GitHub, rempli avec ce que la page affiche. Rien ne
   part tant que vous ne l'envoyez pas vous-même.
@@ -67,6 +70,12 @@ l'enregistrez sous un personnage.
 
 Chaque version dépose ses paquets sur la page des
 [versions](https://github.com/Pasouvenla/krozties/releases/latest).
+
+Une fois installé, Krozties se met à jour lui-même : quand une version sort, la
+mini fenêtre propose « Mettre à jour », puis de redémarrer. Sur Windows,
+l'installation se fait au redémarrage ou à la fermeture de Krozties ; sur Linux,
+un paquet `.deb` ou `.rpm` demande votre mot de passe. Depuis une version
+antérieure à la 0.10.0, téléchargez la nouvelle une dernière fois à la main.
 
 ### macOS (Apple Silicon et Intel)
 

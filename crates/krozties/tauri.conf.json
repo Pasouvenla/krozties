@@ -45,6 +45,18 @@
           "French"
         ]
       }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4OTU5NUYxRjk2MjE1MjYKUldRbUZXTDU4WldWbUVyR3NBOHIxWk4yNGtsMVlBSXJZOEd0ZVVXOTVuYndMWFdHcDQyZTNhNUgK",
+      "endpoints": [
+        "https://github.com/Pasouvenla/krozties/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

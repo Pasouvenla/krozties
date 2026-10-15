@@ -1,6 +1,18 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Krozties se met désormais à jour lui-même : « Mettre à jour » télécharge la nouvelle version, vérifie sa signature et l'installe, puis vous choisissez quand redémarrer. Sur Windows, l'installation se fait au redémarrage ou à la fermeture de Krozties.",
+            "Depuis une version plus ancienne, téléchargez celle-ci une dernière fois à la main : les suivantes s'installeront depuis l'application."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.9.0",
       "date": "2026-10-15",
       "rubriques": [

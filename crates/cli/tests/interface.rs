@@ -165,6 +165,16 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // Deux ouvertures, deux demandes à GitHub ; la troisième, hors ligne, garde
     // le numéro lu.
     assert_eq!(r["majVerifiee"], serde_json::json!({ "demandes": 2, "derniere": "9.9.9" }), "{r}");
+    assert_eq!(
+        r["majAuto"],
+        serde_json::json!({
+            "annonce": "Krozties 0.10.0 est disponible Vous utilisez la version 0.9.0. Mettre à jour Plus tard",
+            "pret": "Krozties 0.10.0 est prêt Il s'ouvrira au prochain lancement. Redémarrer maintenant Plus tard",
+            "pretWindows": "Krozties 0.10.0 est prêt Il s'installera à la fermeture de Krozties. Redémarrer maintenant Plus tard",
+            "echec": "La mise à jour n'a pas abouti Le téléchargement s'est interrompu Réessayer Télécharger sur GitHub",
+        }),
+        "{r}"
+    );
     // Le message pour Discord, et son bouton sous un vrai résultat.
     assert_eq!(
         r["discord"],

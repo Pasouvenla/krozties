@@ -1036,6 +1036,14 @@ table.mini .attenue { color: var(--doux); }
 .maj .telecharger { padding: .4rem .8rem; background: var(--cuivre); color: #fff; }
 .maj .telecharger:hover { background: var(--cuivre-fonce); }
 .maj .plus-tard { padding: .4rem .3rem; color: var(--doux); font-weight: 500; }
+/* La mise à jour en cours, prête, ou qui n'aboutit pas. */
+.maj .detail { color: var(--doux); font-size: .78rem; }
+.maj .jauge { height: .45rem; border-radius: 999px; background: var(--trait); overflow: hidden; margin-top: .35rem; }
+.maj .jauge span { display: block; height: 100%; width: 0; background: var(--cuivre); transition: width .2s; }
+.maj .relancer { padding: .4rem .8rem; background: var(--accent); color: #fff; }
+.maj .erreur { color: var(--alerte); font-size: .8rem; }
+.maj .lien-github { padding: .4rem .2rem; color: var(--accent); font-weight: 500; text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { .maj .jauge span { transition: none; } }
 /* Les nouveautés d'une version, à son premier lancement. */
 .maj.nouveautes { width: 21rem; }
 .maj .date { color: var(--doux); font-size: .78rem; }

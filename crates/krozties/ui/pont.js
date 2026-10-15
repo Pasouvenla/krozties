@@ -38,6 +38,12 @@ const ROUTES = {
   /// Bureau seulement : la liste des personnages, dans le fichier que le joueur
   /// choisit. Un navigateur la télécharge lui-même.
   exporter: { commande: 'exporter_les_personnages', bureau_seulement: "seule l'application de bureau passe par cette commande." },
+  /// Bureau seulement : la mise à jour de l'application, cherchée, installée,
+  /// suivie, puis le redémarrage sur la nouvelle version.
+  majChercher: { commande: 'chercher_la_mise_a_jour', bureau_seulement: "seule l'application de bureau se met à jour." },
+  majInstaller: { commande: 'installer_la_mise_a_jour', bureau_seulement: "seule l'application de bureau se met à jour." },
+  majAvancement: { commande: 'avancement_de_la_mise_a_jour', bureau_seulement: "seule l'application de bureau se met à jour." },
+  redemarrer: { commande: 'redemarrer_l_application', bureau_seulement: "seule l'application de bureau redémarre." },
 };
 
 export async function appeler(nom, charge) {

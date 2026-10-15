@@ -120,6 +120,79 @@ fn ouvrir_les_versions() -> Sortie {
     ouvrir(PAGE_DES_VERSIONS)
 }
 
+/// La mise à jour trouvée, ce qu'elle a reçu et, sur Windows, le paquet qui
+/// attend son installation.
+#[derive(Default)]
+struct MiseAJour {
+    trouvee: std::sync::Mutex<Option<tauri_plugin_updater::Update>>,
+    en_attente: std::sync::Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
+    recu: std::sync::atomic::AtomicU64,
+    total: std::sync::atomic::AtomicU64,
+}
+
+/// La version que propose `latest.json` de la dernière version publiée ;
+/// `null` s'il n'y a rien de plus récent.
+#[tauri::command]
+async fn chercher_la_mise_a_jour(app: tauri::AppHandle, etat: tauri::State<'_, MiseAJour>) -> Sortie {
+    use tauri_plugin_updater::UpdaterExt;
+    let trouvee = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    let version = trouvee.as_ref().map(|m| m.version.clone());
+    *etat.trouvee.lock().map_err(|e| e.to_string())? = trouvee;
+    serde_json::to_string(&version).map_err(|e| e.to_string())
+}
+
+/// Télécharge la mise à jour trouvée et vérifie sa signature. Rend `true` si
+/// elle est installée, la nouvelle version s'ouvrant au prochain lancement ;
+/// `false` sur Windows, où l'installateur ferme l'application : le paquet
+/// attend que le joueur redémarre ou quitte.
+#[tauri::command]
+async fn installer_la_mise_a_jour(etat: tauri::State<'_, MiseAJour>) -> Sortie {
+    use std::sync::atomic::Ordering;
+    let maj = etat.trouvee.lock().map_err(|e| e.to_string())?.clone().ok_or("aucune mise à jour à installer")?;
+    etat.recu.store(0, Ordering::Relaxed);
+    etat.total.store(0, Ordering::Relaxed);
+    let paquet = maj
+        .download(
+            |morceau, total| {
+                etat.recu.fetch_add(morceau as u64, Ordering::Relaxed);
+                if let Some(t) = total {
+                    etat.total.store(t, Ordering::Relaxed);
+                }
+            },
+            || {},
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    if cfg!(windows) {
+        *etat.en_attente.lock().map_err(|e| e.to_string())? = Some((maj, paquet));
+        return Ok("false".into());
+    }
+    maj.install(paquet).map_err(|e| e.to_string())?;
+    Ok("true".into())
+}
+
+/// Ce que la mise à jour a reçu, en octets, sur son total.
+#[tauri::command]
+fn avancement_de_la_mise_a_jour(etat: tauri::State<'_, MiseAJour>) -> Sortie {
+    use std::sync::atomic::Ordering;
+    serde_json::to_string(&serde_json::json!({
+        "recu": etat.recu.load(Ordering::Relaxed),
+        "total": etat.total.load(Ordering::Relaxed),
+    }))
+    .map_err(|e| e.to_string())
+}
+
+/// Relance l'application, sur la version installée. Sur Windows, l'installateur
+/// ferme Krozties et le rouvre une fois la mise à jour posée.
+#[tauri::command]
+fn redemarrer_l_application(app: tauri::AppHandle, etat: tauri::State<'_, MiseAJour>) -> Sortie {
+    let en_attente = etat.en_attente.lock().map_err(|e| e.to_string())?.take();
+    if let Some((maj, paquet)) = en_attente {
+        maj.install(paquet).map_err(|e| e.to_string())?;
+    }
+    app.restart()
+}
+
 /// Le formulaire d'issue du dépôt, que la page Retours remplit par l'adresse.
 const FORMULAIRE_DE_RETOUR: &str = "https://github.com/Pasouvenla/krozties/issues/new?";
 
@@ -192,6 +265,8 @@ fn ouvrir(adresse: &str) -> Sortie {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(MiseAJour::default())
         .invoke_handler(tauri::generate_handler![
             classes,
             resoudre_build,
@@ -211,10 +286,25 @@ fn main() {
             version_de_l_application,
             ouvrir_les_versions,
             ouvrir_un_retour,
-            exporter_les_personnages
+            exporter_les_personnages,
+            chercher_la_mise_a_jour,
+            installer_la_mise_a_jour,
+            avancement_de_la_mise_a_jour,
+            redemarrer_l_application
         ])
-        .run(tauri::generate_context!())
-        .expect("Krozties n'a pas pu démarrer");
+        .build(tauri::generate_context!())
+        .expect("Krozties n'a pas pu démarrer")
+        .run(|app, evenement| {
+            // Une mise à jour remise à plus tard sur Windows s'installe à la
+            // fermeture, sans rouvrir l'application.
+            if let tauri::RunEvent::Exit = evenement {
+                use tauri::Manager;
+                let en_attente = app.state::<MiseAJour>().en_attente.lock().ok().and_then(|mut e| e.take());
+                if let Some((maj, paquet)) = en_attente {
+                    let _ = maj.restart_after_install(false).install(paquet);
+                }
+            }
+        });
 }
 
 #[cfg(test)]

@@ -37,6 +37,19 @@ try {
   resultat.majTexte = fenetre.innerText.replace(/\s+/g, ' ').trim();
   fenetre.remove();
 
+  // La mise à jour dans l'application : « Mettre à jour », puis la nouvelle
+  // version prête avec le choix du redémarrage, ou l'échec et ses deux sorties.
+  const lireFenetre = (f) => f.innerText.replace(/\s+/g, ' ').trim();
+  const fenAuto = maj.afficher('0.10.0', '0.9.0', true);
+  resultat.majAuto = { annonce: lireFenetre(fenAuto) };
+  maj.pret(fenAuto, '0.10.0', true);
+  resultat.majAuto.pret = lireFenetre(fenAuto);
+  maj.pret(fenAuto, '0.10.0', false);
+  resultat.majAuto.pretWindows = lireFenetre(fenAuto);
+  maj.echec(fenAuto, '0.10.0', "le téléchargement s'est interrompu");
+  resultat.majAuto.echec = lireFenetre(fenAuto);
+  fenAuto.remove();
+
   // La vérification part à chaque ouverture, et sans réseau le numéro déjà
   // lu reste. GitHub est simulé ; la version installée, que seule
   // l'application de bureau connaît, arrête ensuite chaque passage, ce qui ne

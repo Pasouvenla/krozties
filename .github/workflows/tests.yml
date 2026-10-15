@@ -42,3 +42,6 @@ jobs:
 
       - name: Liens du README
         run: python3 tools/liens_du_readme.py --test
+
+      - name: Fichier de mise à jour
+        run: python3 tools/latest_json.py --test

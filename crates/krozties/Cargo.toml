@@ -18,5 +18,6 @@ dofus-app = { path = "../app" }
 dofus-build = { path = "../build" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "~2.7"
+tauri-plugin-updater = "~2.12"
 serde = { workspace = true }
 serde_json = { workspace = true }

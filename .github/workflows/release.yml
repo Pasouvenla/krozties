@@ -103,16 +103,21 @@ jobs:
 
       # Les paquets vont dans le brouillon du job `version` ; il ne se publie
       # qu'une fois les trois déposés, par le job `publier`.
+      # La clé signe les paquets pour la mise à jour de l'application ;
+      # `latest.json` s'écrit au job `publier`.
       - id: tauri
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: crates/krozties
           tauriScript: tauri
           args: ${{ matrix.args }}
           releaseId: ${{ needs.version.outputs.brouillon }}
           releaseAssetNamePattern: '[name]_[version]_[arch][setup][ext]'
+          uploadUpdaterJson: false
 
       - name: Paquets de l'essai
         if: env.ETIQUETTE == ''
@@ -122,7 +127,7 @@ jobs:
           path: ${{ join(fromJSON(steps.tauri.outputs.artifactPaths), fromJSON('"\n"')) }}
 
   publier:
-    needs: paquets
+    needs: [version, paquets]
     if: inputs.etiquette != '' || github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     steps:
@@ -134,6 +139,18 @@ jobs:
 
       - name: Notes de version
         run: python3 tools/notes_de_version.py "$ETIQUETTE" > notes.md
+
+      # Ce que lit la mise à jour de l'application : chaque paquet et sa
+      # signature, déposés par le job `paquets`.
+      - name: Mise à jour de l'application
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BROUILLON: ${{ needs.version.outputs.brouillon }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/$BROUILLON" > version.json
+          gh release download "$ETIQUETTE" --repo "$GITHUB_REPOSITORY" --pattern '*.sig' --dir signatures
+          python3 tools/latest_json.py version.json signatures "$GITHUB_REPOSITORY" notes.md > latest.json
+          gh release upload "$ETIQUETTE" latest.json --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Publier la version
         env:
@@ -174,6 +191,9 @@ jobs:
           cask = re.sub(r'^  version ".*"$', f'  version "{numero}"', cask, count=1, flags=re.M)
           cask = re.sub(r'^  sha256 ".*"$', f'  sha256 "{empreinte}"', cask, count=1, flags=re.M)
           nom = dmg["name"].replace(numero, "#{version}")
+          # L'application se met à jour elle-même : brew ne la croit pas en retard.
+          if not re.search(r'^  auto_updates true$', cask, flags=re.M):
+              cask = re.sub(r'^(  depends_on )', r'  auto_updates true\n\1', cask, count=1, flags=re.M)
           cask = re.sub(r'^  url ".*"$', '  url "https://github.com/Pasouvenla/krozties/releases/download/'
                         f'v#{{version}}/{nom}"', cask, count=1, flags=re.M)
           open(sys.argv[2], "w").write(cask)
