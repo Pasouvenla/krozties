@@ -29,6 +29,8 @@ env:
 jobs:
   version:
     runs-on: ubuntu-24.04
+    outputs:
+      brouillon: ${{ steps.brouillon.outputs.id }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,6 +43,20 @@ jobs:
           cargo=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
           echo "étiquette ${ETIQUETTE}, application ${app}, Cargo ${cargo}"
           test "${ETIQUETTE}" = "v${app}" && test "${app}" = "${cargo}"
+
+      # Un seul brouillon, créé avant les paquets : chaque job le créait s'il
+      # ne le trouvait pas, et deux jobs simultanés en faisaient deux.
+      - id: brouillon
+        if: env.ETIQUETTE != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$ETIQUETTE\") | .id" | head -1)
+          if [ -z "$id" ]; then
+            id=$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$ETIQUETTE" -f name="Krozties $ETIQUETTE" \
+              -F draft=true -f body="Paquets pour macOS (Apple Silicon et Intel), Windows et Linux." --jq .id)
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
   paquets:
     needs: version
@@ -85,8 +101,8 @@ jobs:
       - name: CLI Tauri
         run: npm install -g @tauri-apps/cli@2.11.4
 
-      # La version se crée en brouillon : elle ne se publie qu'une fois les
-      # trois paquets déposés, par le job `publier`.
+      # Les paquets vont dans le brouillon du job `version` ; il ne se publie
+      # qu'une fois les trois déposés, par le job `publier`.
       - id: tauri
         uses: tauri-apps/tauri-action@v1
         env:
@@ -95,10 +111,7 @@ jobs:
           projectPath: crates/krozties
           tauriScript: tauri
           args: ${{ matrix.args }}
-          tagName: ${{ env.ETIQUETTE }}
-          releaseName: ${{ env.ETIQUETTE && format('Krozties {0}', env.ETIQUETTE) || '' }}
-          releaseBody: Paquets pour macOS (Apple Silicon et Intel), Windows et Linux. L'installation est décrite dans le README.
-          releaseDraft: true
+          releaseId: ${{ needs.version.outputs.brouillon }}
           releaseAssetNamePattern: '[name]_[arch][setup][ext]'
 
       - name: Paquets de l'essai
