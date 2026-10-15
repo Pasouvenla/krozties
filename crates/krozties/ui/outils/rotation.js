@@ -6,6 +6,7 @@ import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import * as discord from '../commun/discord.js';
+import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
 const NOMS_DES_BOMBES = { feu: 'Explobombes', air: 'Tornabombes', eau: 'Bombes à Eau', terre: 'Sismobombes' };
@@ -36,26 +37,8 @@ export async function rendre(cible, etat, { appeler }) {
   /// sorts.
   const couteuses = (classe && classe.couteuses) || [];
 
-  const reglages = etat.rotation || (etat.rotation = {
-    coches: null,
-    horizon: 7,
-    pmDepenses: 0,
-    /// La Maîtrise d'arme, en Puissance : la normale par défaut.
-    maitrise: 300,
-    /// Les poussées butent contre un obstacle : leurs dommages comptent.
-    pousseesBloquees: false,
-    cibles: 1,
-    etalement: 0,
-    /// Chercher sur tous les sorts à la fois, au lieu des deux passes : plus
-    /// long, rarement meilleur.
-    exhaustif: false,
-    /// Ce que le joueur déclare de sa situation, par identifiant de réglage.
-    etats: {},
-    /// Où il se tient : `libre`, `distance` ou `melee`.
-    position: 'libre',
-    /// Les résistances de la cible, les mêmes pour tous les ennemis.
-    resistances: neutres(),
-  });
+  const reglages = reglagesRotation(etat);
+  if (reglages.cibles > MAX_ENNEMIS) reglages.cibles = MAX_ENNEMIS;
   const res = () => reglages.resistances || (reglages.resistances = neutres());
   const MODES_DE_RESISTANCE = [['aucune', 'Aucune'], ['uniformes', 'Uniformes'], ['elements', 'Par élément']];
   /// La position écarte du deck ce qui ne peut pas frapper de là.
@@ -373,6 +356,7 @@ export async function rendre(cible, etat, { appeler }) {
 
   function marquerPerime() {
     majModifies();
+    garder(reglages);
     if (!resultat) return;
     perime = true;
     $('panneau').classList.add('perime');

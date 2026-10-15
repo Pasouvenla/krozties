@@ -438,6 +438,10 @@ try {
   await attendre(() => document.querySelector('#detailRotation .lancer[data-tour]'), 60000);
   resultat.arme.lancee = document.querySelectorAll('#detailRotation .lancer[data-sort="arme"]').length;
   resultat.copierRotation = Boolean(document.getElementById('copierDiscord'));
+  // Les réglages de la Rotation se gardent : une session neuve, comme après un
+  // redémarrage, retrouve les 2 tours réglés plus haut.
+  const { reglagesRotation } = await import('/commun/reglages-rotation.js');
+  resultat.reglagesGardes = reglagesRotation({}).horizon;
   // Les remarques du calcul, dans leur carte sous la répartition.
   resultat.remarques = [...document.querySelectorAll('#detailRotation .remarques li')].map((li) => li.textContent);
 

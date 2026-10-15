@@ -6,6 +6,7 @@ import { echapper, nb, pluriel } from '../commun/format.js';
 import * as discord from '../commun/discord.js';
 import { deuxBuilds } from '../commun/graphique.js';
 import { CLASSES, courant, lire } from '../commun/personnages.js';
+import { reglagesRotation } from '../commun/reglages-rotation.js';
 import { decrire, versMoteur } from '../commun/resistances.js';
 
 const ROUBLARD = 13;
@@ -86,7 +87,7 @@ export async function rendre(cible, etat, { appeler, afficher }) {
   choix.a = { perso: a.p.id, build: a.b.id };
   choix.b = { perso: b.p.id, build: b.b.id };
 
-  const reglages = etat.rotation || {};
+  const reglages = reglagesRotation(etat);
   const horizon = reglages.horizon || 7;
   const cibles = reglages.cibles || 1;
   const position = reglages.position || 'libre';

@@ -182,6 +182,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "{r}"
     );
     assert_eq!(r["copierRotation"], true, "{r}");
+    assert_eq!(r["reglagesGardes"], 2, "les réglages de la Rotation se gardent : {r}");
     // Les notes de mise à jour : les versions sautées, la fenêtre et la page.
     assert_eq!(
         r["nouveautes"],

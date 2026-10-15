@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Les réglages de la Rotation se gardent d'un lancement à l'autre : tours, ennemis, position, résistances de la cible et ceux de « Pour aller plus loin »."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2026-10-15",
       "rubriques": [
