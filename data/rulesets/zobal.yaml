@@ -121,6 +121,33 @@ resources:
       L'etat que posent le Masque du Pleutre et le Masque du Couard. Exclusif
       des deux autres, comme le Psychopathe.
 
+  - id: psychopathe_melee
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    modifies_damage:
+      - kind: domain_percent
+        reach: melee
+        percent: 10
+    note: |
+      Les 10 % de dommages en mêlée du Masque du Psychopathe (effet 2800 sur le
+      lanceur, sans durée). Un autre masque les retire : « Gestion des masques »
+      (18636) retire les effets du masque quitté (effet 406).
+
+  - id: couard_distance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    modifies_damage:
+      - kind: domain_percent
+        reach: ranged
+        percent: 10
+    note: |
+      Les 10 % de dommages à distance du Masque du Couard (effet 2804 sur le
+      lanceur, sans durée), retirés comme ceux du Psychopathe par un autre masque.
+
   - id: inferno
     scope: caster
     max: 1
@@ -201,6 +228,12 @@ spells:
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: psychopathe
       - effect: reset
@@ -235,6 +268,12 @@ spells:
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: masque_intrepide
       - effect: reset
@@ -258,21 +297,29 @@ spells:
       • Applique l'état Psychopathe sur le lanceur.
       • Augmente les dommages en mêlée et le Tacle du lanceur et de ses alliés (hors Zobals) en zone.
     assumptions:
+      - "Effet 2800 : +10 % de dommages en mêlée au lanceur, sans durée, comptés tant que le masque est porté ; un autre masque les retire, « Gestion des masques » retirant les effets du masque quitté. Ils s'ajoutent aux % mêlée de l'équipement en facteur à part : 10 % sur 10 % font 1,21 ici et 1,20 en jeu."
       - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Psychopathe », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
     lines: []
     open_questions:
       - "Effets 950/951 : ce sort applique « Psychopathe » (99), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
       - "Effet 753 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 2800 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: masque_intrepide
       - effect: reset
         resource: masque_pleutre
       - effect: gain
         resource: psychopathe
+      - effect: gain
+        resource: psychopathe_melee
 
   - id: martelo
     dofusdb_id: 13389
@@ -578,20 +625,28 @@ spells:
       Applique le Masque du Couard sur le lanceur :
       • Augmente les dommages à distance et la Portée du lanceur et de ses alliés (hors Zobals) en zone.
     assumptions:
+      - "Effet 2804 : +10 % de dommages à distance au lanceur, sans durée, comptés tant que le masque est porté ; un autre masque les retire, « Gestion des masques » retirant les effets du masque quitté. Ils s'ajoutent aux % distance de l'équipement en facteur à part : 10 % sur 10 % font 1,21 ici et 1,20 en jeu."
       - "Effets 792/2794 : lance aussi « Gestion des masques », « Masque du Pleutre », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
     lines: []
     open_questions:
       - "Effets 950/951 : ce sort applique « Pleutre » (100), lu par Carnavalo, Transfiguration. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
-      - "Effet 2804 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: masque_intrepide
       - effect: reset
         resource: psychopathe
       - effect: gain
         resource: masque_pleutre
+      - effect: gain
+        resource: couard_distance
 
   - id: agular
     dofusdb_id: 13407
@@ -645,6 +700,12 @@ spells:
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: psychopathe
       - effect: reset
@@ -718,6 +779,12 @@ spells:
     effects:
       # « Gestion des masques » (18634) retire les trois etats, puis le
       # masque pose le sien.
+      # « Gestion des masques » (18636) retire aussi les effets du masque
+      # quitte : les % de domaine du Psychopathe et du Couard.
+      - effect: reset
+        resource: psychopathe_melee
+      - effect: reset
+        resource: couard_distance
       - effect: reset
         resource: masque_intrepide
       - effect: reset

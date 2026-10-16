@@ -461,7 +461,7 @@ const EFFETS: &[Effet] = &[
         greffe: |c| {
             if !c.poussees_bloquees {
                 return Greffe {
-                    remarque: "Bottes du Cul Botté : leurs poussées ne font de dégâts que si vos poussées butent contre un obstacle"
+                    remarque: "Bottes du Cul Botté : leurs poussées ne font de dégâts qu'avec « Inclure les dommages de poussée »"
                         .into(),
                     ..Default::default()
                 };

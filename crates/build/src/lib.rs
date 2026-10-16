@@ -1311,8 +1311,8 @@ pub fn resolve_with_class_spells(
             "pu_si_poussee" => {
                 puissance_si_poussee += boost.amount();
                 assumptions.push(format!(
-                    "bonus {} compté à {:+} Puissance après une poussée, les tours où vos poussées \
-                     butent contre un obstacle",
+                    "bonus {} compté à {:+} Puissance après une poussée, quand les dommages de poussée \
+                     sont inclus",
                     boost.name,
                     boost.amount()
                 ));

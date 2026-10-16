@@ -174,7 +174,7 @@ spells:
       Les combattants ennemis ne peuvent pas emprunter un portail au premier tour de jeu.
     lines: []
     open_questions:
-      - "Effet 1171 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1171, +2 % de dommages finaux : ils montent « lorsqu'il projette un sort dans un portail (cumulable 10 fois) », donc selon les projections dans les portails, du placement que ce calculateur ne simule pas."
       - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
       - "Effet 2971 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
     effects: []
@@ -573,7 +573,7 @@ spells:
       Les combattants ennemis ne peuvent pas emprunter un portail au premier tour de jeu.
     lines: []
     open_questions:
-      - "Effet 1171 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
+      - "Effet 1171, +2 % de dommages finaux : ils montent « lorsqu'il projette un sort dans un portail (cumulable 10 fois) », donc selon les projections dans les portails, du placement que ce calculateur ne simule pas."
       - "Effet 1181, « Pose un portail (+#3 % dommages, +#1 % dommages par case d'éloignement entre 2 portails) », paramètres 0 et 2 : écrit sur le réglage `cases_entre_portails`, deux pour cent par case."
       - "Effet 2971 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
     effects: []

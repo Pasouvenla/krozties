@@ -133,6 +133,41 @@ try {
   app.etat.resolu = await appeler('resoudre', build);
   app.majIdentite();
 
+  // Les données manquantes : la classe du personnage en tête, un point déplié
+  // en formulaire, l'envoi vide refusé, puis l'adresse du formulaire GitHub.
+  await app.afficher('manquantes');
+  await attendre(() => document.querySelector('#contenu [data-onglet]'), 5000);
+  const ouvertes = [];
+  const vraiOpen = window.open;
+  window.open = (u) => { ouvertes.push(u); return null; };
+  try {
+    // Le Sram n'a plus rien à relever : la page le dit. On passe au Crâ.
+    const votreClasse = texte('#contenu .manquantes > p.aide');
+    document.querySelector('#contenu [data-onglet="classe-9"]').click();
+    const carte = [...document.querySelectorAll('#contenu .carte-manquante')]
+      .find((c) => c.querySelector('.dm-sort-nom').innerText.trim() === 'Tir Perçant');
+    const point = carte.querySelector('.point-manquant');
+    point.querySelector('[data-repondre]').click();
+    const formulaire = !point.querySelector('.formulaire-point').hidden;
+    point.querySelector('[data-envoyer]').click();
+    await pause(50);
+    const refus = point.querySelector('[id^=etat-]').innerText.trim();
+    point.querySelector('[id^=vu-]').value = '+15 % jusqu\'à la prochaine attaque';
+    point.querySelector('[data-envoyer]').click();
+    await pause(50);
+    const adresse = new URL(ouvertes[0]);
+    resultat.manquantes = {
+      votreClasse,
+      onglet: texte('#contenu [data-onglet][aria-pressed=true]').split(' ')[0],
+      formulaire,
+      refus,
+      adresse: Object.fromEntries(['template', 'classe', 'sort', 'observation', 'reference']
+        .map((k) => [k, adresse.searchParams.get(k)])),
+    };
+  } finally {
+    window.open = vraiOpen;
+  }
+
   for (const outil of ['equipement', 'rotation', 'beta', 'kroztools']) {
     await app.afficher(outil);
     await pause(300);
@@ -447,11 +482,17 @@ try {
     haut: Math.round(document.getElementById('detailRotation').getBoundingClientRect().top
       - contenu.getBoundingClientRect().top + contenu.scrollTop),
   };
-  // Les graphiques du résultat : le rythme et ses trois repères, les dégâts par PA.
+  // Les graphiques du résultat : le rythme et ses trois repères, les dégâts par
+  // PA, une tige et une icône par sort classé.
+  const figurePA = (document.querySelector('#graphiques .g-tige') || document.body).closest('figure');
+  const pointsPA = figurePA ? figurePA.querySelectorAll('circle.g-pt-1').length : 0;
   resultat.graphiques = {
     reperes: document.querySelectorAll('#graphiques .tuile-rythme').length,
-    parPA: document.querySelectorAll('#graphiques circle.g-pt-1').length > 0,
+    parPA: pointsPA > 0 && figurePA.querySelectorAll('.g-tige').length === pointsPA
+      && figurePA.querySelectorAll('image').length === pointsPA,
   };
+  // Replié dans « Pour aller plus loin » : son texte se lit sans être affiché.
+  resultat.poussees = document.querySelector('label[for=pousseesBloquees] span').textContent;
   document.querySelector('#detailRotation .lancer[data-tour]').click();
   await attendre(() => document.querySelector('#detailRotation .conseil table'), 20000);
   resultat.conseil = {

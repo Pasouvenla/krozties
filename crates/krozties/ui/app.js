@@ -37,6 +37,8 @@ const OUTILS = {
   beta: () => import('./outils/beta.js'),
   // Un calcul faux ou une idée, vers le formulaire d'issue du dépôt.
   retours: () => import('./outils/retours.js'),
+  // Ce que la rotation ne compte pas encore, à relever en jeu.
+  manquantes: () => import('./outils/manquantes.js'),
   notes: () => import('./outils/notes.js'),
   comparaison: () => import('./outils/comparaison.js'),
 };

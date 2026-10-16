@@ -278,6 +278,21 @@ resources:
       alors les entités à son contact : cochez si vous le gardez au contact de la
       cible.
 
+  - id: manigance_dommages
+    scope: caster
+    max: 2
+    default: 0
+    monotone: increasing
+    # Duree 3 dans la donnee : le tour du lancer et les deux suivants.
+    duration: { turns: 2, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: flat_damage
+        amount: 20
+    note: |
+      Les 20 Dommages que Manigance donne au lanceur (effet 112, cible « C,a »),
+      qu'il vise un ennemi ou un allié. Cumul 2 ; un nouveau lancer rafraîchit
+      la durée des deux crans.
+
 costly:
   - id: vols_de_caracteristique
     name: { fr: "Vols de caractéristique", en: "Characteristic steals" }
@@ -287,6 +302,7 @@ costly:
       Arnaque, Pillage, Extorsion et Truanderie, et le bonus qu'ils rendent au
       lanceur pendant trois tours. Sans eux, le total est très en dessous de ce
       qu'un Sram fait vraiment.
+
 
 spells:
   - id: truanderie
@@ -1078,12 +1094,16 @@ spells:
     crit: { base_rate: 0, can_crit: false }
     note: |
       Vole de la Fuite et des Dommages aux ennemis ou augmente ceux du lanceur et de l'allié ciblé.
+    assumptions:
+      - "Effet 112 : +20 Dommages au lanceur pendant trois tours, qu'il vise un ennemi, à qui il les vole, ou un allié ; cumul 2. Un nouveau lancer rafraîchit la durée des deux crans, qui expirent ensemble."
     lines: []
     open_questions:
-      - "Effet 112 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 752 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 754 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-    effects: []
+    effects:
+      - effect: gain
+        resource: manigance_dommages
+        at_cap: refresh
 
   - id: effraction
     dofusdb_id: 14742

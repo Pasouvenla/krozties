@@ -732,6 +732,8 @@ table.mini .attenue { color: var(--doux); }
 .g-pt-1 { fill: var(--serie-1); }
 .g-pt-2 { fill: var(--serie-2); }
 .g-pt-encre { fill: var(--encre); }
+/* La tige qui mène au point des dégâts par PA, depuis le début de l'axe. */
+.g-tige { stroke: var(--trait); stroke-width: 2; }
 .g-serie-1 { fill: var(--serie-1); }
 .g-serie-2 { fill: var(--serie-2); }
 .g-texte { fill: var(--encre); font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -1053,6 +1055,47 @@ table.mini .attenue { color: var(--doux); }
   padding: .12rem 0 .12rem .8rem; font-variant-numeric: tabular-nums; }
 .beta-ligne .libelle { color: var(--doux); }
 .beta-sort .aide { margin: .15rem 0 .15rem .8rem; }
+
+/*
+ * Données manquantes : une pastille par classe, un encart par sort, une ligne
+ * par point, et sous elle le formulaire qu'ouvre « Répondre ».
+ */
+.manquantes .barre-outils { margin-bottom: .8rem; }
+.manquantes .compte { font-variant-numeric: tabular-nums; opacity: .8; margin-left: .15rem; }
+.liste-manquante { max-width: 54rem; display: grid; gap: .7rem; }
+.carte-manquante { background: var(--fond); border: 1px solid var(--cheveux); border-radius: var(--rayon);
+                   overflow: hidden; }
+.dm-sort-nom { display: flex; align-items: center; gap: .55rem; padding: .55rem .8rem;
+               font-weight: 600; font-size: .95rem; }
+.dm-sort-nom img { width: 30px; height: 30px; border-radius: 5px; flex: none; }
+.point-manquant { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) auto; gap: .15rem .8rem;
+                  align-items: start; padding: .55rem .8rem; border-top: 1px solid var(--trait); }
+.point-manquant p { margin: 0; }
+.point-manquant .releve { font-weight: 500; }
+.point-manquant > button { align-self: center; }
+.dm-type { justify-self: start; margin-top: .2rem; font-size: .66rem; text-transform: uppercase;
+           letter-spacing: .06em; font-weight: 700; color: var(--doux-cadre); background: var(--panneau);
+           border: 1px solid var(--trait); border-radius: 3px; padding: 0 .35rem; white-space: nowrap; }
+.formulaire-point { grid-column: 2 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem;
+                    gap: .55rem .8rem; background: var(--panneau); border: 1px solid var(--trait);
+                    border-radius: var(--rayon); padding: .7rem .8rem; margin-top: .45rem; }
+.formulaire-point[hidden] { display: none; }
+.formulaire-point label { margin: 0 0 .2rem; font-size: .76rem; color: var(--doux); }
+.formulaire-point textarea { min-height: 3.2rem; font-family: inherit; font-size: .85rem; }
+.formulaire-point .large, .formulaire-point .pied { grid-column: 1 / -1; }
+.formulaire-point .pied { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.formulaire-point .pied .aide { margin: 0; }
+.manquantes .ouvrir { background: var(--cuivre); border-color: var(--cuivre); color: #fff; }
+.manquantes .ouvrir:hover { background: var(--cuivre-fonce); }
+.hors-calcul { max-width: 54rem; margin-top: 1rem; font-size: .84rem; color: var(--doux); }
+.hors-calcul > summary { cursor: pointer; }
+.hors-calcul dl { margin: .5rem 0 0; }
+.hors-calcul dt { color: var(--encre); font-weight: 600; margin-top: .4rem; }
+.hors-calcul dd { margin: .1rem 0 0; }
+@media (max-width: 700px) {
+  .point-manquant { grid-template-columns: 1fr; }
+  .formulaire-point { grid-column: 1; grid-template-columns: 1fr; }
+}
 
 /* La mini fenêtre de mise à jour, en bas à droite. */
 .maj { position: fixed; right: 1.1rem; bottom: 1.1rem; width: 17rem; z-index: 20;

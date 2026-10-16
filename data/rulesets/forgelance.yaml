@@ -761,7 +761,7 @@ spells:
         critical: unknown
         normal: unknown
     assumptions:
-      - "Le coup de l'état Noa, 26-29 Air, part quand la cible subit des dommages de poussée : quand un sort du Forgelance, lancé après Noa, la pousse contre un obstacle (« Vos poussées butent contre un obstacle »). Jamais de lui-même au début d'un tour."
+      - "Le coup de l'état Noa, 26-29 Air, part quand la cible subit des dommages de poussée : quand un sort du Forgelance, lancé après Noa, la pousse contre un obstacle (« Inclure les dommages de poussée »). Jamais de lui-même au début d'un tour."
       - "Effets 950/951 : ce sort applique « {{spell,32503,2::Noa}} » (6990). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
       - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Noa » sur « a,A,*E3360 » : Air 23-26, Air 28-31; « Noa » sur « a,P,F7139,*E3361,*e3589 » : Air 23-26, Air 28-31. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
       - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."

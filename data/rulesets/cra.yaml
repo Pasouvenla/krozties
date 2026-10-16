@@ -268,12 +268,30 @@ resources:
       Représailles : x110 % (1 tour) », cumul maximal 1. Posé quand le piège part,
       après ses dégâts : il sert aux coups qui suivent dans le tour.
 
+  - id: sentinelle_distance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Duree 2 dans la donnee : le tour du lancer et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: domain_percent
+        reach: ranged
+        percent: 20
+        less_per_mp_used: 2
+    note: |
+      Les 20 % de dommages à distance de la Sentinelle (effet 2804 sur le
+      lanceur, deux tours), moins 2 % par PM utilisé (effet 2805, cumul 10),
+      d'après le réglage « PM dépensés ».
+
 states_outside_model:
   # Etats que lisent des conditions de lancement et qu'aucun compteur ne
   # represente : le moteur les tient pour ABSENTS.
   - state: 7
     name: "Pesanteur"
     note: "Les Represailles la posent sur les cibles de leur zone, et la rotation ne place pas le Cra dans sa propre zone. Le Pas Chasse, seul a l'exiger absente, n'a de toute facon aucun effet ici."
+
 
 spells:
   - id: fleche_de_recul
@@ -1149,15 +1167,16 @@ spells:
       Augmente les dommages à distance et la Portée du lanceur et dévoile tous les ennemis dans sa ligne de vue.
       Les effets sont réduits pour chaque PM utilisé.
     assumptions:
+      - "Effets 2804 et 2805 : +20 % de dommages à distance pendant deux tours, moins 2 % par PM utilisé, d'après le réglage « PM dépensés » : à 10 PM, plus rien. Retirés au bout de deux tours (effet 406), comme le dit leur durée. La Portée (effets 117 et 116) n'est pas comptée, ce calculateur ne simulant pas la grille. Ils s'ajoutent aux % distance de l'équipement en facteur à part."
       - "Effet 1160 : lance aussi « Sentinelle », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
     lines: []
     open_questions:
       - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 2804 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 2805 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 3793 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
-    effects: []
+    effects:
+      - effect: gain
+        resource: sentinelle_distance
+        at_cap: refresh
 
   - id: fleche_evasive
     dofusdb_id: 32531

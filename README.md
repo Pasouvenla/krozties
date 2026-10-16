@@ -28,6 +28,10 @@ rempli avec la version, la classe et le niveau, le lien de l'équipement et les
 réglages de la rotation : il reste à décrire le problème et à coller la
 capture.
 
+La page Données manquantes (menu Aide) liste, classe par classe, ce que la
+rotation ne compte pas encore. Relevez un de ces points en jeu, tapez ce que
+vous voyez, et le formulaire d'issue s'ouvre rempli.
+
 ## Vie privée
 
 Krozties n'a ni télémétrie, ni mesure d'audience, ni compte : rien ne part sur
@@ -46,9 +50,10 @@ votre utilisation. L'application ne contacte le réseau que dans quatre cas :
   la nouvelle version depuis GitHub, vérifie sa signature et l'installe. Quand
   une version ne propose pas cette mise à jour, le bouton « Télécharger » ouvre
   la page des versions dans votre navigateur.
-- **Retours** : le bouton de la page Retours ouvre dans votre navigateur le
-  formulaire d'issue de GitHub, rempli avec ce que la page affiche. Rien ne
-  part tant que vous ne l'envoyez pas vous-même.
+- **Retours et données manquantes** : le bouton de ces deux pages ouvre dans
+  votre navigateur le formulaire d'issue de GitHub, rempli avec ce que la page
+  affiche et ce que vous avez tapé. Rien ne part tant que vous ne l'envoyez pas
+  vous-même.
 
 Sur votre machine, Krozties garde la date de sa dernière vérification de
 version et le numéro qu'il a vu, la taille et la place de sa fenêtre, l'outil

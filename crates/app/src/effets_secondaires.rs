@@ -655,6 +655,125 @@ pub fn du_sort(sort: &Spell, nom_de_sort: &dyn Fn(u32) -> Option<String>) -> Eff
     Effets { phrases, manques }
 }
 
+/// Un effet du sort, seul, tel que la page des données manquantes le lit : sa
+/// phrase, ce qu'il est et qui il touche.
+#[derive(Clone, Debug)]
+pub(crate) struct EffetLu {
+    pub id: u32,
+    /// La valeur du dé, les 10 de « 10 % de Dommages mêlée ».
+    pub n: i32,
+    /// Sa phrase dans la frise, s'il se dit. Sans la condition d'un état que la
+    /// liste ne nomme pas : `condition_sans_nom` le dit.
+    pub phrase: Option<String>,
+    pub condition_sans_nom: bool,
+    pub nature: Nature,
+    pub lanceur: bool,
+    /// La cible ou les ennemis : un effet sans camp précis peut toucher un ennemi.
+    pub ennemis: bool,
+    pub invocations: bool,
+    /// « 70 », « 20 à 22 » : la valeur que porte un effet qui ne se dit pas.
+    pub valeur: Option<String>,
+    /// « pendant 2 tours », « dans 1 tour », ou rien.
+    pub duree: String,
+    pub delai: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Nature {
+    /// Une caractéristique, avec son verbe : « donne », « retire », « vole »,
+    /// « rend ».
+    Caracteristique { verbe: &'static str, nom: &'static str },
+    /// Ce qu'il change à un sort du lanceur.
+    Modificateur(&'static str),
+    Phrase,
+    /// Un sous-sort, par son nom.
+    SousSort(String),
+    /// Ce que le nom du sort dit déjà : invocation, pose, portail, téléportation.
+    Mecanique,
+    Inconnue,
+}
+
+/// Le premier effet du dernier grade du sort, ou de ce qu'il pose, que `choisir`
+/// retient.
+pub(crate) fn lire_un_effet(
+    sort: &Spell,
+    choisir: &dyn Fn(&PlacedEffect) -> bool,
+    nom_de_sort: &dyn Fn(u32) -> Option<String>,
+) -> Option<EffetLu> {
+    let niveau = sort.levels.last()?;
+    let e = niveau.other_effects.iter().chain(&niveau.placed_effects).find(|e| choisir(e))?;
+    let id = e.id;
+    let en_zone = e.zone.is_some_and(|z| z.cells != Some(1));
+    let masque = lire_masque(e.target.as_deref(), en_zone, &sort.name.fr);
+    let qui = masque.qui;
+    let nature = match lire(e, qui, &sort.name.fr) {
+        Lecture::Caracteristique(sens, nom) => Nature::Caracteristique { verbe: sens.verbe(), nom },
+        Lecture::Modificateur(nom) => Nature::Modificateur(nom),
+        Lecture::Phrase(_) => Nature::Phrase,
+        Lecture::SousSort(s, _) => Nature::SousSort(
+            sous_sorts()
+                .get(&s)
+                .map(|(nom, _)| nom.split_once("::").map_or(nom.as_str(), |(_, n)| n.trim_end_matches("}}")).to_string())
+                .unwrap_or_default(),
+        ),
+        Lecture::Muet => Nature::Mecanique,
+        Lecture::EtatSansNom | Lecture::Inconnu => Nature::Inconnue,
+    };
+    // La phrase de la frise, l'effet seul dans le sort, avec le masque donné. Un
+    // sort que la classe n'a pas reste « un autre sort ».
+    let nommer = |i: u32| nom_de_sort(i).or_else(|| Some("un autre sort".to_string()));
+    let phrase_avec = |masque: Option<&str>| {
+        let mut seul = sort.clone();
+        let n = seul.levels.last_mut()?;
+        // Le coup critique change le dé, pas l'effet.
+        let meme = |x: &PlacedEffect| x.id == e.id && x.value == e.value;
+        let garder = |x: &PlacedEffect| meme(x) && x.dice_num == e.dice_num;
+        n.other_effects.retain(garder);
+        n.critical_other_effects.retain(meme);
+        n.placed_effects.retain(garder);
+        for x in n.other_effects.iter_mut().chain(n.placed_effects.iter_mut()) {
+            x.target = masque.map(str::to_string);
+        }
+        du_sort(&seul, &nommer).phrases.into_iter().next()
+    };
+    let mut phrase = phrase_avec(e.target.as_deref());
+    // Une condition sur un état sans nom tait la phrase entière : elle se dit
+    // sans cette condition, que la page signale.
+    let condition_sans_nom = phrase.is_none() && masque.etat_sans_nom.is_some();
+    if let (true, Some(sans)) = (condition_sans_nom, masque.etat_sans_nom) {
+        let reste: Vec<&str> = e
+            .target
+            .as_deref()
+            .unwrap_or("")
+            .split(',')
+            .filter(|j| {
+                let j = j.trim().trim_start_matches('*');
+                !(j.starts_with(['E', 'e']) && j[1..].parse::<u32>() == Ok(sans))
+            })
+            .collect();
+        phrase = phrase_avec(Some(&reste.join(",")));
+    }
+    Some(EffetLu {
+        id,
+        n: e.dice_num.unwrap_or(0),
+        phrase,
+        condition_sans_nom,
+        nature,
+        lanceur: matches!(qui, Qui::Lanceur | Qui::LanceurEtCible | Qui::LanceurEtAllie | Qui::LanceurEtAllies),
+        ennemis: matches!(qui, Qui::Cible | Qui::Ennemis | Qui::Cibles | Qui::LanceurEtCible),
+        invocations: qui == Qui::Invocations,
+        valeur: valeur(e),
+        duree: duree(e).trim_start_matches(", ").to_string(),
+        delai: e.delay.unwrap_or(0),
+    })
+}
+
+/// Le nom d'un état, et s'il ne sert qu'au calcul du jeu, qui ne l'affiche
+/// pas. `None` pour un état que la liste ne nomme pas.
+pub(crate) fn etat(id: u32) -> Option<(String, bool)> {
+    etats().get(&id).map(|(nom, _)| (nom.clone(), nom.contains('(') || ETATS_INTERNES.contains(&nom.as_str())))
+}
+
 /// Un modificateur du sort sur lui-même : « +5 dégâts de base pour ce sort ».
 const CE_SORT: &str = "ce sort";
 

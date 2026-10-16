@@ -22,6 +22,7 @@ const ROUTES = {
   conseil: { commande: 'conseil_par_tour', chemin: '/api/conseil', argument: 'demande' },
   cartes: { commande: 'cartes_de_boss', chemin: '/api/cartes', methode: 'GET' },
   beta: { commande: 'beta_en_cours', chemin: '/api/beta', methode: 'GET' },
+  manquantes: { commande: 'donnees_manquantes', chemin: '/api/manquantes', methode: 'GET' },
   vue: { commande: 'ligne_de_vue', chemin: '/api/vue', argument: 'requete' },
   /// Bureau seulement : elle lit un équipement par une vue invisible sur la page de
   /// DofusBook, seule origine que leur API accepte. Le serveur du CLI la refuse

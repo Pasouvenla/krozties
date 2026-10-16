@@ -167,6 +167,12 @@ export async function rendre(cible, etat, { appeler }) {
             <span>Communes (Arakne, Chaferfu, Cawotte)</span>
           </label>
           <p class="aide">Cochées, elles jouent chaque tour jusqu'au dernier, sans jamais mourir.</p>
+          <p class="libelle-groupe">Poussées</p>
+          <label class="bascule" for="pousseesBloquees">
+            <input type="checkbox" id="pousseesBloquees" ${reglages.pousseesBloquees ? 'checked' : ''}>
+            <span>Inclure les dommages de poussée</span>
+          </label>
+          <p class="aide">Vos poussées butent toutes contre un obstacle.</p>
           <details class="plus-loin" id="plusLoin" ${etat.plusLoinOuvert ? 'open' : ''}>
             <summary>Pour aller plus loin <span class="modifies" id="reglagesModifies"></span></summary>
             <div class="reglages">
@@ -194,16 +200,12 @@ export async function rendre(cible, etat, { appeler }) {
               <div><label for="res-${d}">% Résist. ${nom}</label>
                 <input type="number" id="res-${d}" data-res-domaine="${d}" min="-100" max="100" value="${res()[d] || 0}"></div>`).join('')}
             </div>
-            <h4 class="groupe">Votre combat</h4>
+            ${declares.length || estRoublard ? '<h4 class="groupe">Votre combat</h4>' : ''}
             ${declares.filter((d) => Number(d.max) > 1).length ? `<div class="reglages">${
               declares.filter((d) => Number(d.max) > 1).map((d) => `
               <div><label for="etat-${echapper(d.id)}">${echapper(d.label)}</label>
                 <input type="number" id="etat-${echapper(d.id)}" data-etat="${echapper(d.id)}"
                   min="0" max="${Number(d.max)}" value="${reglages.etats[d.id]}"></div>`).join('')}</div>` : ''}
-            <label class="bascule" for="pousseesBloquees">
-              <input type="checkbox" id="pousseesBloquees" ${reglages.pousseesBloquees ? 'checked' : ''}>
-              <span>Vos poussées butent contre un obstacle</span>
-            </label>
             ${declares.filter((d) => Number(d.max) === 1).map((d) => `
             <label class="bascule" for="etat-${echapper(d.id)}">
               <input type="checkbox" id="etat-${echapper(d.id)}" data-etat="${echapper(d.id)}"
@@ -357,7 +359,6 @@ export async function rendre(cible, etat, { appeler }) {
       reglages.pmDepenses !== 0,
       reglages.etalement !== 0,
       Boolean(arme) && (reglages.maitrise ?? 300) !== 300,
-      Boolean(reglages.pousseesBloquees),
       Boolean(reglages.exhaustif),
       estRoublard && Boolean(reglages.mur),
       ...DOMAINES.filter(([d]) => d !== 'armes' || arme).map(([d]) => Boolean(res()[d])),

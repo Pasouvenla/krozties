@@ -312,6 +312,17 @@ fn handle(mut stream: TcpStream, port: u16) -> Result<(), String> {
             "application/json",
             &dofus_app::notes::beta::beta_json(),
         ),
+        // Ce que la rotation ne compte pas et qu'un joueur peut relever en jeu,
+        // pour la page « Données manquantes ».
+        ("GET", "/api/manquantes") => match dofus_app::manquantes::manquantes_json() {
+            Ok(json) => respond(&mut stream, "200 OK", "application/json", &json),
+            Err(e) => respond(
+                &mut stream,
+                "500 Internal Server Error",
+                "application/json",
+                &error_json(&e),
+            ),
+        },
         // La ligne de vue : ce qu'une case ne voit pas, murs et corps compris.
         ("POST", "/api/vue") => {
             match serde_json::from_str::<dofus_app::cartes::RequeteVue>(&request.body)

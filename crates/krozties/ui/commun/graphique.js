@@ -7,6 +7,12 @@ import { echapper, nb, pluriel } from './format.js';
 const L = 700;
 const H = 190;
 
+/// L'icône d'un sort, ou de l'objet qui le porte, devant son nom.
+function icone(x, gauche, haut, taille) {
+  const src = x && (x.icone_objet ? `objets/${x.icone_objet}.webp` : x.dofusdb_id && `icons/${x.dofusdb_id}.png`);
+  return src ? `<image href="${src}" x="${gauche}" y="${haut}" width="${taille}" height="${taille}"/>` : '';
+}
+
 /// Des graduations à des nombres ronds, environ quatre intervalles. Le plancher
 /// évite `Math.log10(0)`, qui vaudrait `-Infinity` et viderait le graphique.
 export function echelle(maxi) {
@@ -111,45 +117,54 @@ export function rythme(tours, st, cibles) {
 // Les dégâts par PA
 // ---------------------------------------------------------------------
 // Ce que rapporte chaque point d'action dépensé dans un sort : ses dégâts sur la
-// rotation, divisés par ses lancers, puis par son coût. Un point par sort, du plus
-// rentable au moins rentable ; le calcul s'écrit à droite.
+// rotation, divisés par ses lancers, puis par son coût. Une tige par sort, du plus
+// rentable au moins rentable, sur un axe serré autour des valeurs pour que les
+// écarts se lisent ; le calcul s'écrit à droite.
 export function parPA(tours, repartition) {
   const stats = new Map();
   (tours || []).forEach((t) => t.casts.forEach((c) => {
-    const s = stats.get(c.id) || { nom: c.name, lancers: 0, pa: c.ap };
+    const s = stats.get(c.id) || { nom: c.name, lancers: 0, pa: c.ap, dofusdb_id: c.dofusdb_id, icone_objet: c.icone_objet };
     s.lancers += 1;
     stats.set(c.id, s);
   }));
-  const degats = new Map((repartition || []).map((p) => [p.id, p.damage]));
+  const parts = new Map((repartition || []).map((p) => [p.id, p]));
   const lignes = [];
   const soutien = [];
   for (const [id, s] of stats) {
     if (!(s.pa > 0)) continue;
-    const d = degats.get(id) || 0;
+    const p = parts.get(id);
+    const d = (p && p.damage) || 0;
     if (d <= 0) {
       soutien.push(s.nom);
       continue;
     }
     const parLancer = d / s.lancers;
-    lignes.push({ nom: s.nom, pa: s.pa, parLancer, ratio: parLancer / s.pa });
+    lignes.push({ nom: s.nom, pa: s.pa, parLancer, ratio: parLancer / s.pa, image: p.dofusdb_id || p.icone_objet ? p : s });
   }
   if (!lignes.length) return '';
   lignes.sort((a, b) => b.ratio - a.ratio);
-  const h = 26;
+  const h = 28;
   const haut = lignes.length * h + 34;
-  const g = 160;
-  const d = 200;
-  const ech = echelle(lignes[0].ratio * 1.05);
-  const bas = Math.max(0, Math.floor((lignes[lignes.length - 1].ratio * 0.85) / ech.pas) * ech.pas);
-  const x = (v) => g + ((v - bas) / (ech.haut - bas)) * (L - g - d);
+  const g = 190;
+  const d = 190;
+  const plusHaut = lignes[0].ratio;
+  const plusBas = lignes[lignes.length - 1].ratio;
+  const brut = Math.max(plusHaut - plusBas, plusHaut * 0.1) / 4;
+  const ordre = 10 ** Math.floor(Math.log10(brut));
+  const pas = [1, 2, 2.5, 5, 10].map((m) => m * ordre).find((c) => c >= brut);
+  let bas = Math.floor(plusBas / pas) * pas;
+  if (plusBas - bas < pas / 4) bas = Math.max(0, bas - pas);
+  const fin = Math.ceil(plusHaut / pas) * pas;
+  const x = (v) => g + ((v - bas) / (fin - bas)) * (L - g - d);
   let grille = '';
-  for (let v = bas; v <= ech.haut + 0.001; v += ech.pas) {
+  for (let v = bas; v <= fin + pas / 1000; v += pas) {
     grille += `<line class="g-grille" x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="6" y2="${haut - 22}"/>`
       + `<text class="g-axe" x="${x(v).toFixed(1)}" y="${haut - 8}" text-anchor="middle">${nb(v)}</text>`;
   }
   const rangs = lignes.map((l, i) => {
     const yy = 18 + i * h;
-    return `<text class="g-texte" x="0" y="${yy + 4}">${echapper(l.nom)}</text>`
+    return `${icone(l.image, 0, yy - 11, 22)}<text class="g-texte" x="30" y="${yy + 4}">${echapper(l.nom)}</text>`
+      + `<line class="g-tige" x1="${x(bas).toFixed(1)}" x2="${x(l.ratio).toFixed(1)}" y1="${yy}" y2="${yy}"/>`
       + `<circle class="g-pt g-pt-1" cx="${x(l.ratio).toFixed(1)}" cy="${yy}" r="5" tabindex="0">`
       + `<title>${echapper(l.nom)} · ${nb(l.ratio)} dégâts par PA</title></circle>`
       + `<text class="g-texte" x="${L}" y="${yy + 4}" text-anchor="end">${nb(l.parLancer)} ÷ ${l.pa} PA = ${nb(l.ratio)}</text>`;
@@ -179,7 +194,7 @@ export function ecartParSort(ra, rb) {
   const lb = lancersDe(rb);
   const sources = new Map();
   [[ra, 'a'], [rb, 'b']].forEach(([r, cote]) => (r.repartition || []).forEach((p) => {
-    const s = sources.get(p.id) || { nom: p.name, a: 0, b: 0 };
+    const s = sources.get(p.id) || { nom: p.name, a: 0, b: 0, image: p };
     s[cote] = p.damage;
     sources.set(p.id, s);
   }));
@@ -195,7 +210,7 @@ export function ecartParSort(ra, rb) {
       const k = Math.abs(nbB - na);
       raison = `${k} ${pluriel(k, 'lancer')} ${nbB > na ? 'de plus' : 'de moins'}`;
     } else raison = delta > 0 ? 'plus fort par lancer' : 'moins fort par lancer';
-    return { nom: s.nom, delta, raison };
+    return { nom: s.nom, delta, raison, image: s.image };
   }).filter((l) => Math.abs(Math.round(l.delta)) >= 1)
     .sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta)).slice(0, 12);
   if (!lignes.length) return '<p class="aide">Mêmes dégâts, sort par sort.</p>';
@@ -212,8 +227,8 @@ export function ecartParSort(ra, rb) {
     const yy = 10 + i * h;
     const w = long(l.delta);
     const xr = l.delta < 0 ? milieu - w : milieu;
-    return `<text class="g-texte" x="0" y="${yy + 12}">${echapper(l.nom)}</text>`
-      + `<text class="g-repere" x="0" y="${yy + 25}">${echapper(l.raison)}</text>`
+    return `${icone(l.image, 0, yy + 3, 24)}<text class="g-texte" x="32" y="${yy + 12}">${echapper(l.nom)}</text>`
+      + `<text class="g-repere" x="32" y="${yy + 25}">${echapper(l.raison)}</text>`
       + `<rect class="${l.delta < 0 ? 'g-serie-1' : 'g-serie-2'}" x="${xr.toFixed(1)}" y="${yy + 6}" width="${w.toFixed(1)}"`
       + ` height="14" rx="3" tabindex="0"><title>${echapper(l.nom)} · ${signe(l.delta)}${nb(Math.abs(l.delta))}</title></rect>`
       + `<text class="g-texte" x="${L}" y="${yy + 17}" text-anchor="end">${signe(l.delta)}${nb(Math.abs(l.delta))}</text>`;

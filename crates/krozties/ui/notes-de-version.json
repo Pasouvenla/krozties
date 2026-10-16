@@ -1,6 +1,26 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Aide › Données manquantes : ce que la Rotation ne compte pas encore, classe par classe. Relevez un point en jeu, puis envoyez-le sur GitHub dans un formulaire déjà rempli.",
+            "Les graphiques « Dégâts par PA » et « Ce qui fait l'écart » montrent l'icône de chaque sort.",
+            "« Dégâts par PA » trace une tige par sort sur un axe resserré : les écarts entre sorts se lisent mieux.",
+            "La Rotation compte de nouveaux bonus : +10 % de dommages en mêlée du Masque du Psychopathe et +10 % à distance du Masque du Couard (Zobal), +10 % de dommages aux sorts de Berserk (Sacrieur), +20 Dommages par Manigance (Sram, deux fois au plus) et +20 % à distance de la Sentinelle (Crâ), moins 2 % par PM dépensé."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La case « Vos poussées butent contre un obstacle » devient « Inclure les dommages de poussée », et se voit sans ouvrir « Pour aller plus loin ». Cochée, Noa (Forgelance) repart après chaque sort qui pousse."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.12.0",
       "date": "2026-10-16",
       "rubriques": [

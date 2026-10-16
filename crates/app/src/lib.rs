@@ -11,6 +11,7 @@ pub mod effets_secondaires;
 pub mod fiche;
 pub mod grille;
 pub mod invocations;
+pub mod manquantes;
 pub mod notes;
 pub mod objets_de_classe;
 pub mod portails;

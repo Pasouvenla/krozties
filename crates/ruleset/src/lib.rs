@@ -463,6 +463,10 @@ pub enum DamageModifier {
         #[serde(default)]
         reach: Option<dofus_damage::Reach>,
         percent: i32,
+        /// Les points retirés par PM dépensé dans le tour, d'après le réglage « PM
+        /// dépensés », sans descendre sous zéro (la Sentinelle du Crâ : 2 par PM).
+        #[serde(default)]
+        less_per_mp_used: i32,
     },
 }
 

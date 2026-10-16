@@ -393,6 +393,27 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert_eq!(r["reseau"]["apres"]["tour"], "Tour 2", "poser le tour passe au suivant : {r}");
     // Sous le résultat de la Rotation : le rythme, ses trois repères, et les dégâts par PA.
     assert_eq!(r["graphiques"], serde_json::json!({ "reperes": 3, "parPA": true }), "{r}");
+    assert_eq!(r["poussees"], "Inclure les dommages de poussée", "{r}");
+    // Les données manquantes : le Sram n'a plus rien à relever, la page le
+    // dit ; sur l'onglet du Crâ, le Tir Perçant, son formulaire, le refus d'un
+    // envoi vide, puis l'adresse du formulaire GitHub remplie.
+    assert_eq!(
+        r["manquantes"],
+        serde_json::json!({
+            "votreClasse": "Rien à relever pour votre classe.",
+            "onglet": "Crâ",
+            "formulaire": true,
+            "refus": "Tapez d'abord ce que vous voyez en jeu.",
+            "adresse": {
+                "template": "donnee-manquante.yml",
+                "classe": "Crâ",
+                "sort": "Tir Perçant",
+                "observation": "+15 % jusqu'à la prochaine attaque",
+                "reference": "sort 32471, effet 1163",
+            },
+        }),
+        "{r}"
+    );
     // L'outil et l'onglet ouverts se retiennent pour le lancement suivant.
     assert_eq!(r["ouverture"], serde_json::json!({ "outil": "kroztools", "kroztool": "vue" }), "{r}");
     // Les invocations de la classe jouent d'office, les communes non ; le Sram

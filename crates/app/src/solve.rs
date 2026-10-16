@@ -3619,6 +3619,90 @@ mod tests {
         }
     }
 
+    /// Les dégâts d'un lancer rejoué : le sort `sort` du tour `tour`, dans la
+    /// rotation `tours` d'un personnage de niveau 200 sans équipement. Mille
+    /// points dans chaque élément : à quelques dizaines de dégâts, l'arrondi de
+    /// chaque jet mangerait une part d'un bonus en pourcentage.
+    fn degats_rejoues(classe: u32, reglages: serde_json::Value, tours: &[&[&str]], tour: usize, sort: &str) -> f64 {
+        let deck: Vec<&str> = tours.iter().flat_map(|t| t.iter().copied()).collect();
+        let mut r = serde_json::json!({
+            "class": classe, "level": 200, "deck": deck, "horizon": tours.len(),
+            "invested": { "strength": 1000, "agility": 1000, "intelligence": 1000, "chance": 1000 },
+        });
+        r.as_object_mut().unwrap().extend(reglages.as_object().unwrap().clone());
+        let requete: Request = serde_json::from_value(r).unwrap();
+        let tours: Vec<Vec<String>> = tours.iter().map(|t| t.iter().map(|s| s.to_string()).collect()).collect();
+        let s = rejouer(&requete, &tours).unwrap();
+        s.turns[tour].casts.iter().find(|c| c.id == sort).map(|c| c.damage.as_f64()).unwrap_or_else(|| panic!("{sort} absent : {s:?}"))
+    }
+
+    fn rapport(a: f64, b: f64, attendu: f64) {
+        assert!((a / b - attendu).abs() < 0.005, "{a} / {b} = {}, attendu {attendu}", a / b);
+    }
+
+    /// Le Masque du Psychopathe donne 10 % de dommages en mêlée, que l'Hystérique,
+    /// qui pose le même état, ne donne pas ; un autre masque les retire.
+    #[test]
+    fn le_psychopathe_donne_dix_pour_cent_en_melee() {
+        let melee = serde_json::json!({ "position": "melee" });
+        let psy = degats_rejoues(14, melee.clone(), &[&["masque_du_psychopathe", "boliche"]], 0, "boliche");
+        let hys = degats_rejoues(14, melee.clone(), &[&["masque_de_l_hysterique", "boliche"]], 0, "boliche");
+        rapport(psy, hys, 1.10);
+        let quitte = degats_rejoues(14, melee.clone(), &[&["masque_du_psychopathe"], &["masque_de_l_intrepide", "boliche"]], 1, "boliche");
+        let intrepide = degats_rejoues(14, melee, &[&["masque_de_l_intrepide", "boliche"]], 0, "boliche");
+        rapport(quitte, intrepide, 1.0);
+    }
+
+    /// Le Masque du Couard donne 10 % de dommages à distance, que le Pleutre,
+    /// qui pose le même état, ne donne pas.
+    #[test]
+    fn le_couard_donne_dix_pour_cent_a_distance() {
+        let rien = serde_json::json!({});
+        let couard = degats_rejoues(14, rien.clone(), &[&["masque_du_couard", "distance"]], 0, "distance");
+        let pleutre = degats_rejoues(14, rien, &[&["masque_du_pleutre", "distance"]], 0, "distance");
+        rapport(couard, pleutre, 1.10);
+    }
+
+    /// Berserk donne 10 % de dommages aux sorts ; le relancer les retire.
+    #[test]
+    fn berserk_donne_dix_pour_cent_aux_sorts_jusqu_a_sa_relance() {
+        let rien = serde_json::json!({});
+        let berserk = degats_rejoues(11, rien.clone(), &[&["berserk", "supplice"]], 0, "supplice");
+        let seul = degats_rejoues(11, rien.clone(), &[&["supplice"]], 0, "supplice");
+        rapport(berserk, seul, 1.10);
+        let relance = degats_rejoues(11, rien, &[&["berserk"], &[], &["berserk", "supplice"]], 2, "supplice");
+        rapport(relance, seul, 1.0);
+    }
+
+    /// Manigance : 20 Dommages par cran, deux crans, trois tours.
+    #[test]
+    fn manigance_donne_vingt_dommages_par_cran() {
+        let rien = serde_json::json!({});
+        let seul = degats_rejoues(4, rien.clone(), &[&["arnaque"]], 0, "arnaque");
+        let un = degats_rejoues(4, rien.clone(), &[&["manigance", "arnaque"]], 0, "arnaque");
+        assert!((un - seul - 20.0).abs() < 0.5, "{un} - {seul}");
+        let deux = degats_rejoues(4, rien.clone(), &[&["manigance"], &["manigance", "arnaque"]], 1, "arnaque");
+        assert!((deux - seul - 40.0).abs() < 0.5, "{deux} - {seul}");
+        let troisieme = degats_rejoues(4, rien.clone(), &[&["manigance"], &[], &["arnaque"]], 2, "arnaque");
+        assert!((troisieme - seul - 20.0).abs() < 0.5, "{troisieme} - {seul}");
+        let quatrieme = degats_rejoues(4, rien, &[&["manigance"], &[], &[], &["arnaque"]], 3, "arnaque");
+        assert!((quatrieme - seul).abs() < 0.5, "{quatrieme} - {seul}");
+    }
+
+    /// La Sentinelle : 20 % de dommages à distance, moins 2 % par PM dépensé,
+    /// les PM du personnage au plus (trois sans équipement).
+    #[test]
+    fn la_sentinelle_perd_deux_pour_cent_par_pm() {
+        let tours: &[&[&str]] = &[&[], &["sentinelle", "fleche_cinglante"]];
+        let sans: &[&[&str]] = &[&[], &["fleche_cinglante"]];
+        let immobile = serde_json::json!({ "pm_depenses": 0 });
+        let trois = serde_json::json!({ "pm_depenses": 3 });
+        let base = degats_rejoues(9, immobile.clone(), sans, 1, "fleche_cinglante");
+        rapport(degats_rejoues(9, immobile, tours, 1, "fleche_cinglante"), base, 1.20);
+        let base3 = degats_rejoues(9, trois.clone(), sans, 1, "fleche_cinglante");
+        rapport(degats_rejoues(9, trois, tours, 1, "fleche_cinglante"), base3, 1.14);
+    }
+
     /// Les invocations écartées sortent du deck, celles de la classe et les
     /// communes chacune de son côté ; les autres sorts restent. Absents, les deux
     /// réglages gardent tout.
@@ -4299,8 +4383,10 @@ mod tests {
             assert!((a.1 - b.1).abs() < 0.01, "comme l'Œil déclaré : {seul:?} / {declare:?}");
         }
         assert!((seul[1].1 - nu[1].1).abs() < 0.01, "la flèche qui pousse ne prend rien : {seul:?} / {nu:?}");
+        // La Sentinelle monte les deux Cinglantes de 20 % : à une soixantaine de
+        // dégâts, l'arrondi de chaque jet laisse un demi-pour-cent de jeu.
         assert!(
-            seul[2].1 > arme[2].1 * 1.01 && seul[2].1 <= arme[2].1 * 1.10 + 0.01,
+            seul[2].1 > arme[2].1 * 1.01 && seul[2].1 <= arme[2].1 * 1.10 * 1.005,
             "+10 % au plus au-dessus des 100 Puissance : {seul:?} / {arme:?}"
         );
     }

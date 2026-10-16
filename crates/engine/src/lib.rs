@@ -1165,8 +1165,9 @@ impl Engine {
                 amount.known().copied().unwrap_or(0),
                 *critical_amount,
             ),
-            DamageModifier::DomainPercent { delivery, reach, percent } => {
-                Modifier::DomainPercent(*delivery, *reach, *percent)
+            DamageModifier::DomainPercent { delivery, reach, percent, less_per_mp_used } => {
+                let moins = less_per_mp_used * i32::from(scenario.pm_depenses);
+                Modifier::DomainPercent(*delivery, *reach, (*percent - moins).max(0))
             }
         };
         let mut res_index = HashMap::new();
@@ -1754,10 +1755,12 @@ impl Engine {
                     || r.gain_at_turn_end > 0
                     || declares.iter().any(|(d, v)| *d == i && *v > 0)
                     || schedules.iter().any(|s| s.grants.is_some_and(|(g, _)| g == i))
+                    // Une bascule pose son compteur à un aussi : le Berserk du
+                    // Sacrieur n'a qu'elle.
                     || spells.iter().any(|s| {
-                        s.effects
-                            .iter()
-                            .any(|e| matches!(e, Eff::Gain { resource, .. } if *resource == i))
+                        s.effects.iter().any(|e| {
+                            matches!(e, Eff::Gain { resource, .. } | Eff::Toggle { resource } if *resource == i)
+                        })
                     })
             })
             .collect();

@@ -1,0 +1,47 @@
+name: Donnée manquante
+description: Ce que vous avez relevé en jeu pour un point que Krozties ne compte pas encore.
+title: "Donnée : "
+labels: ["donnée"]
+body:
+  - type: markdown
+    attributes:
+      value: Tapez les valeurs que vous voyez en jeu, sans capture d'écran. Laissez la référence telle quelle, elle situe le point dans les règles.
+  - type: input
+    id: classe
+    attributes:
+      label: Classe
+  - type: input
+    id: sort
+    attributes:
+      label: Sort ou objet
+    validations:
+      required: true
+  - type: textarea
+    id: point
+    attributes:
+      label: Point à relever
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Ce que vous voyez en jeu
+      description: La valeur, la durée, ce qui déclenche l'effet.
+    validations:
+      required: true
+  - type: input
+    id: niveau
+    attributes:
+      label: Niveau du personnage
+  - type: textarea
+    id: precisions
+    attributes:
+      label: Précisions
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+  - type: input
+    id: reference
+    attributes:
+      label: Référence

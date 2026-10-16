@@ -146,12 +146,29 @@ resources:
       subis. La vie érodée est ce taux appliqué à la vie perdue : à 60 % de vie et
       20 % d'érosion, 8 % de la vie maximum. Seule la Punition la lit.
 
+  - id: etat_berserk
+    # Berserk (1803) : l'etat que le sort pose, et que sa relance retire.
+    game_states: [1803]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: none
+    modifies_damage:
+      - kind: domain_percent
+        delivery: spell
+        percent: 10
+    note: |
+      Les 10 % de dommages aux sorts de l'état Berserk (effet 2812 sur le
+      lanceur, sans durée). Le sort le pose s'il est absent et le retire s'il
+      est présent (effet 406 sous l'état 1803) : une bascule.
+
 states_outside_model:
   # Etats que lisent des conditions de lancement et qu'aucun compteur ne
   # represente : le moteur les tient pour ABSENTS.
   - state: 7
     name: "Pesanteur"
     note: "Seule la Couronne d'Epines la pose, en zone autour du lanceur, et elle n'a aucun effet dans ce calculateur : la rotation ne la lance pas. ⚠️ Si elle en recoit un, Fulgurance, Transposition et Penitence devront l'exiger absente."
+
 
 spells:
   - id: furie
@@ -525,17 +542,17 @@ spells:
       
       L'état Berserk est retiré si le lanceur retourne en Souffrance 5 ou moins ou relance le sort.
     assumptions:
+      - "Effet 2812 : +10 % de dommages aux sorts, sans durée. Le sort bascule l'état Berserk : il le pose s'il est absent, le retire s'il est présent (effet 406 sous Berserk). Le retrait en Souffrance 5 ou moins n'est pas compté, la rotation ne soignant pas le lanceur. Ils s'ajoutent aux % de dommages aux sorts de l'équipement en facteur à part."
       - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
       - "Effet 792 : lance aussi « Berserk », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
     lines: []
     open_questions:
-      - "Effets 950/951 : ce sort applique « Berserk » (1803), lu par Berserk. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
       - "Effet 333 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 335 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 1048 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 2812 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 406 : le sort retire SES PROPRES effets, ceux qu'il vient de poser. Aucun d'eux n'est compte ici, l'annulation n'a donc rien a annuler et ne coute rien."
-    effects: []
+    effects:
+      - effect: toggle
+        resource: etat_berserk
 
   - id: epee_vorace
     dofusdb_id: 12744

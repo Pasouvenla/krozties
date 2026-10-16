@@ -99,6 +99,13 @@ fn beta_en_cours() -> Sortie {
     Ok(dofus_app::notes::beta::beta_json())
 }
 
+/// Ce que la rotation ne compte pas et qu'un joueur peut relever en jeu, pour
+/// la page « Données manquantes ».
+#[tauri::command]
+fn donnees_manquantes() -> Sortie {
+    dofus_app::manquantes::manquantes_json()
+}
+
 #[tauri::command]
 fn ligne_de_vue(requete: cartes::RequeteVue) -> Sortie {
     cartes::vue_json(&requete)
@@ -284,6 +291,7 @@ fn main() {
             conseil_par_tour,
             cartes_de_boss,
             beta_en_cours,
+            donnees_manquantes,
             ligne_de_vue,
             importer_equipement,
             version_de_l_application,
