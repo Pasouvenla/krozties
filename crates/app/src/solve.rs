@@ -3209,6 +3209,13 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
             |s| s.name.fr.clone(),
         )
     };
+    // Le nom en jeu des compteurs qui ouvrent ou ferment des sorts : la Lance
+    // du Forgelance, le Téléfrag du Xélor.
+    let noms_d_etats: BTreeMap<&str, &str> = ruleset
+        .resources
+        .iter()
+        .filter_map(|r| r.name.as_ref().map(|n| (r.id.as_str(), n.fr.as_str())))
+        .collect();
     let rendre = |tours: &[dofus_engine::TurnPlan]| -> Vec<serde_json::Value> {
         tours
             .iter()
@@ -3249,6 +3256,7 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
                                 "damage": d.as_f64(),
                             })).collect::<Vec<_>>(),
                             "notes": c.notes,
+                            "indications": indications(&c.notes, &noms_d_etats),
                         })
                     }).collect::<Vec<_>>(),
                 })
@@ -3385,6 +3393,26 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
         },
     })
     .to_string())
+}
+
+/// Ce qu'un lancer ouvre, exige ou ferme, pour la page : « Pose Lance »,
+/// « Exige Téléfrag », « +1 PA », « Termine le tour ». Un compteur sans nom en
+/// jeu ne se cite pas ; les autres notes du moteur restent dans `notes`.
+fn indications(notes: &[String], noms: &BTreeMap<&str, &str>) -> Vec<String> {
+    notes
+        .iter()
+        .filter_map(|n| {
+            for (verbe, dit) in [("pose ", "Pose"), ("exige ", "Exige"), ("retire ", "Retire")] {
+                if let Some(id) = n.strip_prefix(verbe) {
+                    return noms.get(id).map(|nom| format!("{dit} {nom}"));
+                }
+            }
+            if n.starts_with('+') && n.ends_with(" PA") {
+                return Some(n.clone());
+            }
+            (n == "termine le tour").then(|| "Termine le tour".to_string())
+        })
+        .collect()
 }
 
 /// Les sorts que les objets portés modifient, par identifiant de sort des
@@ -5144,6 +5172,31 @@ mod tests {
         assert_eq!(
             v["rotation"]["effets"]["herbes_folles"],
             serde_json::json!(["Retire 3 PM aux ennemis en zone, pendant 1 tour"])
+        );
+    }
+
+    /// Chaque lancer dit ce qu'il ouvre, exige ou ferme, sous le nom du jeu :
+    /// le Fer Rouge pose la Lance, l'Ydra l'exige puis la retire.
+    #[test]
+    fn les_lancers_disent_ce_qu_ils_posent_et_exigent() {
+        let requete: Request = serde_json::from_value(serde_json::json!({
+            "class": 20, "level": 200, "deck": ["fer_rouge", "ydra"], "horizon": 1,
+            "invested": { "strength": 400, "intelligence": 400 },
+        }))
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let lancers: Vec<(String, serde_json::Value)> = v["rotation"]["turns"][0]["casts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| (c["id"].as_str().unwrap().to_string(), c["indications"].clone()))
+            .collect();
+        assert_eq!(
+            lancers,
+            [
+                ("fer_rouge".to_string(), serde_json::json!(["Pose Lance"])),
+                ("ydra".to_string(), serde_json::json!(["Exige Lance", "Retire Lance"])),
+            ]
         );
     }
 

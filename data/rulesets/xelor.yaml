@@ -30,6 +30,7 @@ resources:
       jetterait l'état qui permet au générateur suivant d'être remboursé.
 
   - id: glas_stacks
+    name: { fr: "Téléfrag consommé", en: "Telefrag consumed" }
     # « 1 Telefrag consomme » (707), que le Glas exige (HS=707).
     game_states: [707]
     scope: caster

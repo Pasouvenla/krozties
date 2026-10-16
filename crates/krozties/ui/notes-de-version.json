@@ -1,6 +1,23 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Chaque lancer de la Rotation indique ce qu'il pose, exige ou retire : la Lance du Forgelance, le Téléfrag du Xélor, la Rage de l'Ouginak, les Runes de l'Huppermage."
+          ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La fenêtre de mise à jour garde chaque bouton sur une ligne, sans déborder."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.13.0",
       "date": "2026-10-16",
       "rubriques": [

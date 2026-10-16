@@ -40,14 +40,24 @@ try {
   // La mise à jour dans l'application : « Mettre à jour », puis la nouvelle
   // version prête avec le choix du redémarrage, ou l'échec et ses deux sorties.
   const lireFenetre = (f) => f.innerText.replace(/\s+/g, ' ').trim();
+  // Chaque bouton tient sur une ligne, sans sortir de la fenêtre.
+  const surUneLigne = (f) => [...f.querySelectorAll('.actions button')].every((b) => {
+    const r = document.createRange();
+    r.selectNodeContents(b);
+    return r.getClientRects().length === 1 && b.getBoundingClientRect().right <= f.getBoundingClientRect().right;
+  });
   const fenAuto = maj.afficher('0.10.0', '0.9.0', true);
   resultat.majAuto = { annonce: lireFenetre(fenAuto) };
+  const uneLigne = { annonce: surUneLigne(fenAuto) };
   maj.pret(fenAuto, '0.10.0', true);
   resultat.majAuto.pret = lireFenetre(fenAuto);
+  uneLigne.pret = surUneLigne(fenAuto);
   maj.pret(fenAuto, '0.10.0', false);
   resultat.majAuto.pretWindows = lireFenetre(fenAuto);
   maj.echec(fenAuto, '0.10.0', "le téléchargement s'est interrompu");
   resultat.majAuto.echec = lireFenetre(fenAuto);
+  uneLigne.echec = surUneLigne(fenAuto);
+  resultat.majAuto.uneLigne = uneLigne;
   fenAuto.remove();
 
   // La vérification part à chaque ouverture, et sans réseau le numéro déjà

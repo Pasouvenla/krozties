@@ -105,6 +105,7 @@ resources:
       Proie. Le reste du sort est du placement.
 
   - id: rage
+    name: { fr: "Rage", en: "Rage" }
     # Rage Ouginak (515), qu'exigent Flair, Arcanin, Caninos, et Apaisement ou
     # Affection a defaut de la Forme Bestiale.
     game_states: [515]

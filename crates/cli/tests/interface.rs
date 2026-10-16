@@ -172,6 +172,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
             "pret": "Krozties 0.10.0 est prêt Il s'ouvrira au prochain lancement. Redémarrer maintenant Plus tard",
             "pretWindows": "Krozties 0.10.0 est prêt Il s'installera à la fermeture de Krozties. Redémarrer maintenant Plus tard",
             "echec": "La mise à jour n'a pas abouti Le téléchargement s'est interrompu Réessayer Télécharger sur GitHub",
+            "uneLigne": { "annonce": true, "pret": true, "echec": true },
         }),
         "{r}"
     );

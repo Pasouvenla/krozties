@@ -11,6 +11,7 @@ name: { fr: "Forgelance", en: "Forgelance" }
 
 resources:
   - id: lance
+    name: { fr: "Lance", en: "Lance" }
     # Desarme (3361) tant que la Lance est plantee, Arme (3360) sinon : quinze
     # sorts exigent Arme, le Muspel exige Desarme (condition de la donnee).
     game_states: [3361]

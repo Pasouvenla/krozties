@@ -253,6 +253,7 @@ resources:
       tous les deux. `monotone: none` : un même élément relancé ne cumule rien.
 
   - id: rune
+    name: { fr: "Rune", en: "Rune" }
     scope: target
     max: 4
     default: 0

@@ -149,6 +149,7 @@ resources:
 
 
   - id: porteur
+    name: { fr: "Porteur", en: "Carrier" }
     # Porteur (3), qu'exigent les cinq sorts qui jettent ce que le Pandawa
     # porte : Propulsion, Pandikulation, Eau-de-vie, Brancard, Cascade.
     game_states: [3]
