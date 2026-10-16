@@ -266,6 +266,9 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        // La taille, la place, l'écran et l'état agrandi de la fenêtre, retrouvés
+        // à l'ouverture suivante.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(MiseAJour::default())
         .invoke_handler(tauri::generate_handler![
             classes,

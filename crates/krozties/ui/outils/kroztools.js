@@ -3,6 +3,8 @@
 // « à venir ». Chaque outil est son propre module ; ce fichier ne tient que le
 // bandeau et l'onglet ouvert.
 
+import { garderOuverture } from '../commun/ouverture.js';
+
 const ONGLETS = [
   { id: 'zone', nom: 'KrozZone', quoi: 'Zones de sorts', module: () => import('./zones.js') },
   { id: 'trap', nom: 'KrozTrap', quoi: 'Pièges du Sram', module: () => import('./reseau.js') },
@@ -35,6 +37,7 @@ export async function rendre(cible, etat, contexte) {
   async function ouvrir(onglet, focaliser) {
     courant = onglet;
     etat.kroztool = onglet.id;
+    garderOuverture(etat);
     bandeau.querySelectorAll('[role=tab]').forEach((b) => {
       const choisi = b.dataset.onglet === onglet.id;
       b.setAttribute('aria-selected', String(choisi));

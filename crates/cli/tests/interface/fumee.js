@@ -275,6 +275,9 @@ try {
   };
   resultat.onglets.fermes = [...document.querySelectorAll('.onglets [role=tab][disabled]')]
     .map((b) => b.dataset.onglet);
+  // L'outil et l'onglet de KrozTools ouverts se retiennent pour le lancement
+  // suivant.
+  resultat.ouverture = JSON.parse(localStorage.getItem('krozties.ouverture'));
 
   // Le générateur, à la main : une entrée, quatre PA, une proposition, un
   // tour posé.

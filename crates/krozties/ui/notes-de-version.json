@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Krozties rouvre sa fenêtre à la taille et à la place où vous l'avez laissée, agrandie si elle l'était, et sur l'outil que vous utilisiez, onglet de KrozTools compris."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.11.0",
       "date": "2026-10-16",
       "rubriques": [

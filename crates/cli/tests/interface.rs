@@ -393,6 +393,8 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "le générateur doit proposer un tour : {r}"
     );
     assert_eq!(r["reseau"]["apres"]["tour"], "Tour 2", "poser le tour passe au suivant : {r}");
+    // L'outil et l'onglet ouverts se retiennent pour le lancement suivant.
+    assert_eq!(r["ouverture"], serde_json::json!({ "outil": "kroztools", "kroztool": "vue" }), "{r}");
     // Les invocations de la classe jouent d'office, les communes non ; le Sram
     // n'en a pas, sa case ne s'affiche pas.
     assert_eq!(

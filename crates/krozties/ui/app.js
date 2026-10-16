@@ -6,6 +6,7 @@
 import { appeler, hote } from './pont.js';
 import { nb } from './commun/format.js';
 import { brancherInfobulles, ficheDeSort, ficheDObjet } from './commun/infobulle.js';
+import { garderOuverture, lireOuverture } from './commun/ouverture.js';
 import { chargerBuild, courant, lire, oublierCourant } from './commun/personnages.js';
 import { dessinerSelecteur } from './commun/selecteur-perso.js';
 
@@ -89,6 +90,9 @@ brancherInfobulles({
 export async function afficher(nom) {
   if (!OUTILS[nom]) return;
   etat.outil = nom;
+  // Pendant l'ouverture, Équipement attend le build : il ne remplace pas
+  // l'outil retenu.
+  if (!etat.ouverture) garderOuverture(etat);
   document.querySelectorAll('#rail button[data-outil]').forEach((b) => {
     b.toggleAttribute('aria-current', b.dataset.outil === nom);
     if (b.dataset.outil === nom) b.setAttribute('aria-current', 'page');
@@ -138,16 +142,32 @@ $('changerEquipement').addEventListener('click', () => afficher('equipement'));
 
 $('hote').textContent = hote === 'bureau' ? '' : 'Navigateur';
 
+// L'application rouvre sur l'outil et l'onglet de KrozTools quittés. Un outil
+// qui exige un équipement attend le dernier build enregistré, sur Équipement.
+const ouverture = lireOuverture();
+const voulu = OUTILS[ouverture.outil] ? ouverture.outil : 'equipement';
+if (ouverture.kroztool) etat.kroztool = ouverture.kroztool;
+const exigeBuild = Boolean(document.querySelector(`#rail button[data-outil="${voulu}"][data-exige-build]`));
 majIdentite();
-afficher('equipement');
 
 // Le dernier build enregistré chargé l'est de nouveau à l'ouverture.
 const dernier = courant(lire());
+if (dernier && exigeBuild) {
+  etat.ouverture = true;
+  afficher('equipement');
+} else {
+  afficher(voulu);
+}
 if (dernier) {
   catalogue
     .then(() => chargerBuild(etat, dernier.perso, dernier.build, { appeler, majIdentite }))
-    .then(() => afficher(etat.outil))
+    .then(() => {
+      const attendu = etat.ouverture && etat.outil === 'equipement';
+      etat.ouverture = false;
+      return afficher(attendu ? voulu : etat.outil);
+    })
     .catch(() => {
+      etat.ouverture = false;
       oublierCourant();
       majIdentite();
     });

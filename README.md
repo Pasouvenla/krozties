@@ -51,7 +51,8 @@ votre utilisation. L'application ne contacte le réseau que dans quatre cas :
   part tant que vous ne l'envoyez pas vous-même.
 
 Sur votre machine, Krozties garde la date de sa dernière vérification de
-version et le numéro qu'il a vu, ainsi que les personnages et les builds que
+version et le numéro qu'il a vu, la taille et la place de sa fenêtre, l'outil
+ouvert, vos réglages de la Rotation, ainsi que les personnages et les builds que
 vous enregistrez (l'équipement importé, son lien et sa fiche DofusBook), pour
 les retrouver à l'ouverture suivante. Ils ne quittent cet ordinateur que si
 vous exportez la liste dans un fichier. Un équipement importé sans être
