@@ -28,6 +28,7 @@
   --panneau: #f5f1e6;               /* aplat discret, tiré du vêtement 1 */
   --ground: #eeebe3;                /* fond de l'application, tiré des cheveux */
   --cadre: var(--vetement-1);       /* bandeau des encarts */
+  --doux-cadre: #464a52;            /* texte secondaire sur le bandeau, 5,2:1 */
   --accent: var(--vetement-2);      /* boutons, sélection, liens */
   --accent-clair: #ece3cc;          /* case cochée, tirée du vêtement 1 */
   --accent-doux: var(--vetement-3); /* seconde série des graphiques */
@@ -160,7 +161,7 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
 
 /* Le bandeau de KrozTools : un onglet par outil, son nom puis ce qu'il fait.
    Il défile de côté plutôt que de passer à la ligne sur un écran étroit. */
-.onglets { display: flex; gap: .2rem; overflow-x: auto; margin: .4rem 0 1rem;
+.onglets { display: flex; gap: .2rem; overflow-x: auto; overflow-y: hidden; margin: .4rem 0 1rem;
            border-bottom: 1px solid var(--trait); scrollbar-width: thin; }
 .onglets [role=tab] { all: unset; cursor: pointer; display: grid; gap: .05rem;
                       padding: .45rem .9rem .5rem; white-space: nowrap;
@@ -185,9 +186,10 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
               background: var(--cadre); border-bottom: 1px solid var(--cheveux);
               font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
               color: var(--encre); font-weight: 700; }
+.carte > h3 .aide { color: var(--doux-cadre); }
 /*
  * Un encart se replie d'un clic sur sa barre de titre ; le triangle dit s'il est
- * ouvert.
+ * ouvert. Toute la hauteur du bandeau répond au clic, pas la seule ligne du titre.
  */
 .titre-repli { display: flex; align-items: baseline; gap: .5rem; }
 .titre-repli button { flex: 1 1 auto; display: inline-flex; align-items: center; gap: .45rem;
@@ -198,6 +200,9 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
                               border-right: 4px solid transparent;
                               border-top: 5px solid currentColor; transition: transform .12s; }
 .titre-repli button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.carte > h3.titre-repli { padding: 0 1rem 0 0; }
+.carte > h3.titre-repli > button { padding: .4rem 0 .4rem 1rem; }
+.carte > h3.titre-repli > button:focus-visible { outline-offset: -3px; }
 .carte.repliee { padding-bottom: 0; }
 .carte.repliee > .titre-repli { margin-bottom: 0; border-bottom: 0; }
 .carte.repliee > .titre-repli button::before { transform: rotate(-90deg); }

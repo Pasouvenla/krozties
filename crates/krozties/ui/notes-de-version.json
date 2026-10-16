@@ -1,6 +1,19 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "La barre de défilement qui s'affichait sous les onglets de KrozTools a disparu.",
+            "Les sections repliables (Sorts, Rotation, Répartition…) se replient d'un clic n'importe où sur leur bandeau, plus seulement sur leur titre.",
+            "Le nombre de sorts cochés se lit mieux sur son bandeau."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.10.0",
       "date": "2026-10-15",
       "rubriques": [
