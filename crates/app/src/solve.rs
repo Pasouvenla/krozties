@@ -583,7 +583,7 @@ fn avec_les_effets_de_dofus(
     request: &Request,
     resolved: &Resolved,
     entravants: &[u32],
-) -> Result<(Ruleset, Vec<String>), String> {
+) -> Result<(Ruleset, Vec<String>, Option<String>), String> {
     let mut notes = Vec::new();
     if request.poussees_bloquees && resolved.puissance_si_poussee > 0 {
         let declare = request.bonus_inclus.iter().any(|b| b == dofus_build::OEIL_DU_CAUCHEMAR);
@@ -717,13 +717,11 @@ fn avec_les_effets_de_dofus(
             des_le_deuxieme.push(format!("{nom} (+{} % de dommages finaux)", pourcent.saturating_sub(100)));
         }
     }
-    if !des_le_deuxieme.is_empty() {
-        notes.push(format!(
-            "{} : à partir du deuxième tour, le premier n'ayant pas de tour précédent",
-            des_le_deuxieme.join(", ")
-        ));
-    }
-    Ok((ruleset, notes))
+    // À part : l'interface la place sous le tour 1, qu'elle explique.
+    let au_tour_1 = (!des_le_deuxieme.is_empty()).then(|| {
+        format!("{} : à partir du deuxième tour, le premier n'ayant pas de tour précédent", des_le_deuxieme.join(", "))
+    });
+    Ok((ruleset, notes, au_tour_1))
 }
 
 /// Plombage, lancé sur une bombe, redéclenche le mur de bombes où se tient la
@@ -1920,8 +1918,9 @@ fn preparer(
     } else {
         Vec::new()
     };
-    let (ruleset, places_manquees) = avec_les_effets_de_dofus(ruleset, request, &resolved, &entravants)?;
+    let (ruleset, places_manquees, au_tour_1) = avec_les_effets_de_dofus(ruleset, request, &resolved, &entravants)?;
     noter(&mut resolved.assumptions, "Équipement", places_manquees);
+    noter(&mut resolved.assumptions, "Tour 1", au_tour_1.into_iter().collect());
     let (ruleset, notes_des_invocations) = avec_les_invocations(ruleset, request, &build, &resolved)?;
     noter(&mut resolved.assumptions, "Invocations", notes_des_invocations);
     let (ruleset, notes_des_tourelles) = avec_les_tourelles(ruleset, request, &build, &resolved)?;
@@ -4051,7 +4050,7 @@ mod tests {
         assert_eq!(garde.base_ap, resolved.base_ap, "le Jaune Ocre n'est pas un PA de chaque tour");
         assert!(!garde.modifiers.iter().any(|m| m.id == "Rouge Vermeil"));
         let etats = |r: &Request| {
-            let (regles, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), r, &resolved, &[]).unwrap();
+            let (regles, _, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), r, &resolved, &[]).unwrap();
             regles
                 .resources
                 .iter()
@@ -4064,7 +4063,7 @@ mod tests {
             [("jaune_ocre".to_string(), Some(1), Some(1)), ("rouge_vermeil".to_string(), Some(1), None)]
         );
         // Ses 10 % rejoignent la somme des dommages finaux, comme avant.
-        let (regles, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), &request, &resolved, &[]).unwrap();
+        let (regles, _, _) = avec_les_effets_de_dofus(load_ruleset(5).unwrap(), &request, &resolved, &[]).unwrap();
         let vermeil = regles.resources.iter().find(|x| x.id == "rouge_vermeil").unwrap();
         assert!(matches!(
             vermeil.modifies_damage.as_slice(),
@@ -4145,7 +4144,7 @@ mod tests {
         // poussent, le Sylvestre à 3 × 8 par cran, deux crans au plus.
         let entravants = snapshot_for(13).unwrap().sorts_qui_entravent_le_lanceur();
         assert!(entravants.is_empty(), "aucun sort du Roublard ne l'entrave : {entravants:?}");
-        let (regles, notes) =
+        let (regles, notes, _) =
             avec_les_effets_de_dofus(load_ruleset(13).unwrap(), &base, &resolved, &entravants).expect("greffe");
         assert!(notes.is_empty(), "{notes:?}");
         let etat = |id: &str| regles.resources.iter().find(|r| r.id == id).expect(id);
@@ -4163,7 +4162,7 @@ mod tests {
         let oeil = |r: &Ruleset| r.resources.iter().find(|x| x.id == "oeil_du_cauchemar").cloned();
         assert!(oeil(&regles).is_none());
         let avec_oeil = requete(serde_json::json!({ "bonus_inclus": ["Œil du Cauchemar"] }));
-        let (regles, _) =
+        let (regles, _, _) =
             avec_les_effets_de_dofus(load_ruleset(13).unwrap(), &avec_oeil, &resolved, &entravants).expect("greffe");
         assert!(oeil(&regles).expect("l'Œil déclaré").modifies_damage.iter().any(|m| matches!(
             m,
@@ -4216,7 +4215,7 @@ mod tests {
         }))
         .unwrap();
         let resolved = resolve_build(&requete.build.normalise()).expect("résolution");
-        let (regles, notes) =
+        let (regles, notes, _) =
             avec_les_effets_de_dofus(load_ruleset(9).unwrap(), &requete, &resolved, &entravants).expect("greffe");
         assert!(notes.iter().any(|n| n.contains(": Sentinelle vous entrave")), "{notes:?}");
         let de = |s: &str| Some(s.to_string());
@@ -4721,7 +4720,8 @@ mod tests {
         let libre = rotation_a("libre", &["arme"]);
         assert!(lance(&libre, "arme"));
         assert_eq!(libre["rotation"]["hors_position"], serde_json::json!([]));
-        assert!(parle_de_l_epee(&libre));
+        // La Maîtrise d'arme ne se redit pas dans les remarques : le joueur la règle.
+        assert!(!parle_de_l_epee(&libre));
         let distance = rotation_a("distance", &["arme"]);
         assert!(!lance(&distance, "arme"));
         assert_eq!(distance["rotation"]["hors_position"], serde_json::json!(["Épée de Boisaille"]));

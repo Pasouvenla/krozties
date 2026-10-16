@@ -4,7 +4,7 @@
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import { echapper, nb, pluriel } from '../commun/format.js';
 import * as discord from '../commun/discord.js';
-import { deuxBuilds } from '../commun/graphique.js';
+import { cumulDeuxBuilds, ecartParSort } from '../commun/graphique.js';
 import { CLASSES, courant, lire } from '../commun/personnages.js';
 import { reglagesRotation } from '../commun/reglages-rotation.js';
 import { decrire, versMoteur } from '../commun/resistances.js';
@@ -20,20 +20,6 @@ function ecart(a, b) {
   const v = Math.abs(p).toFixed(1).replace('.', ',');
   if (v === '0,0') return { texte: '0 %', classe: '' };
   return { texte: `${p < 0 ? '−' : '+'}${v} %`, classe: p < 0 ? 'moins' : 'plus' };
-}
-
-/// Combien de fois chaque sort est lancé dans une rotation.
-function lancers(r) {
-  const n = new Map();
-  r.turns.forEach((t) => t.casts.forEach((c) => n.set(c.id, (n.get(c.id) || 0) + 1)));
-  return n;
-}
-
-/// L'écart de B sur A, en points de dégâts signés.
-function ecartEnPoints(a, b) {
-  const v = Math.round(b) - Math.round(a);
-  if (!v) return { texte: '0', classe: '' };
-  return { texte: `${v < 0 ? '−' : '+'}${nb(Math.abs(v))}`, classe: v < 0 ? 'moins' : 'plus' };
 }
 
 export async function rendre(cible, etat, { appeler, afficher }) {
@@ -194,23 +180,6 @@ export async function rendre(cible, etat, { appeler, afficher }) {
         ? [['Sur la durée', ra.steady.per_turn, rb.steady.per_turn, true]] : []),
       ['PA perdus', ra.ap_wasted || 0, rb.ap_wasted || 0, false],
     ];
-    // Les sources de la Répartition des deux rotations, alignées par
-    // identifiant : sorts, poisons et invocations.
-    const la = lancers(ra);
-    const lb = lancers(rb);
-    const sources = new Map();
-    [[ra, 'a'], [rb, 'b']].forEach(([r, cote]) => (r.repartition || []).forEach((p) => {
-      const s = sources.get(p.id) || { nom: p.name, a: null, b: null };
-      s[cote] = p.damage;
-      sources.set(p.id, s);
-    }));
-    const lignesParSort = [...sources.entries()]
-      .sort(([, x], [, y]) => Math.max(y.a || 0, y.b || 0) - Math.max(x.a || 0, x.b || 0));
-    const plusFort = Math.max(1, ...lignesParSort.map(([, s]) => Math.max(s.a || 0, s.b || 0)));
-    const barre = (v, cote) => (v == null
-      ? '<div class="ligne"><div class="piste"></div><span class="absent">·</span></div>'
-      : `<div class="ligne"><div class="piste"><div class="barre ${cote}" style="width:${
-        ((v / plusFort) * 100).toFixed(1)}%"></div></div><span>${nb(v)}</span></div>`);
     $('resultatComparaison').innerHTML = `
       <section class="encart resultat-comparaison"><h4>Résultat</h4><div>
         <table class="comparaison"><thead><tr><th></th><th>A</th><th>B</th><th>Écart</th></tr></thead><tbody>
@@ -223,19 +192,11 @@ export async function rendre(cible, etat, { appeler, afficher }) {
           <button type="button" class="action discret" id="copierComparaison">Copier pour Discord</button>
           <span class="copie" id="copieComparaison" role="status"></span>
         </div></div></section>
-      <section class="encart"><h4>Dégâts par sort</h4><div>
-        <div class="g-legende"><span><i class="g-puce g-p-a"></i>A · ${echapper(nom(a))}</span>
-          <span><i class="g-puce g-p-b"></i>B · ${echapper(nom(b))}</span></div>
-        <table class="comparaison par-sort"><thead><tr><th>Source</th><th>Lancers A / B</th><th class="degats">Dégâts</th>
-          <th>Écart</th></tr></thead><tbody>
-        ${lignesParSort.map(([id, s]) => {
-          const e = ecartEnPoints(s.a || 0, s.b || 0);
-          return `<tr><td>${echapper(s.nom)}</td><td>${la.get(id) || 0} / ${lb.get(id) || 0}</td>
-            <td class="barres">${barre(s.a, 'a')}${barre(s.b, 'b')}</td><td class="${e.classe}">${e.texte}</td></tr>`;
-        }).join('')}
-        </tbody></table></div></section>
-      <section class="encart"><h4>Dégâts par tour</h4><div>
-        ${deuxBuilds(ra.turns.map((t) => t.damage), rb.turns.map((t) => t.damage), nom(a), nom(b))}
+      <section class="encart"><h4>Ce qui fait l'écart</h4><div>
+        ${ecartParSort(ra, rb)}
+      </div></section>
+      <section class="encart"><h4>Tour après tour</h4><div>
+        ${cumulDeuxBuilds(ra.turns.map((t) => t.damage), rb.turns.map((t) => t.damage), nom(a), nom(b))}
       </div></section>`;
     $('copierComparaison').addEventListener('click', async () => {
       const texte = discord.comparaison({

@@ -308,12 +308,10 @@ fn chaque_outil_s_affiche_sans_erreur() {
     let (sans, avec) = (entier(&r["resistances"]["sans"]), entier(&r["resistances"]["avec"]));
     assert!(sans > 0 && (avec * 2 - sans).abs() <= sans / 50, "50 % Feu : {sans} puis {avec}");
     assert_eq!(r["resistances"]["contre"], "Feu 50 %", "{r}");
-    // Les remarques du calcul ont leur carte dans la Rotation.
+    // Les hypothèses du calcul, sous le total : l'écho d'un réglage du joueur (la
+    // Maîtrise d'arme) n'y est plus.
     let remarques: Vec<&str> = r["remarques"].as_array().map_or_else(Vec::new, |v| v.iter().filter_map(|x| x.as_str()).collect());
-    assert!(
-        remarques.contains(&"Hachebarde de Guerre : Maîtrise d'arme comptée, 300 Puissance sur ses coups"),
-        "{remarques:?}"
-    );
+    assert!(!remarques.iter().any(|r| r.contains("Maîtrise d'arme")), "{remarques:?}");
     assert!(
         remarques.iter().any(|r| r.starts_with("Couronne de Brâm Barbe-Monde : +2 % de dommages finaux")),
         "{remarques:?}"
@@ -339,11 +337,11 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert_eq!(persos["barre"][1], "Essai", "{r}");
     assert_eq!((&persos["cartes"], &persos["builds"]), (&serde_json::json!(1), &serde_json::json!(["Essai"])), "{r}");
     // La comparaison de deux builds du même Crâ : le tableau, les écarts
-    // signés, les sorts joués et deux colonnes par tour.
+    // signés, ce qui fait l'écart sort par sort, et le cumul tour par tour.
     assert_eq!(
         r["comparaison"],
         serde_json::json!({
-            "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "sorts": true, "barres": true, "copier": true,
+            "builds": ["Essai", "Agilité"], "lignes": true, "ecarts": true, "ecartParSort": true, "cumul": true, "copier": true,
             "charge": "Build chargé · Crâ 200 (choisi)",
         }),
         "{r}"
@@ -393,6 +391,8 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "le générateur doit proposer un tour : {r}"
     );
     assert_eq!(r["reseau"]["apres"]["tour"], "Tour 2", "poser le tour passe au suivant : {r}");
+    // Sous le résultat de la Rotation : le rythme, ses trois repères, et les dégâts par PA.
+    assert_eq!(r["graphiques"], serde_json::json!({ "reperes": 3, "parPA": true }), "{r}");
     // L'outil et l'onglet ouverts se retiennent pour le lancement suivant.
     assert_eq!(r["ouverture"], serde_json::json!({ "outil": "kroztools", "kroztool": "vue" }), "{r}");
     // Les invocations de la classe jouent d'office, les communes non ; le Sram

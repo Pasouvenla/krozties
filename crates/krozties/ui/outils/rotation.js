@@ -1,7 +1,7 @@
 // Rotation : quels sorts lancer, dans quel ordre.
 
 import { COULEUR_ELEMENT, echapper, majuscule, nb, pluriel } from '../commun/format.js';
-import { parTour, selonCibles } from '../commun/graphique.js';
+import { parPA, rythme, selonCibles } from '../commun/graphique.js';
 import { brancherRepli, classeRepli, replier, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
@@ -219,6 +219,7 @@ export async function rendre(cible, etat, { appeler }) {
               ${mur().combos.map((c, i) => `<select data-mur-combo="${i}" aria-label="Combo de la bombe ${i + 1}">
                 ${ROMAINS.map((r, k) => `<option value="${k + 1}"${c === k + 1 ? ' selected' : ''}>${r}</option>`).join('')}
               </select>`).join('')}
+              <p class="aide" id="hypothesesMur"></p>
             </div>` : ''}
             ${bonusDofus.length ? `
             <h4 class="groupe">Bonus d'équipement tenus</h4>
@@ -580,6 +581,10 @@ export async function rendre(cible, etat, { appeler }) {
       $('etatCalcul').textContent = '';
       dessinerResume();
       dessinerDetail();
+      dessinerInvocations();
+      if ($('hypothesesMur')) {
+        $('hypothesesMur').innerHTML = hypotheses('mur').map((m) => `${echapper(majuscule(m))}.`).join('<br>');
+      }
       // Le résultat remonte sous la liste, repliée à son bandeau ; un clic sur
       // le bandeau la rouvre.
       replier(cible, etat, 'sorts');
@@ -601,6 +606,14 @@ export async function rendre(cible, etat, { appeler }) {
       if (erreur) $('etatCalcul').innerHTML = erreur;
     }
   });
+
+  /// Les hypothèses du calcul, rangées là où elles expliquent quelque chose :
+  /// sous le tour 1, dans l'encart des invocations, sous le mur de bombes ; les
+  /// autres, sous le total.
+  const LIEUX = { 'Tour 1': 'tour1', Invocations: 'invocations', Tourelles: 'invocations', Bombes: 'mur' };
+  const hypotheses = (lieu) => ((resultat && resultat.remarques_par_sujet) || [])
+    .filter((g) => (LIEUX[g.sujet] || 'resultat') === lieu)
+    .flatMap((g) => g.lignes);
 
   function dessinerResume() {
     const r = resultat;
@@ -624,6 +637,9 @@ export async function rendre(cible, etat, { appeler }) {
         ${r.ap_wasted > 0 ? `<dt>PA perdus</dt><dd class="alerte">${r.ap_wasted}</dd>` : ''}
       </dl>
       ${st.too_large ? '<p class="aide">Moyenne sur la durée non calculée avec autant de sorts.</p>' : ''}
+      ${hypotheses('resultat').length ? `<details class="hypotheses"><summary>${hypotheses('resultat').length} ${
+        pluriel(hypotheses('resultat').length, 'hypothèse')} du calcul</summary><ul>${hypotheses('resultat')
+        .map((m) => `<li>${echapper(majuscule(m))}.</li>`).join('')}</ul></details>` : ''}
       <div class="copie-discord">
         <button type="button" class="action discret" id="copierDiscord">Copier pour Discord</button>
         <span class="copie" id="copieDiscord" role="status"></span>
@@ -694,7 +710,7 @@ export async function rendre(cible, etat, { appeler }) {
                 <span class="reste">Reste ${c.ap_left}</span>
               </li>`).join('')}</ol>
             <div class="conseil" data-conseil="${i}" hidden></div>
-          </details>`;
+          </details>${i === 0 ? hypotheses('tour1').map((m) => `<p class="note-tour">${echapper(majuscule(m))}.</p>`).join('') : ''}`;
         }).join('')}</div>
 
         ${alerte((r.ecartes || []).map((e) => e.sort),
@@ -720,15 +736,7 @@ export async function rendre(cible, etat, { appeler }) {
             <td style="width:4rem">${(p.share * 100).toFixed(1).replace('.', ',')} %</td></tr>`).join('')}
         </tbody></table>
       </div>
-      ${(r.remarques || []).length ? `
-      <div class="carte selectionnable${classeRepli(etat, 'remarques')}" style="margin-top:1rem">
-        ${titreRepliable(etat, 'remarques', 'Remarques du calcul')}
-        <div class="grille-encarts">${(r.remarques_par_sujet || []).map((g) => `
-          <section class="encart"><h4>${echapper(g.sujet)}</h4>
-            <div><ul class="aide remarques">${
-              g.lignes.map((m) => `<li>${echapper(majuscule(m))}</li>`).join('')}</ul></div>
-          </section>`).join('')}</div>
-      </div>` : ''}`;
+`;
 
     $('detailRotation').querySelectorAll('details.palier').forEach((d) => {
       d.addEventListener('toggle', () => { etat.toursOuverts[d.dataset.pli] = d.open; });
@@ -747,8 +755,12 @@ export async function rendre(cible, etat, { appeler }) {
     $('graphiques').innerHTML = `
       <div class="bande-graphiques">
         <div class="carte${classeRepli(etat, 'par-tour')}">
-          ${titreRepliable(etat, 'par-tour', 'Dégâts par tour')}
-          ${parTour(r.steady, r.turns, r.targets)}
+          ${titreRepliable(etat, 'par-tour', 'Rythme')}
+          ${rythme(r.turns, r.steady, r.targets)}
+        </div>
+        <div class="carte${classeRepli(etat, 'par-pa')}">
+          ${titreRepliable(etat, 'par-pa', 'Dégâts par PA')}
+          ${parPA(r.turns, r.repartition)}
         </div>
         <div class="carte${classeRepli(etat, 'ennemis')}">
           ${titreRepliable(etat, 'ennemis', 'Dégâts selon le nombre d\'ennemis')}
@@ -889,6 +901,8 @@ export async function rendre(cible, etat, { appeler }) {
       </section>`;
     hote.classList.toggle('repliee', Boolean(etat.replies && etat.replies.invocations));
     hote.innerHTML = `${titreRepliable(etat, 'invocations', 'Invocations')}
+      ${hypotheses('invocations').length ? `<ul class="aide remarques">${hypotheses('invocations')
+    .map((m) => `<li>${echapper(majuscule(m))}.</li>`).join('')}</ul>` : ''}
       <p class="aide">Calculés avec vos caractéristiques, sans vos % de dommages ni vos
         dommages critiques.${(propres.length && reglages.invocationsDeClasse === false)
     || (communes.length && !reglages.invocationsCommunes)

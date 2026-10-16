@@ -6,7 +6,12 @@
         {
           "titre": "Nouveautés",
           "lignes": [
-            "Krozties rouvre sa fenêtre à la taille et à la place où vous l'avez laissée, agrandie si elle l'était, et sur l'outil que vous utilisiez, onglet de KrozTools compris."
+            "Krozties rouvre sa fenêtre à la taille et à la place où vous l'avez laissée, agrandie si elle l'était, et sur l'outil que vous utilisiez, onglet de KrozTools compris.",
+            "La Rotation montre son rythme : le tour le plus fort, le plus faible, la moyenne, et la part des dégâts qui tombe en début de tour.",
+            "La Rotation classe ses sorts par dégâts par PA, avec le calcul de chacun.",
+            "La Comparaison explique l'écart sort par sort, avec sa raison (lancé plus ou moins souvent, par un seul des deux builds, ou plus fort à chaque lancer), et suit le cumul des dégâts tour après tour.",
+            "Les hypothèses du calcul se lisent là où elles comptent : sous le tour 1, dans l'encart des invocations, sous le mur de bombes, ou en dépliant la ligne sous le total. Les rappels de vos propres réglages disparaissent.",
+            "Les graphiques prennent de nouvelles couleurs, mieux distinguées par les daltoniens."
           ]
         }
       ]

@@ -445,6 +445,11 @@ try {
     haut: Math.round(document.getElementById('detailRotation').getBoundingClientRect().top
       - contenu.getBoundingClientRect().top + contenu.scrollTop),
   };
+  // Les graphiques du résultat : le rythme et ses trois repères, les dégâts par PA.
+  resultat.graphiques = {
+    reperes: document.querySelectorAll('#graphiques .tuile-rythme').length,
+    parPA: document.querySelectorAll('#graphiques circle.g-pt-1').length > 0,
+  };
   document.querySelector('#detailRotation .lancer[data-tour]').click();
   await attendre(() => document.querySelector('#detailRotation .conseil table'), 20000);
   resultat.conseil = {
@@ -487,8 +492,9 @@ try {
   // redémarrage, retrouve les 2 tours réglés plus haut.
   const { reglagesRotation } = await import('/commun/reglages-rotation.js');
   resultat.reglagesGardes = reglagesRotation({}).horizon;
-  // Les remarques du calcul, dans leur carte sous la répartition.
-  resultat.remarques = [...document.querySelectorAll('#detailRotation .remarques li')].map((li) => li.textContent);
+  // Les hypothèses du calcul : sous le tour 1, ou dépliables sous le total.
+  resultat.remarques = [...document.querySelectorAll('#resumeRotation .hypotheses li, #detailRotation .note-tour')]
+    .map((li) => li.textContent);
 
   // Les résistances de la cible : le moteur range ses éléments dans un autre
   // ordre que l'affichage, et 50 % Feu divisent par deux cette rotation Feu.
@@ -591,10 +597,12 @@ try {
     lignes: lignesComparees[0] ? lignesComparees[0].querySelectorAll('tbody tr').length >= 3 : false,
     ecarts: lignesComparees[0] ? [...lignesComparees[0].querySelectorAll('td.moins, td.plus')]
       .every((td) => /^[+\u2212]\d+,\d %$/.test(td.textContent)) : false,
-    sorts: lignesComparees[1] ? lignesComparees[1].querySelectorAll('tbody tr').length > 0
-      && [...lignesComparees[1].querySelectorAll('tbody tr')].every((tr) => tr.querySelectorAll('.ligne').length === 2
-        && /^([+\u2212][\d\s\u202f]+|0)$/.test(tr.lastElementChild.textContent)) : false,
-    barres: document.querySelectorAll('#resultatComparaison rect.g-barre').length === 2 * toursCompares,
+    // Ce qui fait l'écart : une barre par source qui change, et sa raison.
+    ecartParSort: document.querySelectorAll('#resultatComparaison rect.g-serie-1, #resultatComparaison rect.g-serie-2')
+      .length > 0,
+    // Le cumul : un point par tour et par build.
+    cumul: document.querySelectorAll('#resultatComparaison circle.g-pt-1').length === toursCompares
+      && document.querySelectorAll('#resultatComparaison circle.g-pt-2').length === toursCompares,
     copier: Boolean(document.getElementById('copierComparaison')),
   };
   // Un build importé sans être enregistré se compare aussi : il vient en

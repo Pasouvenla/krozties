@@ -1,7 +1,8 @@
-// Les deux graphiques de la rotation : les colonnes disent si la rotation tient
-// un régime, la courbe ce qu'un ennemi de plus rapporte vraiment.
+// Les graphiques de la Rotation et de la Comparaison : le rythme des tours, la
+// rentabilité de chaque PA, ce qu'un ennemi de plus rapporte, et ce qui sépare
+// deux builds. Leurs couleurs viennent de la palette (`--serie-1`, `--serie-2`).
 
-import { echapper, nb } from './format.js';
+import { echapper, nb, pluriel } from './format.js';
 
 const L = 700;
 const H = 190;
@@ -39,146 +40,241 @@ const enveloppe = (legende, corps, note) => `<figure class="graphique">`
   + `</figure>`;
 
 // ---------------------------------------------------------------------
-// Dégâts par tour
+// Le rythme de la rotation
 // ---------------------------------------------------------------------
-// Des colonnes : la couleur sépare les tours d'ouverture, joués une fois, des
-// tours de boucle ; le pointillé est la moyenne de la boucle. Tout ce qui est
-// chiffré dépend du nombre d'ennemis, et le rappelle.
-/// La coupe ne tombe jamais dans la boucle : les cycles sont réservés d'abord,
-/// l'ouverture prend la place qui reste, et ce qui est retiré se dit.
-const MAX_COLONNES = 24;
+// Trois repères, le tour le plus fort, le plus faible et la moyenne, puis les
+// dégâts de chaque tour empilés : ce que le tour lance, et ce qui frappe à son
+// début (explosion différée, poison, invocations). Le pointillé est la moyenne
+// sur la durée, quand la rotation tient une boucle.
+const point = (x, y) => `${x.toFixed(1)} ${y.toFixed(1)}`;
 
-export function parTour(st, tours, cibles) {
-  const stable = st || {};
-  const cycle = stable.cycle || [];
-  let suite = [];
-  let coupes = 0;
-  let premierCoupe = 0;
-  if (stable.cycle_length && cycle.length) {
-    // Deux passages au moins : un seul ne se distingue pas d'une ouverture qui
-    // continuerait. Trois quand le cycle est court, pour que le motif s'impose.
-    let cycles = Math.max(2, Math.min(3, Math.ceil(8 / stable.cycle_length)));
-    while (cycles > 1 && cycles * cycle.length > MAX_COLONNES) cycles -= 1;
-    const ouverture = stable.opener || [];
-    const place = Math.max(0, MAX_COLONNES - cycles * cycle.length);
-    coupes = Math.max(0, ouverture.length - place);
-    premierCoupe = place + 1;
-    suite = ouverture.slice(0, place).map((t, i) => ({ v: t.damage, phase: 'ouverture', tour: i + 1 }));
-    for (let c = 0; c < cycles; c += 1) {
-      cycle.forEach((t, j) => suite.push({
-        v: t.damage,
-        phase: 'boucle',
-        // Le NUMÉRO RESTE VRAI même quand des tours manquent : un axe qui se
-        // renumérote après une coupe ferait lire la boucle au mauvais tour.
-        tour: ouverture.length + c * cycle.length + j + 1,
-      }));
-    }
-  } else {
-    suite = (tours || []).map((t, i) => ({
-      v: t.damage, phase: 'boucle', tour: t.turn != null ? t.turn : i + 1,
-    }));
-  }
-  // Dernier rempart : un cycle plus long que le cadre passait quand même,
-  // puisque le compte de cycles ne descend pas en dessous d'un. Alors rien ne
-  // peut montrer la répétition, et c'est cela qu'il faut dire.
-  const deborde = suite.length > MAX_COLONNES;
-  if (deborde) suite = suite.slice(0, MAX_COLONNES);
+export function rythme(tours, st, cibles) {
+  const suite = (tours || []).map((t, i) => ({
+    tour: t.turn != null ? t.turn : i + 1,
+    total: t.damage,
+    debut: Math.min(t.damage, (t.opening_sources || []).reduce((n, o) => n + (o.damage || 0), 0)),
+  }));
   if (!suite.length) return '';
-
-  // La marge droite loge l'étiquette de moyenne : la poser sur le tracé la
-  // ferait chevaucher la dernière colonne.
-  const m = { h: 14, b: 26, g: 46, d: 78 };
-  const aire = aireDe(m);
-  const ech = echelle(Math.max(...suite.map((d) => d.v), stable.per_turn || 0));
-  const y = (v) => m.h + aire.h - (v / ech.haut) * aire.h;
-
-  const bande = aire.w / suite.length;
-  const epaisseur = Math.min(24, bande - 2); // 2 px de fond entre deux colonnes
-
-  const barres = suite.map((d, i) => {
-    const x = m.g + i * bande + (bande - epaisseur) / 2;
-    const t = y(d.v);
-    const hauteur = Math.max(2, m.h + aire.h - t);
-    const r = Math.min(4, epaisseur / 2);
-    // Sommet arrondi, base carrée : le pied de la colonne EST la ligne zéro,
-    // l'arrondir décollerait la donnée de son axe.
-    const chemin = `M${x} ${t + hauteur}V${t + r}a${r} ${r} 0 0 1 ${r} ${-r}`
-      + `h${epaisseur - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}V${t + hauteur}Z`;
-    return `<path class="g-barre ${d.phase === 'boucle' ? 'g-boucle' : 'g-ouverture'}"`
-      + ` d="${chemin}" tabindex="0"><title>Tour ${d.tour} · ${nb(d.v)} dégâts · ${d.phase}</title></path>`;
-  }).join('');
-
-  // Étiqueter le tour le plus fort et le plus faible, pas tous : un nombre sur
-  // chaque colonne ne se lit pas, mais une valeur qu'on n'atteint qu'au survol
-  // n'existe pas pour qui n'a pas de souris. Ces deux-là donnent l'amplitude.
-  const fort = suite.reduce((a, b) => (b.v > a.v ? b : a));
-  const faible = suite.reduce((a, b) => (b.v < a.v ? b : a));
-  const reperes = [fort, faible]
-    .filter((d, i, tab) => tab.indexOf(d) === i)
-    .map((d) => `<text class="g-repere" x="${(m.g + suite.indexOf(d) * bande + bande / 2).toFixed(1)}"`
-      + ` y="${(y(d.v) - 5).toFixed(1)}" text-anchor="middle">${nb(d.v)}</text>`).join('');
-
-  const axeX = suite.map((d, i) => `<text class="g-axe" x="${(m.g + i * bande + bande / 2).toFixed(1)}"`
-    + ` y="${H - 8}" text-anchor="middle">${d.tour}</text>`).join('');
-
-  const moyenne = stable.per_turn
-    ? `<line class="g-moyenne" x1="${m.g}" x2="${L - m.d + 4}" y1="${y(stable.per_turn).toFixed(1)}"`
-      + ` y2="${y(stable.per_turn).toFixed(1)}"/>`
-      + `<text class="g-moyenne-texte" x="${L - m.d + 10}" y="${(y(stable.per_turn) + 3.5).toFixed(1)}">`
-      + `${nb(stable.per_turn)} / tour</text>`
-    : '';
-
-  const legende = '<div class="g-legende">'
-    + (suite.some((d) => d.phase === 'ouverture')
-      ? '<span><i class="g-puce g-p-ouverture"></i>Ouverture, jouée une fois</span>' : '')
-    + '<span><i class="g-puce g-p-boucle"></i>Boucle, répétée</span>'
-    + (stable.per_turn ? '<span><i class="g-puce g-p-moyenne"></i>Moyenne de la boucle</span>' : '')
+  const duree = st && st.per_turn ? st.per_turn : null;
+  const moyenne = suite.reduce((s, d) => s + d.total, 0) / suite.length;
+  const fort = suite.reduce((a, b) => (b.total > a.total ? b : a));
+  const faible = suite.reduce((a, b) => (b.total < a.total ? b : a));
+  const tuile = (titre, valeur, detail) => `<div class="tuile-rythme"><small>${titre}</small>`
+    + `<b>${nb(valeur)}</b><span>${detail}</span></div>`;
+  const tuiles = '<div class="tuiles-rythme">'
+    + tuile('Tour le plus fort', fort.total, `tour ${fort.tour}`)
+    + tuile('Tour le plus faible', faible.total, `tour ${faible.tour}`)
+    + tuile(duree ? 'Sur la durée' : 'Moyenne', duree || moyenne, 'par tour')
     + '</div>';
 
-  // Une phrase seulement quand elle s'applique : le nombre d'ennemis, dont tout
-  // dépend, et les tours que le cadre ne montre pas.
-  return enveloppe(
-    [
-      cibles > 1 ? `Sur ${cibles} ennemis.` : '',
-      coupes > 1 ? `Tours ${premierCoupe} à ${premierCoupe + coupes - 1} non affichés.`
-        : coupes ? `Tour ${premierCoupe} non affiché.` : '',
-      deborde ? `Tours après le ${suite[suite.length - 1].tour} non affichés.` : '',
-    ].filter(Boolean).join(' '),
-    fond(m, aire, ech) + barres + reperes + axeX + moyenne,
+  const m = { h: 18, b: 26, g: 46, d: 78 };
+  const aire = aireDe(m);
+  const ech = echelle(Math.max(...suite.map((d) => d.total), duree || 0));
+  const y = (v) => m.h + aire.h - (v / ech.haut) * aire.h;
+  const x = (i) => m.g + (suite.length > 1 ? (i / (suite.length - 1)) * aire.w : aire.w / 2);
+  const lancers = suite.map((d) => d.total - d.debut);
+  const avecDebut = suite.some((d) => d.debut > 0);
+  const bande = (haut, bas) => `M${haut.map((v, i) => point(x(i), y(v))).join(' L')}`
+    + ` L${bas.map((v, i) => point(x(i), y(v))).reverse().join(' L')} Z`;
+  const zeros = suite.map(() => 0);
+  const aires = `<path class="g-aire-1" d="${bande(lancers, zeros)}"/>`
+    + (avecDebut
+      ? `<path class="g-aire-2" d="${bande(suite.map((d) => d.total), lancers)}"/>`
+        // 2 px de fond entre les deux couches.
+        + `<path class="g-separation" d="M${lancers.map((v, i) => point(x(i), y(v))).join(' L')}"/>`
+      : '');
+  const points = suite.map((d, i) => `<circle class="g-pt g-pt-encre" cx="${x(i).toFixed(1)}" cy="${y(d.total).toFixed(1)}"`
+    + ` r="4" tabindex="0"><title>Tour ${d.tour} · ${nb(d.total)} dégâts${d.debut ? `, dont ${nb(d.debut)} en début de tour` : ''}</title></circle>`).join('');
+  // Le tour le plus fort et le plus faible portent leur valeur : l'amplitude se
+  // lit sans survol.
+  const reperes = [fort, faible].filter((d, i, tab) => tab.indexOf(d) === i)
+    .map((d) => `<text class="g-repere" x="${x(suite.indexOf(d)).toFixed(1)}" y="${(y(d.total) - 9).toFixed(1)}"`
+      + ` text-anchor="middle">${nb(d.total)}</text>`).join('');
+  const axeX = suite.map((d, i) => `<text class="g-axe" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${d.tour}</text>`).join('');
+  const ligneDuree = duree
+    ? `<line class="g-moyenne" x1="${m.g}" x2="${L - m.d + 4}" y1="${y(duree).toFixed(1)}" y2="${y(duree).toFixed(1)}"/>`
+      + `<text class="g-moyenne-texte" x="${L - m.d + 10}" y="${(y(duree) + 3.5).toFixed(1)}">${nb(duree)} / tour</text>`
+    : '';
+  const legende = '<div class="g-legende">'
+    + (avecDebut ? '<span><i class="g-puce g-p-1"></i>Lancé dans le tour</span>'
+      + '<span><i class="g-puce g-p-2"></i>En début de tour : explosion différée, poison, invocations</span>' : '')
+    + (duree ? '<span><i class="g-puce g-p-moyenne"></i>Sur la durée</span>' : '')
+    + '</div>';
+  return tuiles + enveloppe(
+    cibles > 1 ? `Sur ${cibles} ennemis.` : '',
+    fond(m, aire, ech) + aires + ligneDuree + points + reperes + axeX,
     legende,
   );
 }
 
 // ---------------------------------------------------------------------
-// Deux builds, tour par tour
+// Les dégâts par PA
 // ---------------------------------------------------------------------
-// Deux colonnes par tour, une couleur par build, sur la même échelle et la
-// même grille que les dégâts par tour.
-export function deuxBuilds(a, b, nomA, nomB) {
+// Ce que rapporte chaque point d'action dépensé dans un sort : ses dégâts sur la
+// rotation, divisés par ses lancers, puis par son coût. Un point par sort, du plus
+// rentable au moins rentable ; le calcul s'écrit à droite.
+export function parPA(tours, repartition) {
+  const stats = new Map();
+  (tours || []).forEach((t) => t.casts.forEach((c) => {
+    const s = stats.get(c.id) || { nom: c.name, lancers: 0, pa: c.ap };
+    s.lancers += 1;
+    stats.set(c.id, s);
+  }));
+  const degats = new Map((repartition || []).map((p) => [p.id, p.damage]));
+  const lignes = [];
+  const soutien = [];
+  for (const [id, s] of stats) {
+    if (!(s.pa > 0)) continue;
+    const d = degats.get(id) || 0;
+    if (d <= 0) {
+      soutien.push(s.nom);
+      continue;
+    }
+    const parLancer = d / s.lancers;
+    lignes.push({ nom: s.nom, pa: s.pa, parLancer, ratio: parLancer / s.pa });
+  }
+  if (!lignes.length) return '';
+  lignes.sort((a, b) => b.ratio - a.ratio);
+  const h = 26;
+  const haut = lignes.length * h + 34;
+  const g = 160;
+  const d = 200;
+  const ech = echelle(lignes[0].ratio * 1.05);
+  const bas = Math.max(0, Math.floor((lignes[lignes.length - 1].ratio * 0.85) / ech.pas) * ech.pas);
+  const x = (v) => g + ((v - bas) / (ech.haut - bas)) * (L - g - d);
+  let grille = '';
+  for (let v = bas; v <= ech.haut + 0.001; v += ech.pas) {
+    grille += `<line class="g-grille" x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="6" y2="${haut - 22}"/>`
+      + `<text class="g-axe" x="${x(v).toFixed(1)}" y="${haut - 8}" text-anchor="middle">${nb(v)}</text>`;
+  }
+  const rangs = lignes.map((l, i) => {
+    const yy = 18 + i * h;
+    return `<text class="g-texte" x="0" y="${yy + 4}">${echapper(l.nom)}</text>`
+      + `<circle class="g-pt g-pt-1" cx="${x(l.ratio).toFixed(1)}" cy="${yy}" r="5" tabindex="0">`
+      + `<title>${echapper(l.nom)} · ${nb(l.ratio)} dégâts par PA</title></circle>`
+      + `<text class="g-texte" x="${L}" y="${yy + 4}" text-anchor="end">${nb(l.parLancer)} ÷ ${l.pa} PA = ${nb(l.ratio)}</text>`;
+  }).join('');
+  const note = soutien.length
+    ? `<p class="aide">Sans dégâts directs, ${soutien.length > 1 ? 'ils ne sont pas classés' : 'il n\'est pas classé'} : ${
+      soutien.map(echapper).join(', ')}.</p>` : '';
+  return `<figure class="graphique"><figcaption>Dégâts d'un lancer, divisés par son coût en PA.</figcaption>`
+    + `<svg viewBox="0 0 ${L} ${haut}">${grille}${rangs}</svg>${note}</figure>`;
+}
+
+// ---------------------------------------------------------------------
+// Deux builds : ce qui les sépare
+// ---------------------------------------------------------------------
+/// Combien de fois chaque sort est lancé dans une rotation.
+function lancersDe(r) {
+  const n = new Map();
+  r.turns.forEach((t) => t.casts.forEach((c) => n.set(c.id, (n.get(c.id) || 0) + 1)));
+  return n;
+}
+
+// Ce que chaque source ajoute ou retire de B à A, avec sa raison : lancée plus
+// ou moins souvent, par un seul des deux, ou plus ou moins forte à chaque lancer.
+// La somme des barres est l'écart total.
+export function ecartParSort(ra, rb) {
+  const la = lancersDe(ra);
+  const lb = lancersDe(rb);
+  const sources = new Map();
+  [[ra, 'a'], [rb, 'b']].forEach(([r, cote]) => (r.repartition || []).forEach((p) => {
+    const s = sources.get(p.id) || { nom: p.name, a: 0, b: 0 };
+    s[cote] = p.damage;
+    sources.set(p.id, s);
+  }));
+  const lignes = [...sources.entries()].map(([id, s]) => {
+    const na = la.get(id) || 0;
+    const nbB = lb.get(id) || 0;
+    const delta = s.b - s.a;
+    let raison;
+    if (na && !nbB) raison = `${na} ${pluriel(na, 'lancer')} chez A seulement`;
+    else if (!na && nbB) raison = `${nbB} ${pluriel(nbB, 'lancer')} chez B seulement`;
+    else if (!na) raison = 'hors lancers';
+    else if (nbB !== na) {
+      const k = Math.abs(nbB - na);
+      raison = `${k} ${pluriel(k, 'lancer')} ${nbB > na ? 'de plus' : 'de moins'}`;
+    } else raison = delta > 0 ? 'plus fort par lancer' : 'moins fort par lancer';
+    return { nom: s.nom, delta, raison };
+  }).filter((l) => Math.abs(Math.round(l.delta)) >= 1)
+    .sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta)).slice(0, 12);
+  if (!lignes.length) return '<p class="aide">Mêmes dégâts, sort par sort.</p>';
+  const h = 34;
+  const bas = 10 + lignes.length * h;
+  const haut = bas + 44;
+  const debut = 200;
+  const fin = 560;
+  const milieu = (debut + fin) / 2;
+  const plusGrand = Math.max(...lignes.map((l) => Math.abs(l.delta)));
+  const long = (v) => Math.max(2, (Math.abs(v) / plusGrand) * ((fin - debut) / 2));
+  const signe = (v) => (v < 0 ? '−' : '+');
+  const rangs = lignes.map((l, i) => {
+    const yy = 10 + i * h;
+    const w = long(l.delta);
+    const xr = l.delta < 0 ? milieu - w : milieu;
+    return `<text class="g-texte" x="0" y="${yy + 12}">${echapper(l.nom)}</text>`
+      + `<text class="g-repere" x="0" y="${yy + 25}">${echapper(l.raison)}</text>`
+      + `<rect class="${l.delta < 0 ? 'g-serie-1' : 'g-serie-2'}" x="${xr.toFixed(1)}" y="${yy + 6}" width="${w.toFixed(1)}"`
+      + ` height="14" rx="3" tabindex="0"><title>${echapper(l.nom)} · ${signe(l.delta)}${nb(Math.abs(l.delta))}</title></rect>`
+      + `<text class="g-texte" x="${L}" y="${yy + 17}" text-anchor="end">${signe(l.delta)}${nb(Math.abs(l.delta))}</text>`;
+  }).join('');
+  const total = rb.total - ra.total;
+  return `<figure class="graphique"><svg viewBox="0 0 ${L} ${haut}">`
+    + `<line class="g-zero" x1="${milieu}" x2="${milieu}" y1="4" y2="${bas}"/>${rangs}`
+    + `<text class="g-repere" x="${milieu - 6}" y="${bas + 14}" text-anchor="end">← A devant</text>`
+    + `<text class="g-repere" x="${milieu + 6}" y="${bas + 14}">B devant →</text>`
+    + `<text class="g-texte g-total" x="${L}" y="${bas + 36}" text-anchor="end">Écart total : ${signe(total)}${nb(Math.abs(total))}</text>`
+    + '</svg></figure>';
+}
+
+// Les dégâts cumulés de deux builds, tour après tour : on y lit qui mène, et
+// quand l'autre passe devant.
+export function cumulDeuxBuilds(a, b, nomA, nomB) {
   const n = Math.max(a.length, b.length);
   if (!n) return '';
-  const m = { h: 14, b: 26, g: 46, d: 12 };
-  const aire = aireDe(m);
-  const ech = echelle(Math.max(...a, ...b));
-  const y = (v) => m.h + aire.h - (v / ech.haut) * aire.h;
-  const bande = aire.w / n;
-  const epaisseur = Math.min(18, (bande - 6) / 2);
-  const colonne = (v, i, k, classe, nom) => {
-    if (v == null) return '';
-    const x = m.g + i * bande + bande / 2 - epaisseur + k * epaisseur;
-    const t = y(v);
-    return `<rect class="g-barre ${classe}" x="${x.toFixed(1)}" y="${t.toFixed(1)}" width="${(epaisseur - 1).toFixed(1)}"`
-      + ` height="${Math.max(2, m.h + aire.h - t).toFixed(1)}" tabindex="0">`
-      + `<title>Tour ${i + 1} · ${echapper(nom)} · ${nb(v)} dégâts</title></rect>`;
+  const cumul = (v) => {
+    let s = 0;
+    return v.map((x) => (s += x));
   };
-  const barres = Array.from({ length: n }, (_, i) => colonne(a[i], i, 0, 'g-serie-a', nomA)
-    + colonne(b[i], i, 1, 'g-serie-b', nomB)).join('');
-  const axeX = Array.from({ length: n }, (_, i) => `<text class="g-axe" x="${(m.g + i * bande + bande / 2).toFixed(1)}"`
-    + ` y="${H - 8}" text-anchor="middle">${i + 1}</text>`).join('');
+  const ca = cumul(a);
+  const cb = cumul(b);
+  const m = { h: 18, b: 26, g: 46, d: 112 };
+  const aire = aireDe(m);
+  const ech = echelle(Math.max(ca[ca.length - 1] || 0, cb[cb.length - 1] || 0));
+  const y = (v) => m.h + aire.h - (v / ech.haut) * aire.h;
+  const x = (i) => m.g + (n > 1 ? (i / (n - 1)) * aire.w : aire.w / 2);
+  const trace = (vals, k, nom) => `<path class="g-ligne-${k}" d="M${vals.map((v, i) => point(x(i), y(v))).join(' L')}"/>`
+    + vals.map((v, i) => `<circle class="g-pt g-pt-${k}" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" tabindex="0">`
+      + `<title>Tour ${i + 1} · ${echapper(nom)} · ${nb(v)} cumulés</title></circle>`).join('');
+  // Les deux étiquettes de fin ne se chevauchent pas.
+  let ya = y(ca[ca.length - 1]) + 4;
+  let yb = y(cb[cb.length - 1]) + 4;
+  if (Math.abs(ya - yb) < 13) {
+    if (ya <= yb) yb = ya + 13; else ya = yb + 13;
+  }
+  const fins = `<text class="g-texte" x="${L - m.d + 10}" y="${ya.toFixed(1)}">A · ${nb(ca[ca.length - 1])}</text>`
+    + `<text class="g-texte" x="${L - m.d + 10}" y="${yb.toFixed(1)}">B · ${nb(cb[cb.length - 1])}</text>`;
+  // Les tours où mène celui qui finit derrière : le premier passage se dit.
+  const devant = ca.map((v, i) => Math.sign(v - (cb[i] ?? v)));
+  const final = devant[devant.length - 1];
+  const autre = final > 0 ? 'B' : 'A';
+  const menes = devant.map((s, i) => (final && s === -final ? i : -1)).filter((i) => i >= 0);
+  let annonce = '';
+  if (menes.length) {
+    const premier = menes[0];
+    let dernier = premier;
+    while (menes.includes(dernier + 1)) dernier += 1;
+    const texte = premier === dernier ? `${autre} mène au tour ${premier + 1}` : `${autre} mène des tours ${premier + 1} à ${dernier + 1}`;
+    const ix = x((premier + dernier) / 2);
+    const iy = Math.min(y(ca[premier]), y(cb[premier])) - 12;
+    annonce = `<text class="g-repere" x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" text-anchor="middle">${texte}</text>`;
+  }
+  const axeX = Array.from({ length: n }, (_, i) => `<text class="g-axe" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${i + 1}</text>`).join('');
   const legende = '<div class="g-legende">'
-    + `<span><i class="g-puce g-p-a"></i>A · ${echapper(nomA)}</span>`
-    + `<span><i class="g-puce g-p-b"></i>B · ${echapper(nomB)}</span></div>`;
-  return enveloppe('', fond(m, aire, ech) + barres + axeX, legende);
+    + `<span><i class="g-puce g-p-1"></i>A · ${echapper(nomA)}</span>`
+    + `<span><i class="g-puce g-p-2"></i>B · ${echapper(nomB)}</span></div>`;
+  return enveloppe('Dégâts cumulés, tour après tour.', fond(m, aire, ech) + trace(ca, 1, nomA) + trace(cb, 2, nomB)
+    + fins + annonce + axeX, legende);
 }
 
 // ---------------------------------------------------------------------

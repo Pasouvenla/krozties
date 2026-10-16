@@ -31,7 +31,10 @@
   --doux-cadre: #464a52;            /* texte secondaire sur le bandeau, 5,2:1 */
   --accent: var(--vetement-2);      /* boutons, sélection, liens */
   --accent-clair: #ece3cc;          /* case cochée, tirée du vêtement 1 */
-  --accent-doux: var(--vetement-3); /* seconde série des graphiques */
+  /* Les deux séries des graphiques, A puis B : paire validée pour les
+     daltoniens (écart de 18 et plus), plus de 3:1 sur le fond. */
+  --serie-1: #2f73a3;
+  --serie-2: #b56a2a;
   --alerte: #a23b2a;
   --succes: #2e7d4f;
   --rail: var(--vetement-2);
@@ -716,12 +719,31 @@ table.mini .attenue { color: var(--doux); }
 .graphique svg { display: block; width: 100%; height: auto; overflow: visible; }
 .g-grille { stroke: var(--trait); stroke-width: 1; }
 .g-axe { fill: var(--doux); font-size: 10px; font-variant-numeric: tabular-nums; }
-/*
- * L'ouverture se distingue de la boucle par le poids, pas par une couleur
- * d'alerte.
- */
-.g-boucle { fill: var(--accent); }
-.g-ouverture { fill: var(--accent-doux); }
+/* Le rythme : deux couches empilées, séparées par 2 px de fond. */
+.g-aire-1 { fill: var(--serie-1); }
+.g-aire-2 { fill: var(--serie-2); }
+.g-separation { fill: none; stroke: var(--fond); stroke-width: 2; }
+.g-ligne-1, .g-ligne-2 { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.g-ligne-1 { stroke: var(--serie-1); }
+.g-ligne-2 { stroke: var(--serie-2); }
+/* Un anneau de fond autour de chaque point : deux séries qui se croisent
+   restent distinctes. */
+.g-pt { stroke: var(--fond); stroke-width: 2; }
+.g-pt-1 { fill: var(--serie-1); }
+.g-pt-2 { fill: var(--serie-2); }
+.g-pt-encre { fill: var(--encre); }
+.g-serie-1 { fill: var(--serie-1); }
+.g-serie-2 { fill: var(--serie-2); }
+.g-texte { fill: var(--encre); font-size: 11px; font-variant-numeric: tabular-nums; }
+.g-total { font-weight: 600; }
+.g-zero { stroke: var(--doux); stroke-width: 1; }
+.tuiles-rythme { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem;
+                 margin: .1rem 0 .6rem; max-width: 54rem; }
+.tuile-rythme { border: 1px solid var(--trait); border-radius: var(--rayon); padding: .4rem .6rem; }
+.tuile-rythme small { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+                      color: var(--doux); font-weight: 600; }
+.tuile-rythme b { font-size: 1.15rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tuile-rythme span { font-size: .74rem; color: var(--doux); margin-left: .3rem; }
 /* Le pointillé de la moyenne passe en encre et non en couleur de série : il ne
    décrit aucune des deux, il les traverse. */
 .g-moyenne { stroke: var(--encre); stroke-width: 2; stroke-dasharray: 5 4;
@@ -734,21 +756,19 @@ table.mini .attenue { color: var(--doux); }
 
 /* La courbe selon le nombre d'ennemis. Une ligne et non des colonnes : du point
    de vue du lecteur c'est la PENTE qui compte, pas chaque valeur. */
-.g-courbe { fill: none; stroke: var(--accent); stroke-width: 2.5;
+.g-courbe { fill: none; stroke: var(--serie-1); stroke-width: 2;
             stroke-linejoin: round; stroke-linecap: round; }
-.g-point { fill: var(--accent); }
-.g-point-actif { fill: var(--alerte); stroke: var(--fond); stroke-width: 2; }
+.g-point { fill: var(--serie-1); }
+.g-point-actif { fill: var(--encre); stroke: var(--fond); stroke-width: 2; }
 .g-lineaire { fill: none; stroke: var(--doux); stroke-width: 1.5; stroke-dasharray: 4 4; }
 
 .g-legende { display: flex; gap: 1rem; font-size: .76rem; color: var(--doux);
              margin-top: .35rem; flex-wrap: wrap; }
 .g-legende span { display: inline-flex; align-items: center; gap: .35rem; }
 .g-puce { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-.g-p-boucle { background: var(--accent); }
-.g-p-ouverture { background: var(--accent-doux); }
+.g-p-1 { background: var(--serie-1); }
+.g-p-2 { background: var(--serie-2); }
 .g-p-moyenne { background: var(--encre); height: 2px; border-radius: 1px; }
-.g-serie-a, .g-p-a { fill: var(--accent); background: var(--accent); }
-.g-serie-b, .g-p-b { fill: var(--accent-doux); background: var(--accent-doux); }
 
 /* --------------------------------------------------- fiche du build */
 
@@ -1097,17 +1117,15 @@ table.comparaison thead th { font-size: .72rem; text-transform: uppercase; lette
 table.comparaison .moins { color: var(--alerte); }
 table.comparaison .plus { color: var(--succes); }
 .resultat-comparaison { max-width: 36rem; }
-/* Les dégâts par sort : deux barres sur la même échelle, le chiffre à côté. */
-table.par-sort th.degats, table.par-sort td.barres { text-align: left; }
-table.par-sort td.barres { width: 55%; min-width: 12rem; }
-table.par-sort .ligne { display: grid; grid-template-columns: 1fr 3.4rem; gap: .4rem; align-items: center;
-  height: 1.05rem; }
-table.par-sort .piste { height: .55rem; }
-table.par-sort .barre { height: 100%; border-radius: 2px; }
-table.par-sort .barre.a { background: var(--accent); }
-table.par-sort .barre.b { background: var(--accent-doux); }
-table.par-sort .ligne span { font-size: .76rem; text-align: right; }
-table.par-sort .absent { color: var(--doux); }
+
+/* Les hypothèses du calcul : sous le tour qu'elles expliquent, ou dépliables
+   sous le total. */
+.note-tour { font-size: .76rem; color: var(--doux); margin: .1rem 0 .3rem 1.6rem; }
+.note-tour::before { content: 'ⓘ '; }
+details.hypotheses { margin-top: .5rem; }
+details.hypotheses > summary { cursor: pointer; font-size: .78rem; color: var(--doux); }
+details.hypotheses ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .76rem; color: var(--doux); }
+details.hypotheses li + li { margin-top: .2rem; }
 
 /* Copier pour Discord, sous un résultat ; la réponse à côté. */
 .copie-discord { display: grid; gap: .25rem; margin-top: .7rem; }

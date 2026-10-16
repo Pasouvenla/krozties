@@ -148,11 +148,8 @@ pub fn sort(resolu: &Resolved, maitrise: i32, reach: Reach) -> Option<SpellDef> 
 /// Ce que la Rotation dit de l'arme quand elle est au deck.
 pub fn hypotheses(resolu: &Resolved, maitrise: i32, reach: Reach) -> Vec<String> {
     let Some(portee) = resolu.arme.as_ref() else { return Vec::new() };
-    let mut notes = vec![if maitrise > 0 {
-        format!("{} : Maîtrise d'arme comptée, {maitrise} Puissance sur ses coups", portee.nom)
-    } else {
-        format!("{} : sans Maîtrise d'arme", portee.nom)
-    }];
+    // La Maîtrise d'arme ne se redit pas : le joueur la règle lui-même.
+    let mut notes = Vec::new();
     let type_d_arme = type_d_arme(portee.arme.type_id);
     if a_distance(portee, reach) && MALUS_A_DISTANCE.contains(&portee.arme.type_id) {
         let nom = type_d_arme.map_or("arme", |t| t.name.as_str());
