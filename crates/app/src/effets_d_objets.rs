@@ -57,8 +57,8 @@ pub struct Greffes {
     /// Les remarques du calcul.
     pub remarques: Vec<String>,
     /// La cible subit des dommages de poussée à chaque tour : le réglage que
-    /// déclarent le Crâ, le Steamer et le Forgelance (`poussee_subie`), que les
-    /// Bottes du Cul Botté rendent vrai.
+    /// déclarent le Crâ et le Steamer (`poussee_subie`), que les Bottes du Cul
+    /// Botté rendent vrai.
     pub poussee_subie: bool,
 }
 

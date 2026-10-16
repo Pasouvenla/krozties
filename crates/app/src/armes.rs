@@ -146,7 +146,7 @@ pub fn sort(resolu: &Resolved, maitrise: i32, reach: Reach) -> Option<SpellDef> 
 }
 
 /// Ce que la Rotation dit de l'arme quand elle est au deck.
-pub fn hypotheses(resolu: &Resolved, maitrise: i32, reach: Reach) -> Vec<String> {
+pub fn hypotheses(resolu: &Resolved, reach: Reach) -> Vec<String> {
     let Some(portee) = resolu.arme.as_ref() else { return Vec::new() };
     // La Maîtrise d'arme ne se redit pas : le joueur la règle lui-même.
     let mut notes = Vec::new();

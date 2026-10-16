@@ -1,11 +1,12 @@
 //! « La cible subit des dommages de poussée à chaque tour » : un réglage
 //! déclaré par le joueur.
 //!
-//! Trois sorts posent un état qui frappe quand la cible subit des dommages de
-//! poussée, puis se retire : le Noa du Forgelance, la Flibuste du Steamer, la
-//! Flèche Tyrannique du Crâ, dont la décharge retire aussi le poison. Coché, le
-//! réglage fait frapper chaque état une fois par tour, au début du suivant ;
-//! décoché, rien ne change.
+//! Deux sorts posent un état qui frappe quand la cible subit des dommages de
+//! poussée, puis se retire : la Flibuste du Steamer, la Flèche Tyrannique du
+//! Crâ, dont la décharge retire aussi le poison. Coché, le réglage fait frapper
+//! chaque état une fois par tour, au début du suivant ; décoché, rien ne change.
+//! Le Noa du Forgelance, lui, ne lit pas ce réglage : seules les poussées de ses
+//! propres sorts, lancés après lui, le déclenchent.
 
 use dofus_damage::{
     expected_line, CritRate, DamageProfile, Element, ElementStats, FinalMultiplier, Resistance,
@@ -97,19 +98,15 @@ fn ouverture(sol: &Solution, sort: &str) -> Vec<f64> {
         .collect()
 }
 
-/// Le Noa : 26-29 Air au taux du sort, 25 %, au début du tour qui suit. Rien
-/// sans le réglage.
+/// Le Noa ne frappe jamais de lui-même au début d'un tour, réglage coché ou
+/// non : il lui faut des dommages de poussée infligés après sa pose.
 #[test]
-fn le_noa_frappe_quand_la_cible_est_poussee() {
+fn le_noa_ne_frappe_pas_au_debut_d_un_tour() {
     let rs = regles("forgelance", 20);
-    let attendu = coup(Element::Air, (26, 29), (31, 35), 25);
-    let avec = ouverture(&solve(&rs, &["noa"], 1, 2), "noa");
-    let sans = ouverture(&solve(&rs, &["noa"], 0, 2), "noa");
-    assert!(
-        (avec[1] - attendu).abs() < 0.01,
-        "{attendu:.2} attendu au tour 2, {avec:?} mesuré"
-    );
-    assert!(sans.iter().all(|d| *d == 0.0), "rien sans poussée : {sans:?}");
+    for poussee in [0, 1] {
+        let debut = ouverture(&solve(&rs, &["noa"], poussee, 2), "noa");
+        assert!(debut.iter().all(|d| *d == 0.0), "réglage {poussee} : {debut:?}");
+    }
 }
 
 /// La Flibuste : UN coup par tour, même lancée deux fois, et à 1 % de

@@ -1942,7 +1942,7 @@ fn preparer(
     let maitrise = request.maitrise_d_arme.map_or(crate::armes::MAITRISE_PAR_DEFAUT, i32::from);
     if let Some(arme) = crate::armes::sort(&resolved, maitrise, reach) {
         if request.deck.iter().any(|d| d == crate::armes::ID) && !hors_de_la_position(request, &arme) {
-            let hypotheses = crate::armes::hypotheses(&resolved, maitrise, reach);
+            let hypotheses = crate::armes::hypotheses(&resolved, reach);
             noter(&mut resolved.assumptions, "Arme", hypotheses);
         }
         ruleset.spells.push(arme);
@@ -3585,6 +3585,37 @@ mod tests {
                 "{e:?} : {:#?}",
                 r.assumptions
             );
+        }
+    }
+
+    /// Noa frappe à la pose, puis ne repart que sur des dommages de poussée
+    /// infligés après lui : un sort du Forgelance qui pousse contre un obstacle le
+    /// redéclenche dans le tour ; sans poussée bloquée, rien ; et jamais de
+    /// lui-même au début d'un tour.
+    #[test]
+    fn noa_ne_repart_que_sur_une_poussee() {
+        // L'ancienne case « La cible subit des dommages de poussée à chaque tour »,
+        // cochée, ne le relance pas non plus.
+        let rejoue = |bloquees: bool| {
+            let requete: Request = serde_json::from_value(serde_json::json!({
+                "class": 20, "level": 200,
+                "items": [17573, 14169, 17574, 14092, 14162, 14093, 14161, 18718, 27644, 13673, 0, 13344, 7043, 739, 694, 7754, 6980],
+                "deck": ["fer_rouge", "noa", "kyrja", "estoc_brulant"], "horizon": 3, "position": "libre",
+                "poussees_bloquees": bloquees, "etats_declares": { "poussee_subie": 1 },
+            }))
+            .unwrap();
+            let tours = [vec!["fer_rouge".to_string()], vec!["noa".into(), "kyrja".into(), "estoc_brulant".into()], vec![]];
+            rejouer(&requete, &tours).unwrap()
+        };
+        let procs = |s: &dofus_engine::Solution| -> Vec<String> {
+            s.turns[1].casts.iter().flat_map(|c| c.procs.iter().map(|(n, _)| n.clone())).collect()
+        };
+        let bloquee = rejoue(true);
+        assert_eq!(procs(&bloquee), ["noa"]);
+        let libre = rejoue(false);
+        assert!(procs(&libre).is_empty(), "{:?}", procs(&libre));
+        for s in [&bloquee, &libre] {
+            assert!(s.turns.iter().all(|t| t.opening_sources.iter().all(|(n, _)| n != "noa")));
         }
     }
 

@@ -114,17 +114,6 @@ resources:
       zone du sort : en annoncer quatre dont la Terre du Milieu n'attrape que deux
       gonfle le chiffre. Une limite acceptée.
 
-  - id: poussee_subie
-    scope: caster
-    max: 1
-    default: 0
-    monotone: increasing
-    declared_by_player: true
-    player_label: "La cible subit des dommages de poussée à chaque tour"
-    note: |
-      À cocher si vous poussez la cible contre un obstacle à chaque tour : elle
-      subit des dommages de poussée sans bouger, ce que le Noa exploite.
-
   - id: noa
     # Sans `dofusdb_source` : ses chiffres sont la SECONDE ligne de son sort,
     # que l'appariement par position confondrait avec la premiere. Le
@@ -135,10 +124,10 @@ resources:
     monotone: increasing
     duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
     while_present:
-      # La poussee d'un autre, entre deux tours : seulement si le joueur la
-      # declare.
-      - trigger: turn_start
-        requires: { kind: caster_has, resource: poussee_subie }
+      # Seuls des dommages de poussée le déclenchent : ceux des sorts du
+      # Forgelance lancés APRÈS Noa, quand le joueur coche « Vos poussées
+      # butent contre un obstacle ». Jamais de lui-même au début d'un tour.
+      - trigger: push_damage
         lines:
           # Sous-sort 32503, au taux de critique du sort, 25 %.
           - element: air
@@ -149,23 +138,14 @@ resources:
             area: { shape: G, size: 1, max_targets: 9 }
             critical: [31, 35]
             normal: [26, 29]
-      # La poussée des sorts du Forgelance lui-même, quand le joueur coche
-      # « Vos poussées butent contre un obstacle ».
-      - trigger: push_damage
-        lines:
-          - element: air
-            area: { shape: G, size: 1, max_targets: 9 }
-            critical: [31, 35]
-            normal: [26, 29]
     note: |
       L'état Noa : 26-29 Air quand la cible subit des dommages de poussée, puis il
       se retire ; il ne revient qu'avec le Noa suivant. Il se pose sur toutes les
       cibles touchées, et chacune le déclenche de son côté.
 
-      Deux poussées le consomment. Celle d'un sort du Forgelance, dans le tour, si
-      ses poussées butent contre un obstacle. Et celle que le joueur déclare subie
-      par la cible à chaque tour, comptée une fois au début du tour suivant si
-      l'état est encore là.
+      Seule une poussée qui inflige des dommages le consomme : celle d'un sort du
+      Forgelance lancé après Noa, dans le tour, si ses poussées butent contre un
+      obstacle.
 
       26-29, 31-35 en critique, au rang 2, confirmé en jeu : les 28-31 du
       sous-sort 32503 de la donnée ne sont pas ceux du jeu.
@@ -781,7 +761,7 @@ spells:
         critical: unknown
         normal: unknown
     assumptions:
-      - "Le coup de l'état Noa, 26-29 Air, part quand la cible subit des dommages de poussée : quand un sort du Forgelance la pousse contre un obstacle (poussées déclarées bloquées), ou au début du tour suivant si le joueur déclare qu'elle subit une poussée à chaque tour."
+      - "Le coup de l'état Noa, 26-29 Air, part quand la cible subit des dommages de poussée : quand un sort du Forgelance, lancé après Noa, la pousse contre un obstacle (« Vos poussées butent contre un obstacle »). Jamais de lui-même au début d'un tour."
       - "Effets 950/951 : ce sort applique « {{spell,32503,2::Noa}} » (6990). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
       - "\"Effets 792/1160/2960 : ce sort a deux modes de lancer, autour du lanceur ou depuis la Lance, « Noa » sur « a,A,*E3360 » : Air 23-26, Air 28-31; « Noa » sur « a,P,F7139,*E3361,*e3589 » : Air 23-26, Air 28-31. Ils ne se cumulent pas : « les dommages de zone ne sont appliqués qu'une seule fois par lancer », et lancer sur la Lance ne frappe jamais autour du lanceur. Confirmé en jeu. Une seule ligne est donc comptée, celle du mode le plus fort.\""
       - "Effets 792/1160/2960 : lance aussi « Reprise de Volée », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."

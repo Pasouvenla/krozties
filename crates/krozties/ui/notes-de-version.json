@@ -13,6 +13,12 @@
             "Les hypothèses du calcul se lisent là où elles comptent : sous le tour 1, dans l'encart des invocations, sous le mur de bombes, ou en dépliant la ligne sous le total. Les rappels de vos propres réglages disparaissent.",
             "Les graphiques prennent de nouvelles couleurs, mieux distinguées par les daltoniens."
           ]
+        },
+        {
+          "titre": "Corrections",
+          "lignes": [
+            "Noa (Forgelance) ne se redéclenche plus de lui-même au début du tour suivant : son coup ne repart que sur des dommages de poussée infligés après sa pose, quand vos poussées butent contre un obstacle. La case « La cible subit des dommages de poussée à chaque tour » disparaît du Forgelance."
+          ]
         }
       ]
     },
