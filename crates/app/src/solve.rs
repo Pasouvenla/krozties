@@ -107,6 +107,15 @@ pub struct Request {
     /// secondes l'essentiel de ce que les mécaniques valent.
     #[serde(default)]
     pub exhaustif: bool,
+    /// Les invocations de la classe jouent-elles ? Faux, leurs sorts sortent du
+    /// deck : jouées, elles frappent à chaque tour jusqu'au dernier, sans jamais
+    /// mourir. Absent, elles jouent.
+    #[serde(default = "oui")]
+    pub invocations_de_classe: bool,
+    /// Les invocations communes à toutes les classes (Arakne, Chaferfu, Cawotte),
+    /// de même. Absent, elles jouent.
+    #[serde(default = "oui")]
+    pub invocations_communes: bool,
     #[serde(default = "default_horizon")]
     pub horizon: u8,
     /// Combien d'ennemis le joueur suppose toucher. Absent vaut un.
@@ -180,6 +189,39 @@ pub struct Request {
 
 fn default_horizon() -> u8 {
     7
+}
+
+fn oui() -> bool {
+    true
+}
+
+impl Request {
+    /// La requête que le moteur joue : sans les sorts d'invocation que le joueur
+    /// écarte, de sa classe ou communs. Retirés du deck avant tout, ils ne laissent
+    /// ni attaque à greffer ni compteur à suivre.
+    pub fn telle_que_jouee(&self) -> Result<std::borrow::Cow<'_, Request>, String> {
+        if self.invocations_de_classe && self.invocations_communes {
+            return Ok(std::borrow::Cow::Borrowed(self));
+        }
+        // La classe 0 du relevé désigne les invocations communes.
+        let invoquent: std::collections::BTreeSet<u32> = crate::invocations::releve()
+            .invocations
+            .iter()
+            .filter(|i| if i.classe == 0 { !self.invocations_communes } else { !self.invocations_de_classe })
+            .map(|i| i.sort)
+            .collect();
+        let mut regles = load_ruleset(self.build.normalise().class)?;
+        regles.spells.extend(sorts_communs().iter().cloned());
+        let ecartes: Vec<&str> = regles
+            .spells
+            .iter()
+            .filter(|s| s.dofusdb_id.is_some_and(|id| invoquent.contains(&id)))
+            .map(|s| s.id.as_str())
+            .collect();
+        let mut sans = self.clone();
+        sans.deck.retain(|s| !ecartes.contains(&s.as_str()));
+        Ok(std::borrow::Cow::Owned(sans))
+    }
 }
 
 pub fn ruleset_for(class: u32) -> Option<(&'static str, u32)> {
@@ -2018,6 +2060,7 @@ fn hors_de_la_position(request: &Request, sort: &dofus_ruleset::SpellDef) -> boo
 /// requête : voir [`Engine::replay`]. Rien n'est élagué, un sort que la
 /// recherche aurait écarté se rejoue comme un autre.
 pub fn rejouer(request: &Request, tours: &[Vec<String>]) -> Result<dofus_engine::Solution, String> {
+    let request = &*request.telle_que_jouee()?;
     let (build, resolved, ruleset, mut scenario, _) = preparer(request)?;
     scenario.prune_spells = false;
     let mut engine_build = to_engine_build(request, &resolved);
@@ -2041,11 +2084,12 @@ pub struct DemandeDeConseil {
 /// Ce que chaque sort du deck vaudrait à la place d'un lancer de la rotation,
 /// à cet instant : voir [`Engine::remplacants`].
 pub fn conseil_json(demande: &DemandeDeConseil) -> Result<String, String> {
-    let (build, resolved, ruleset, mut scenario, _) = preparer(&demande.requete)?;
+    let requete = &*demande.requete.telle_que_jouee()?;
+    let (build, resolved, ruleset, mut scenario, _) = preparer(requete)?;
     scenario.prune_spells = false;
-    let mut engine_build = to_engine_build(&demande.requete, &resolved);
+    let mut engine_build = to_engine_build(requete, &resolved);
     engine_build.name = format!("classe {}", build.class);
-    let hors = ecartes_par_la_position(&demande.requete, &ruleset);
+    let hors = ecartes_par_la_position(requete, &ruleset);
     engine_build.deck.retain(|s| !hors.iter().any(|(id, _)| id == s));
     let engine = Engine::new(&ruleset, engine_build, scenario).map_err(|e| e.to_string())?;
     let remplacants = engine.remplacants(&demande.tours, demande.tour, demande.lancer)?;
@@ -2080,6 +2124,7 @@ impl Request {
 }
 
 pub fn run(request: &Request) -> Result<Outcome, String> {
+    let request = &*request.telle_que_jouee()?;
     let (build, resolved, ruleset, scenario, remarques) = preparer(request)?;
     let hors_position = ecartes_par_la_position(request, &ruleset);
     let dans_la_position = |s: &String| !hors_position.iter().any(|(id, _)| id == s);
@@ -3542,6 +3587,28 @@ mod tests {
                 r.assumptions
             );
         }
+    }
+
+    /// Les invocations écartées sortent du deck, celles de la classe et les
+    /// communes chacune de son côté ; les autres sorts restent. Absents, les deux
+    /// réglages gardent tout.
+    #[test]
+    fn les_invocations_ecartees_sortent_du_deck() {
+        let deck = ["tofu", "invocation_de_l_arakne", "fouet", "invocation_de_chaferfu"];
+        let jouee = |reglages: serde_json::Value| -> Vec<String> {
+            let mut r = serde_json::json!({ "class": 2, "level": 200, "deck": deck });
+            r.as_object_mut().unwrap().extend(reglages.as_object().unwrap().clone());
+            let requete: Request = serde_json::from_value(r).unwrap();
+            requete.telle_que_jouee().unwrap().deck.clone()
+        };
+        let reglages = |classe: bool, communes: bool| {
+            serde_json::json!({ "invocations_de_classe": classe, "invocations_communes": communes })
+        };
+        assert_eq!(jouee(reglages(true, false)), ["tofu", "fouet"]);
+        assert_eq!(jouee(reglages(false, true)), ["invocation_de_l_arakne", "fouet", "invocation_de_chaferfu"]);
+        assert_eq!(jouee(reglages(false, false)), ["fouet"]);
+        assert_eq!(jouee(reglages(true, true)), deck);
+        assert_eq!(jouee(serde_json::json!({})), deck);
     }
 
     /// Les deux passes trouvent ce que la première ne pouvait pas voir.

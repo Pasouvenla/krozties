@@ -157,6 +157,16 @@ export async function rendre(cible, etat, { appeler }) {
               value="${res().elements[e] || 0}"></label>`).join('')}
           </div>
           <p class="aide" id="aideResistances"${res().mode === 'aucune' ? ' hidden' : ''}>En %, pour tous les ennemis.</p>
+          <p class="libelle-groupe">Invocations</p>
+          <label class="bascule" for="invocationsDeClasse" id="caseInvocationsDeClasse" hidden>
+            <input type="checkbox" id="invocationsDeClasse" ${reglages.invocationsDeClasse !== false ? 'checked' : ''}>
+            <span>De la classe</span>
+          </label>
+          <label class="bascule" for="invocationsCommunes">
+            <input type="checkbox" id="invocationsCommunes" ${reglages.invocationsCommunes ? 'checked' : ''}>
+            <span>Communes (Arakne, Chaferfu, Cawotte)</span>
+          </label>
+          <p class="aide">Cochées, elles jouent chaque tour jusqu'au dernier, sans jamais mourir.</p>
           <details class="plus-loin" id="plusLoin" ${etat.plusLoinOuvert ? 'open' : ''}>
             <summary>Pour aller plus loin <span class="modifies" id="reglagesModifies"></span></summary>
             <div class="reglages">
@@ -467,6 +477,13 @@ export async function rendre(cible, etat, { appeler }) {
     $('etatCalcul').textContent = 'Arrêt demandé…';
     try { await appeler('annuler'); } catch (e) { /* le calcul finira de lui-même */ }
   });
+  for (const [id, cle] of [['invocationsDeClasse', 'invocationsDeClasse'], ['invocationsCommunes', 'invocationsCommunes']]) {
+    $(id).addEventListener('change', () => {
+      reglages[cle] = $(id).checked;
+      dessinerInvocations();
+      marquerPerime();
+    });
+  }
   if (couteuses.length) {
     $('exhaustif').addEventListener('change', () => {
       reglages.exhaustif = $('exhaustif').checked;
@@ -506,6 +523,8 @@ export async function rendre(cible, etat, { appeler }) {
     targets: reglages.cibles,
     etalement: reglages.etalement,
     exhaustif: reglages.exhaustif,
+    invocations_de_classe: reglages.invocationsDeClasse !== false,
+    invocations_communes: Boolean(reglages.invocationsCommunes),
     etats_declares: Object.fromEntries(declares.map((d) => [d.id, reglages.etats[d.id]])),
     bonus_ecartes: ecartes(),
     bonus_inclus: inclus(),
@@ -835,6 +854,8 @@ export async function rendre(cible, etat, { appeler }) {
     const idDuSort = new Map(sorts.map((s) => [s.dofusdb_id, s.id]));
     const propres = invocationsDuBuild.filter((i) => !i.commune);
     const communes = invocationsDuBuild.filter((i) => i.commune && reglages.coches.has(idDuSort.get(i.sort)));
+    // La case des invocations de la classe ne sert qu'à une classe qui en a.
+    $('caseInvocationsDeClasse').hidden = !propres.length;
     if (!propres.length && !communes.length) {
       hote.hidden = true;
       return;
@@ -869,7 +890,9 @@ export async function rendre(cible, etat, { appeler }) {
     hote.classList.toggle('repliee', Boolean(etat.replies && etat.replies.invocations));
     hote.innerHTML = `${titreRepliable(etat, 'invocations', 'Invocations')}
       <p class="aide">Calculés avec vos caractéristiques, sans vos % de dommages ni vos
-        dommages critiques.</p>
+        dommages critiques.${(propres.length && reglages.invocationsDeClasse === false)
+    || (communes.length && !reglages.invocationsCommunes)
+    ? ' Cochez-les dans le panneau, sous « Invocations », pour qu\'elles jouent dans la rotation.' : ''}</p>
       ${propres.length ? `<div class="grille-encarts">${propres.map(encart).join('')}</div>` : ''}
       ${communes.length ? `<p class="groupe-encarts">Communes à toutes les classes, cochées</p>
         <div class="grille-encarts">${communes.map(encart).join('')}</div>` : ''}`;

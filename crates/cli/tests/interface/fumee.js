@@ -304,6 +304,25 @@ try {
   await pause(300);
   resultat.orientation = [...app.etat.rotation.coches].sort();
 
+  // Les invocations : celles de la classe jouent d'office, les communes non ; la
+  // case de la classe n'apparaît que chez une classe qui en a (nul sinon).
+  const casesInvocations = () => ({
+    classe: document.getElementById('caseInvocationsDeClasse').hidden
+      ? null : document.getElementById('invocationsDeClasse').checked,
+    communes: document.getElementById('invocationsCommunes').checked,
+  });
+  resultat.invocationsCochees = { sram: casesInvocations() };
+  const invocateur = { class: 2, level: 200 };
+  app.etat.build = invocateur;
+  app.etat.resolu = await appeler('resoudre', invocateur);
+  await app.afficher('rotation');
+  await pause(300);
+  resultat.invocationsCochees.osamodas = casesInvocations();
+  app.etat.build = eau;
+  app.etat.resolu = await appeler('resoudre', eau);
+  await app.afficher('rotation');
+  await pause(300);
+
   // Votre position : trois boutons, et « Distance » dit ce qui sort de la
   // rotation et passe dans le réglage.
   const positions = [...document.querySelectorAll('input[name="position"]')];

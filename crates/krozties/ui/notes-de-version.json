@@ -1,6 +1,18 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "La Rotation et la Comparaison distinguent désormais les invocations de la classe, comptées d'office, et les invocations communes (Arakne, Chaferfu, Cawotte), laissées de côté sauf si vous les cochez. Comptées, elles jouent à chaque tour jusqu'au dernier.",
+            "Le message « Copier pour Discord » se lit mieux : les tours et leurs dégâts en colonnes, la répartition en barres."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.10.1",
       "date": "2026-10-16",
       "rubriques": [

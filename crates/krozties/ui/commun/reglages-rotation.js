@@ -1,7 +1,7 @@
 // Les réglages de la Rotation, gardés sur cet ordinateur d'un lancement à
-// l'autre : tours, ennemis, position, résistances de la cible et ceux de
-// « Pour aller plus loin ». Les sorts cochés et le mur de bombes suivent la
-// classe du build chargé, ils ne se gardent pas.
+// l'autre : tours, ennemis, position, résistances de la cible, invocations et
+// ceux de « Pour aller plus loin ». Les sorts cochés et le mur de bombes
+// suivent la classe du build chargé, ils ne se gardent pas.
 
 import { neutres } from './resistances.js';
 
@@ -30,6 +30,8 @@ function lus() {
   if ('exhaustif' in d) r.exhaustif = Boolean(d.exhaustif);
   if (d.etats && typeof d.etats === 'object') r.etats = { ...d.etats };
   if (d.resistances && typeof d.resistances === 'object') r.resistances = { ...neutres(), ...d.resistances };
+  if ('invocationsDeClasse' in d) r.invocationsDeClasse = d.invocationsDeClasse !== false;
+  if ('invocationsCommunes' in d) r.invocationsCommunes = d.invocationsCommunes === true;
   return r;
 }
 
@@ -56,6 +58,10 @@ export function reglagesRotation(etat) {
       position: 'libre',
       /// Les résistances de la cible, les mêmes pour tous les ennemis.
       resistances: neutres(),
+      /// Les invocations de la classe jouent d'office ; les communes (Arakne,
+      /// Chaferfu, Cawotte), que les joueurs n'emploient pas, attendent la case.
+      invocationsDeClasse: true,
+      invocationsCommunes: false,
       ...lus(),
     };
   }
@@ -64,10 +70,14 @@ export function reglagesRotation(etat) {
 
 /// Garde les réglages ; un stockage qui refuse ne gêne rien.
 export function garder(reglages) {
-  const { horizon, cibles, position, pmDepenses, etalement, maitrise, pousseesBloquees, exhaustif, etats, resistances } = reglages;
+  const {
+    horizon, cibles, position, pmDepenses, etalement, maitrise, pousseesBloquees, exhaustif, etats, resistances,
+    invocationsDeClasse, invocationsCommunes,
+  } = reglages;
   try {
     localStorage.setItem(CLE, JSON.stringify({
       horizon, cibles, position, pmDepenses, etalement, maitrise, pousseesBloquees, exhaustif, etats, resistances,
+      invocationsDeClasse, invocationsCommunes,
     }));
   } catch (e) {
     // Navigation privée ou stockage plein : les réglages valent pour la session.

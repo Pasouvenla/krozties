@@ -175,6 +175,8 @@ export async function rendre(cible, etat, { appeler, afficher }) {
       targets: cibles,
       etalement: reglages.etalement || 0,
       exhaustif: Boolean(reglages.exhaustif),
+      invocations_de_classe: reglages.invocationsDeClasse !== false,
+      invocations_communes: Boolean(reglages.invocationsCommunes),
       etats_declares: Object.fromEntries(declares.map((e) => [e.id,
         (reglages.etats && reglages.etats[e.id] != null) ? reglages.etats[e.id] : (Number(e.defaut) || 0)])),
       ...(resolu.class === ROUBLARD ? { mur_de_bombes: reglages.mur || { element: 'feu', combos: [1, 1] } } : {}),

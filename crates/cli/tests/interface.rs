@@ -179,15 +179,17 @@ fn chaque_outil_s_affiche_sans_erreur() {
     assert_eq!(
         r["discord"],
         serde_json::json!([
-            "**Sram 200 · Agilité** (Krozties 0.8.0)",
-            "3 tours, 1 ennemi, position à distance, contre 20 % partout",
-            "**900** dégâts · 300 par tour · 310 sur la durée",
+            "**Sram 200 · Agilité** · **900 dégâts** · 300 par tour · 310 sur la durée",
+            "-# 3 tours · 1 ennemi · à distance · contre 20 % partout · Krozties 0.8.0",
+            "```",
+            "Tour  Dégâts  Sorts",
+            "1-2    ≈ 300  Arnaque ×2 › Épidémie",
+            "3        300  Injection Toxique",
             "",
-            "Tours 1 à 2 : Arnaque ×2, Épidémie (≈ 300 par tour)",
-            "Tour 3 : Injection Toxique (300)",
-            "",
-            "Répartition : Arnaque 60,0 % · Épidémie 40,0 %",
-            "https://d-bk.net/fr/d/XXXX",
+            "Arnaque   ████████████████  60,0 %",
+            "Épidémie  ███████████       40,0 %",
+            "```",
+            "-# [Le build sur DofusBook](<https://d-bk.net/fr/d/XXXX>)",
         ]),
         "{r}"
     );
@@ -391,6 +393,13 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "le générateur doit proposer un tour : {r}"
     );
     assert_eq!(r["reseau"]["apres"]["tour"], "Tour 2", "poser le tour passe au suivant : {r}");
+    // Les invocations de la classe jouent d'office, les communes non ; le Sram
+    // n'en a pas, sa case ne s'affiche pas.
+    assert_eq!(
+        r["invocationsCochees"],
+        serde_json::json!({ "sram": { "classe": null, "communes": false }, "osamodas": { "classe": true, "communes": false } }),
+        "{r}"
+    );
     // L'orientation d'un Sram Eau : ses sorts et ses pièges Eau, la meilleure
     // variante de chaque paire, et rien d'un autre élément.
     let coches: Vec<&str> = r["orientation"].as_array().unwrap().iter().filter_map(|v| v.as_str()).collect();
