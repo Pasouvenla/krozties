@@ -310,7 +310,7 @@ details.pourquoi > summary:hover { background: var(--panneau); }
    panneau sous le damier oblige à défiler entre le geste et son effet. */
 .vue-damier { display: grid; gap: 1rem; align-items: start;
               grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 62rem) {
+@media (min-width: 56rem) {
   .vue-damier { grid-template-columns: minmax(0, 1fr) 21rem; }
 }
 
@@ -550,11 +550,16 @@ table.mini .attenue { color: var(--doux); }
 
 .vue-rotation { display: grid; gap: 1rem; align-items: start;
                 grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 62rem) {
-  .vue-rotation { grid-template-columns: minmax(0, 1fr) 19rem; }
+/* Deux colonnes jusqu'à la fenêtre la plus étroite (900 px) : sur une seule,
+   « Calculer » et le résultat tombaient sous toute la liste des sorts. */
+@media (min-width: 56rem) {
+  .vue-rotation { grid-template-columns: minmax(0, 1fr) 17rem; }
   /* Le panneau reste en vue pendant qu'on coche : le prototype obligeait à
      descendre, cliquer, puis remonter lire. */
   .panneau { position: sticky; top: 0; }
+}
+@media (min-width: 62rem) {
+  .vue-rotation { grid-template-columns: minmax(0, 1fr) 19rem; }
 }
 
 .panneau { border: 1px solid var(--trait); border-radius: var(--rayon);

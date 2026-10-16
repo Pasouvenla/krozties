@@ -278,6 +278,16 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // place, le sort joué compris et marqué.
     assert!(r["conseil"]["lignes"].as_u64().unwrap_or(0) >= 1, "{r}");
     assert_eq!(r["conseil"]["joue"], 1, "{r}");
+    // Après le calcul, la liste des sorts se replie et le détail commence en
+    // haut de la page (sous toute la liste, il passait les 1 400 px) ; un
+    // nouvel affichage, sans résultat, la rouvre.
+    assert_eq!(
+        (&r["repli"]["apresCalcul"], &r["repli"]["rouverte"]),
+        (&serde_json::json!(true), &serde_json::json!(true)),
+        "{}",
+        r["repli"]
+    );
+    assert!(r["repli"]["haut"].as_i64().is_some_and(|h| h < 400), "{}", r["repli"]);
     // L'arme du build au deck, cochée d'office (elle frappe dans l'élément du
     // build), la Maîtrise normale par défaut, sa fiche, et des coups d'arme
     // dans la rotation.

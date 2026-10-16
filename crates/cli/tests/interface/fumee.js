@@ -415,6 +415,14 @@ try {
   });
   document.getElementById('calculer').click();
   await attendre(() => document.querySelector('#detailRotation .lancer[data-tour]'), 60000);
+  // Après le calcul, la liste des sorts se replie à son bandeau : le détail de
+  // la rotation commence en haut de la page, pas sous toute la liste.
+  const contenu = document.getElementById('contenu');
+  resultat.repli = {
+    apresCalcul: document.getElementById('listeSorts').closest('.carte').classList.contains('repliee'),
+    haut: Math.round(document.getElementById('detailRotation').getBoundingClientRect().top
+      - contenu.getBoundingClientRect().top + contenu.scrollTop),
+  };
   document.querySelector('#detailRotation .lancer[data-tour]').click();
   await attendre(() => document.querySelector('#detailRotation .conseil table'), 20000);
   resultat.conseil = {
@@ -434,6 +442,8 @@ try {
   app.etat.resolu = await appeler('resoudre', ouginak);
   await app.afficher('rotation');
   await pause(400);
+  // Un nouvel affichage, sans résultat, rouvre la liste.
+  resultat.repli.rouverte = !document.getElementById('listeSorts').closest('.carte').classList.contains('repliee');
   const caseArme = document.querySelector('#contenu label.sort[data-sort="arme"] input');
   const ficheArme = document.createElement('div');
   ficheArme.innerHTML = ficheDeSort(app.etat.resolu.arme, {

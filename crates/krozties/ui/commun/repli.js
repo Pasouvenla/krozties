@@ -18,6 +18,16 @@ export function titreRepliable(etat, cle, titre, suite = '') {
 /// La classe à ajouter à la `.carte` d'un encart replié.
 export const classeRepli = (etat, cle) => (estReplie(etat, cle) ? ' repliee' : '');
 
+/// Replie un encart, ou le rouvre, sans clic : comme sa barre de titre.
+export function replier(hote, etat, cle, replie = true) {
+  const bouton = hote.querySelector(`button[data-repli="${cle}"]`);
+  if (!bouton) return;
+  etat.replies = etat.replies || {};
+  etat.replies[cle] = replie;
+  bouton.closest('.carte').classList.toggle('repliee', replie);
+  bouton.setAttribute('aria-expanded', String(!replie));
+}
+
 /// Branche, une fois, les barres de titre de `hote` : par délégation, elles
 /// tiennent quand une partie de la page se redessine.
 export function brancherRepli(hote, etat) {

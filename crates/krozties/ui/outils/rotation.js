@@ -2,7 +2,7 @@
 
 import { COULEUR_ELEMENT, echapper, majuscule, nb, pluriel } from '../commun/format.js';
 import { parTour, selonCibles } from '../commun/graphique.js';
-import { brancherRepli, classeRepli, titreRepliable } from '../commun/repli.js';
+import { brancherRepli, classeRepli, replier, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import * as discord from '../commun/discord.js';
@@ -101,6 +101,10 @@ export async function rendre(cible, etat, { appeler }) {
   let balayage = null;
   let enCours = false;
   let perime = false;
+
+  // La liste des sorts s'ouvre à chaque affichage : sans résultat, repliée,
+  // la page n'aurait rien à montrer.
+  if (etat.replies) etat.replies.sorts = false;
 
   cible.innerHTML = `
     <section class="outil">
@@ -557,6 +561,10 @@ export async function rendre(cible, etat, { appeler }) {
       $('etatCalcul').textContent = '';
       dessinerResume();
       dessinerDetail();
+      // Le résultat remonte sous la liste, repliée à son bandeau ; un clic sur
+      // le bandeau la rouvre.
+      replier(cible, etat, 'sorts');
+      $('listeSorts').closest('.carte').scrollIntoView({ block: 'nearest' });
     } catch (e) {
       erreur = e.message === 'calcul annulé'
         ? 'Calcul annulé.'

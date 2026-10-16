@@ -4,11 +4,18 @@
       "version": "prochaine",
       "rubriques": [
         {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Après le calcul d'une rotation, la liste des sorts se replie à son bandeau et le détail tour par tour s'affiche juste en dessous ; un clic sur le bandeau « Sorts » rouvre la liste."
+          ]
+        },
+        {
           "titre": "Corrections",
           "lignes": [
             "La barre de défilement qui s'affichait sous les onglets de KrozTools a disparu.",
             "Les sections repliables (Sorts, Rotation, Répartition…) se replient d'un clic n'importe où sur leur bandeau, plus seulement sur leur titre.",
-            "Le nombre de sorts cochés se lit mieux sur son bandeau."
+            "Le nombre de sorts cochés se lit mieux sur son bandeau.",
+            "En fenêtre étroite, jusqu'à 900 px de large, le panneau de la Rotation et celui de KrozTools restent à droite au lieu de passer sous la liste des sorts ou sous le damier."
           ]
         }
       ]
