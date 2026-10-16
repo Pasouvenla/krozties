@@ -91,7 +91,7 @@ Avec [Homebrew](https://brew.sh) :
 brew install --cask pasouvenla/krozties/krozties
 ```
 
-Sinon, [télécharger le `.dmg`](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_universal.dmg), l'ouvrir et
+Sinon, [télécharger le `.dmg`](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_universal.dmg), l'ouvrir et
 glisser Krozties dans Applications.
 
 Krozties n'est pas signé par Apple : au premier lancement, macOS refuse de
@@ -100,19 +100,19 @@ l'ouvrir. Dans Réglages Système, Confidentialité et sécurité, cliquer sur
 
 ### Windows
 
-[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_x64-setup.exe) (ou le
-[`.msi`](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_x64.msi)), puis le lancer. Krozties n'est pas signé : si
+[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_x64-setup.exe) (ou le
+[`.msi`](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_x64.msi)), puis le lancer. Krozties n'est pas signé : si
 SmartScreen affiche « Windows a protégé votre ordinateur », cliquer sur
 « Informations complémentaires », puis sur « Exécuter quand même ».
 
 ### Linux
 
-- [AppImage](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_amd64.AppImage) : `chmod +x Krozties_0.12.0_amd64.AppImage`,
+- [AppImage](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_amd64.AppImage) : `chmod +x Krozties_0.13.0_amd64.AppImage`,
   puis la lancer.
-- Debian, Ubuntu ([`.deb`](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_amd64.deb)) :
-  `sudo apt install ./Krozties_0.12.0_amd64.deb`
-- Fedora ([`.rpm`](https://github.com/Pasouvenla/krozties/releases/download/v0.12.0/Krozties_0.12.0_x86_64.rpm)) :
-  `sudo dnf install ./Krozties_0.12.0_x86_64.rpm`
+- Debian, Ubuntu ([`.deb`](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_amd64.deb)) :
+  `sudo apt install ./Krozties_0.13.0_amd64.deb`
+- Fedora ([`.rpm`](https://github.com/Pasouvenla/krozties/releases/download/v0.13.0/Krozties_0.13.0_x86_64.rpm)) :
+  `sudo dnf install ./Krozties_0.13.0_x86_64.rpm`
 
 ## Licence
 
