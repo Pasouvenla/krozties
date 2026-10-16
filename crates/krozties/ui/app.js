@@ -6,6 +6,7 @@
 import { appeler, hote } from './pont.js';
 import { nb } from './commun/format.js';
 import { brancherInfobulles, ficheDeSort, ficheDObjet } from './commun/infobulle.js';
+import { brancherDetails } from './commun/animation.js';
 import { garderOuverture, lireOuverture } from './commun/ouverture.js';
 import { chargerBuild, courant, lire, oublierCourant } from './commun/personnages.js';
 import { dessinerSelecteur } from './commun/selecteur-perso.js';
@@ -141,6 +142,9 @@ $('rail').addEventListener('click', (e) => {
 $('changerEquipement').addEventListener('click', () => afficher('equipement'));
 
 $('hote').textContent = hote === 'bureau' ? '' : 'Navigateur';
+
+// Les blocs dépliables s'ouvrent et se replient en glissant, partout.
+brancherDetails(document);
 
 // L'application rouvre sur l'outil et l'onglet de KrozTools quittés. Un outil
 // qui exige un équipement attend le dernier build enregistré, sur Équipement.

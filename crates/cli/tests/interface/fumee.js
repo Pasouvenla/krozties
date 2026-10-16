@@ -440,6 +440,8 @@ try {
   // Après le calcul, la liste des sorts se replie à son bandeau : le détail de
   // la rotation commence en haut de la page, pas sous toute la liste.
   const contenu = document.getElementById('contenu');
+  // Le repli s'anime : il s'achève en quelques centaines de millisecondes.
+  await attendre(() => document.getElementById('listeSorts').closest('.carte').classList.contains('repliee'), 3000);
   resultat.repli = {
     apresCalcul: document.getElementById('listeSorts').closest('.carte').classList.contains('repliee'),
     haut: Math.round(document.getElementById('detailRotation').getBoundingClientRect().top

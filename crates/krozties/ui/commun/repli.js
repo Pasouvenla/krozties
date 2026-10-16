@@ -6,6 +6,8 @@
 // retient, et recalculer une rotation, qui redessine ses encarts, ne rouvre
 // pas ce que le joueur a fermé.
 
+import { animerCarte } from './animation.js';
+
 const estReplie = (etat, cle) => Boolean(etat.replies && etat.replies[cle]);
 
 /// La barre de titre d'un encart repliable : le titre est un bouton, et
@@ -24,7 +26,8 @@ export function replier(hote, etat, cle, replie = true) {
   if (!bouton) return;
   etat.replies = etat.replies || {};
   etat.replies[cle] = replie;
-  bouton.closest('.carte').classList.toggle('repliee', replie);
+  const carte = bouton.closest('.carte');
+  if (carte.classList.contains('repliee') !== replie) animerCarte(carte, replie);
   bouton.setAttribute('aria-expanded', String(!replie));
 }
 
@@ -37,7 +40,7 @@ export function brancherRepli(hote, etat) {
     etat.replies = etat.replies || {};
     const cle = bouton.dataset.repli;
     etat.replies[cle] = !etat.replies[cle];
-    bouton.closest('.carte').classList.toggle('repliee', etat.replies[cle]);
+    animerCarte(bouton.closest('.carte'), etat.replies[cle]);
     bouton.setAttribute('aria-expanded', String(!etat.replies[cle]));
   });
 }
