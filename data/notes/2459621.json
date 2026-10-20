@@ -1,0 +1,104 @@
+{
+ "id": "2459621",
+ "forum": "Patch notes",
+ "titre": "Patch notes 3.7.12.12 du 20/10/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2459621-patch-notes-3-7-12-12-20-10-2026",
+ "publie": "2026-10-20T08:47:27+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Le challenge \"En ligne de mire\" échoue anormalement si un personnage invisible finit en ligne de vue d'un monstre."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Objets"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "La recette de l'éclat de Séisme contient une planche à repasser au lieu de 10 éklames ordinaires."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Monstres"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Le sort initial du Psikopompe n'applique plus ses effets sur les invocations au moment où il apparaît dans le combat."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Divers problèmes avec Nileza dans l'état Amer (provoque en boucle des dégats sur un personnage avec la prysmaradite Prygen, les dégâts de l'état dépendent de la vie de Nileza au lieu de dépendre de celle du joueur)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Songes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "En Songes, certains portails vides sont anormalement affichés."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Visuels / Son"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'un arbre Sadida pousse en combat, aucun son n'est joué."
+  },
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Modifications"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'opacité du nuage du sort \"Brume\" du Sram est augmentée pour moins masquer les éléments placés derrière."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
