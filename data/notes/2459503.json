@@ -1,0 +1,149 @@
+{
+ "id": "2459503",
+ "forum": "Patch notes",
+ "titre": "Patch notes 3.7.11.11 du 16/10/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2459503-patch-notes-3-7-11-11-16-10-2026",
+ "publie": "2026-10-16T08:47:28+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Si l'interface d'envoutements est fermée via Echap alors qu'un effet est survolé, alors le joueur ne peut plus utiliser ses PM."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'un monstre quitte son invisibilité alors qu'il se trouve devant un décor, il est anormalement affiché derrière le décor."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "La taille des états au dessus des entités est anormalement réduite."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Certains glyphes ne sont pas correctement affichés en combat (Founoroshi, Bolgrot ...)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans le cas de glyphes non pleins (des cases vides au centre), l'infobulle s'affiche anormalement lors du survol des cases vides au centre."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Quêtes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les dialogues se lançant automatiquement à l'arrivée sur une carte ne se lancent parfois pas."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Quête \"L'épée du rocher\" : dans le combat contre le Craqueleur de Verre, le craqueleur invoqué n'apparait pas."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Cartes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Si une interface est fermée alors que le curseur est sur une zone de texte, alors le personnage change parfois tout seul de carte."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Des flashs lumineux apparaissent à la transition d'une carte lorsqu'un nombre de FPS au dessus de 60 est paramétré."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Certains éléments bloquent anormalement le clic des éléments en arrière plan (ex : blocage du clic sur le coffre de Havre-Sac)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Visuels / Son"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque l'attitude \"Malédiction de Médoroziam\" est jouée, les cris ne s'arrêtent jamais à la fin de l'animation."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors de la transition entre la course et l'arrêt du personnage, le familier disparait durant un bref instant."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'un personnage avec une pose différente de celle de base change de carte, alors la pose ne se joue pas à l'arrivée sur la nouvelle carte."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans l'attitude \"Etreinte de Sacrieur\", la déesse Sacrieur a un bras manquant."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsqu'une ressource récoltable réapparait, elle ne fait plus de bruit."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Divers"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, il arrive que la zone de clic sur un personnage soit trop grande."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors de l'autopilotage avec une monture, le bonus de vitesse de déplacement n'est parfois pas appliqué."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "L'option \"Baffer\" est anormalement absente en dehors des combats."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
