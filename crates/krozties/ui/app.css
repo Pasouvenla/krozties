@@ -1196,6 +1196,25 @@ details.hypotheses li + li { margin-top: .2rem; }
 .copie-discord .copie.ok { color: var(--succes); }
 .copie-discord .copie.refus { color: var(--alerte); }
 
+/* Les touches du compagnon, sous son bouton : un clic, puis la nouvelle touche. */
+.touches-compagnon .touches { display: grid; gap: .4rem; margin-top: .5rem; }
+.touches-compagnon .touche { display: flex; align-items: center; gap: .7rem; font-size: .84rem; }
+.touches-compagnon .touche > span { flex: 1; }
+.touches-compagnon .capuchon { min-width: 6.2rem; padding: .22rem .55rem; border: 1px solid var(--cheveux);
+                               border-bottom-width: 2px; border-radius: var(--rayon); background: var(--fond);
+                               color: var(--encre); font: inherit; font-size: .8rem; font-weight: 600;
+                               text-align: center; cursor: pointer; }
+.touches-compagnon .capuchon.ecoute { border-color: var(--accent); background: var(--accent-clair); color: var(--doux);
+                                      font-weight: 500; }
+.touches-compagnon .capuchon:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.touches-compagnon .refus-touche { color: var(--alerte); font-size: .76rem; margin: .4rem 0 0; }
+.touches-compagnon .refus-touche:empty { display: none; }
+.touches-compagnon .pied-touches { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+                                   gap: .3rem 1rem; margin-top: .5rem; }
+.touches-compagnon .pied-touches small { color: var(--doux); font-size: .74rem; max-width: 34ch; }
+.touches-compagnon .lien { background: none; border: 0; padding: 0; color: var(--accent); font: inherit;
+                           font-size: .76rem; cursor: pointer; text-decoration: underline; white-space: nowrap; }
+
 /*
  * Le compagnon de combat : sa propre fenêtre, sans bordure, par-dessus le jeu.
  * Sombre pour se fondre dans l'écran de jeu ; le sable désigne le sort à lancer.

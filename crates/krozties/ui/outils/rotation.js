@@ -8,6 +8,7 @@ import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '.
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import * as discord from '../commun/discord.js';
 import { ouvrirLeCompagnon, publier as publierPourLeCompagnon } from '../commun/suivi.js';
+import { brancherLesReglages, reglages as reglagesDesTouches, signalerLesPrises } from '../commun/touches.js';
 import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
@@ -651,11 +652,15 @@ export async function rendre(cible, etat, { appeler }) {
         <button type="button" class="action discret" id="copierDiscord">Copier pour Discord</button>
         <button type="button" class="action discret" id="ouvrirCompagnon">Compagnon de combat</button>
         <span class="copie" id="copieDiscord" role="status"></span>
-      </div>`;
+      </div>
+      ${reglagesDesTouches()}`;
     // Le compagnon suit chaque nouveau résultat, ouvert ou non.
     publierPourLeCompagnon(r, nomDuBuild());
+    brancherLesReglages($('touchesCompagnon'));
     $('ouvrirCompagnon').addEventListener('click', () => {
-      ouvrirLeCompagnon(appeler).catch((e) => {
+      ouvrirLeCompagnon(appeler).then((ouvert) => {
+        signalerLesPrises($('touchesCompagnon'), ouvert && ouvert.prises);
+      }).catch((e) => {
         $('copieDiscord').className = 'copie refus';
         $('copieDiscord').textContent = e.message;
       });

@@ -52,6 +52,7 @@ const ROUTES = {
   compagnonFermer: { commande: 'fermer_le_compagnon', bureau_seulement: "seule l'application de bureau ferme le compagnon." },
   compagnonDeplacer: { commande: 'deplacer_le_compagnon', bureau_seulement: "seule l'application de bureau déplace le compagnon." },
   compagnonAjuster: { commande: 'ajuster_le_compagnon', bureau_seulement: "seule l'application de bureau ajuste le compagnon." },
+  compagnonTouches: { commande: 'regler_les_touches_du_compagnon', bureau_seulement: "seule l'application de bureau prend des raccourcis globaux." },
 };
 
 export async function appeler(nom, charge) {

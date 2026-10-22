@@ -3,6 +3,7 @@
 // compagnon la relit à chaque nouveau calcul.
 
 import { hote } from '../pont.js';
+import { lireLesTouches } from './touches.js';
 
 export const CLE = 'krozties.compagnon';
 
@@ -31,10 +32,10 @@ export function publier(r, build) {
   }
 }
 
-/// Le compagnon, par-dessus le jeu dans l'application de bureau, dans une
-/// fenêtre du navigateur sinon.
+/// Le compagnon, par-dessus le jeu dans l'application de bureau, avec les
+/// touches choisies ; dans une fenêtre du navigateur sinon.
 export async function ouvrirLeCompagnon(appeler) {
-  if (hote === 'bureau') return appeler('compagnon');
+  if (hote === 'bureau') return appeler('compagnon', { touches: lireLesTouches() });
   window.open('compagnon.html', 'compagnon', 'width=460,height=140');
   return null;
 }

@@ -1881,6 +1881,7 @@ version = "0.13.1"
 dependencies = [
  "dofus-app",
  "dofus-build",
+ "objc2",
  "serde",
  "serde_json",
  "tauri",

@@ -272,8 +272,14 @@ fn ouvrir(adresse: &str) -> Sortie {
 
 /// Le compagnon de combat, par-dessus le jeu. Voir `compagnon.rs`.
 #[tauri::command]
-async fn ouvrir_le_compagnon(app: tauri::AppHandle) -> Sortie {
-    compagnon::ouvrir(app).await
+async fn ouvrir_le_compagnon(app: tauri::AppHandle, touches: Option<compagnon::Touches>) -> Sortie {
+    compagnon::ouvrir(app, touches).await
+}
+
+/// Les touches du compagnon, réglées dans la Rotation.
+#[tauri::command]
+fn regler_les_touches_du_compagnon(app: tauri::AppHandle, touches: Option<compagnon::Touches>) -> Sortie {
+    compagnon::regler(&app, touches)
 }
 
 #[tauri::command]
@@ -303,6 +309,7 @@ fn main() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(compagnon::greffon())
         .manage(MiseAJour::default())
+        .manage(compagnon::Raccourcis::default())
         // Le compagnon ne survit pas à la fenêtre principale, et ses touches
         // reviennent aux autres applications dès qu'il se ferme.
         .on_window_event(|fenetre, evenement| {
@@ -343,7 +350,8 @@ fn main() {
             ouvrir_le_compagnon,
             fermer_le_compagnon,
             deplacer_le_compagnon,
-            ajuster_le_compagnon
+            ajuster_le_compagnon,
+            regler_les_touches_du_compagnon
         ])
         .build(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer")

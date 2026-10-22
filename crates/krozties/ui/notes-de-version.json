@@ -7,7 +7,7 @@
           "titre": "Nouveautés",
           "lignes": [
             "La Rotation mesure ce que vaut chaque caractéristique pour votre build : la plus rentable, votre meilleure caractéristique, ce qui ne sert à rien, puis chacune ramenée à la Puissance (« 1 PA vaut 145 Puissance »).",
-            "Rotation › Compagnon de combat : la rotation calculée, tour par tour, dans une petite fenêtre par-dessus le jeu, en barre de sorts ou en liste. F8 passe au sort suivant, Maj+F8 au tour suivant, F7 revient en arrière."
+            "Rotation › Compagnon de combat : la rotation calculée, tour par tour, dans une petite fenêtre par-dessus le jeu, en barre de sorts ou en liste. F8 passe au sort suivant, Maj+F8 au tour suivant, F7 revient en arrière ; les trois touches se changent sous le bouton du compagnon. Sur Mac, il passe aussi par-dessus le plein écran : Krozties quitte le Dock tant qu'il est ouvert."
           ]
         }
       ]

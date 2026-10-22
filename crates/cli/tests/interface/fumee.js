@@ -518,10 +518,41 @@ try {
     lignes: document.querySelectorAll('#detailRotation .conseil tbody tr').length,
     joue: document.querySelectorAll('#detailRotation .conseil tr.joue').length,
   };
-  // Le compagnon de combat reprend la rotation dans sa page : la barre du tour
-  // 1, F8 vers le sort suivant, Maj+F8 vers le tour 2, puis la liste.
-  const CLES_COMPAGNON = ['krozties.compagnon.position', 'krozties.compagnon.disposition'];
+  // Les touches du compagnon, sous son bouton : une lettre seule refusée, Maj+F9
+  // gardée pour le tour, puis refusée pour un autre geste.
+  const CLES_COMPAGNON = ['krozties.compagnon.position', 'krozties.compagnon.disposition',
+    'krozties.compagnon.touches'];
   CLES_COMPAGNON.forEach((cle) => localStorage.removeItem(cle));
+  const reglage = document.getElementById('touchesCompagnon');
+  reglage.open = true;
+  const appuyer = async (key, code, shiftKey) => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, code, shiftKey, bubbles: true }));
+    await pause(50);
+  };
+  const capuchon = (geste) => reglage.querySelector(`.capuchon[data-geste=${geste}]`);
+  capuchon('tour').click();
+  await pause(50);
+  const ecoute = capuchon('tour').textContent;
+  await appuyer('a', 'KeyA', false);
+  const refus = texte('#touchesCompagnon .refus-touche') || '';
+  await appuyer('F9', 'F9', true);
+  const choisie = capuchon('tour').textContent;
+  capuchon('suivant').click();
+  await pause(50);
+  await appuyer('F9', 'F9', true);
+  const doublon = texte('#touchesCompagnon .refus-touche');
+  await appuyer('Escape', 'Escape', false);
+  resultat.touches = {
+    ecoute,
+    refus: refus.startsWith("« A » seule n'arriverait plus au jeu"),
+    choisie,
+    gardee: JSON.parse(localStorage.getItem('krozties.compagnon.touches') || '{}').tour ?? null,
+    doublon,
+    resume: reglage.querySelector('summary').textContent,
+  };
+  // Le compagnon de combat reprend la rotation dans sa page : la barre du tour
+  // 1, F8 vers le sort suivant, Maj+F9 vers le tour 2, puis la liste et ses
+  // touches.
   const suivi = JSON.parse(localStorage.getItem('krozties.compagnon') || 'null');
   const cadre = document.createElement('iframe');
   cadre.src = 'compagnon.html';
@@ -529,11 +560,11 @@ try {
   await attendre(() => cadre.contentDocument && cadre.contentDocument.querySelector('.cp'), 10000);
   const cp = cadre.contentDocument;
   const touche = (key, shiftKey) => cp.dispatchEvent(
-    new cadre.contentWindow.KeyboardEvent('keydown', { key, shiftKey, bubbles: true }));
+    new cadre.contentWindow.KeyboardEvent('keydown', { key, code: key, shiftKey, bubbles: true }));
   const cases = cp.querySelectorAll('.cp-case').length;
   touche('F8', false);
   const apresF8 = cp.querySelector('.cp-case.prochain')?.dataset.lancer ?? null;
-  touche('F8', true);
+  touche('F9', true);
   const tour = cp.querySelector('.cp-tour')?.textContent ?? null;
   cp.querySelector('[data-action=disposition]')?.click();
   resultat.compagnon = {
@@ -543,8 +574,13 @@ try {
     tour,
     liste: Boolean(suivi && suivi.tours[1])
       && cp.querySelectorAll('.cp-liste li').length === suivi.tours[1].lancers.length,
+    pied: [...cp.querySelectorAll('.cp-pied kbd')].map((k) => k.textContent),
   };
   cadre.remove();
+  // Les touches d'origine, rétablies.
+  reglage.querySelector('[data-action=origine]').click();
+  await pause(50);
+  resultat.touches.retablie = JSON.parse(localStorage.getItem('krozties.compagnon.touches') || '{}').tour ?? null;
   CLES_COMPAGNON.forEach((cle) => localStorage.removeItem(cle));
 
   // L'arme du build, un sort de plus au deck de la Rotation, avec son réglage

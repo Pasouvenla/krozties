@@ -1,11 +1,12 @@
 // Le compagnon de combat : la rotation calculée, tour par tour, dans une petite
 // fenêtre par-dessus le jeu. En barre, comme celle des sorts du jeu, ou en
-// liste. F8 avance d'un sort, Maj+F8 d'un tour, F7 recule ; un clic sur un sort
-// le désigne comme le prochain.
+// liste. Trois touches, réglées dans la Rotation, avancent d'un sort, d'un tour,
+// ou reculent ; un clic sur un sort le désigne comme le prochain.
 
 import { appeler, hote } from './pont.js';
 import { echapper, nb } from './commun/format.js';
 import { CLE } from './commun/suivi.js';
+import { CLE_TOUCHES, GESTES, gesteDe, libelle, lireLesTouches } from './commun/touches.js';
 
 const CLE_POSITION = 'krozties.compagnon.position';
 const CLE_DISPOSITION = 'krozties.compagnon.disposition';
@@ -24,6 +25,7 @@ const ecrire = (cle, valeur) => {
 };
 
 let suivi = lire(CLE);
+let touches = lireLesTouches();
 let position = positionDe(suivi);
 let disposition = (() => {
   try {
@@ -81,7 +83,8 @@ function barre() {
   const t = suivi.tours[position.tour];
   const suite = suivi.tours[position.tour + 1];
   return `<div class="cp cp-barre">
-    <span class="cp-tour" data-poignee title="Tour ${position.tour + 1} sur ${suivi.tours.length}, ${t.pa} PA">T${position.tour + 1}</span>
+    <span class="cp-tour" data-poignee title="Tour ${position.tour + 1} sur ${suivi.tours.length}, ${t.pa} PA · ${
+      echapper(GESTES.map((g) => `${libelle(touches[g.id])} ${g.court}`).join(', '))}">T${position.tour + 1}</span>
     ${t.lancers.map((l, i) => `<button type="button" class="cp-case${etat(i)}" data-lancer="${i}"
       title="${echapper(l.nom)}, ${l.pa} PA${l.indications.length ? `, ${echapper(l.indications.join(', '))}` : ''}">${icone(l)}<i>${i + 1}</i></button>`).join('')}
     ${suite ? `<span class="cp-sep"></span><span class="cp-suite" data-poignee title="Tour ${position.tour + 2}">${suite.lancers.map(icone).join('')}</span>` : ''}
@@ -97,7 +100,7 @@ function liste() {
       <li class="${etat(i).trim()}" data-lancer="${i}">${icone(l)}<span class="nom">${echapper(l.nom)}</span>${
         l.indications.map((x) => `<span class="cp-etiquette">${echapper(x)}</span>`).join('')}<span class="pa">${l.pa}</span></li>`).join('')}
     </ol>
-    <div class="cp-pied"><span><kbd>F8</kbd> suivant</span><span><kbd>Maj F8</kbd> tour</span><span><kbd>F7</kbd> retour</span></div>
+    <div class="cp-pied">${GESTES.map((g) => `<span><kbd>${echapper(libelle(touches[g.id]))}</kbd> ${g.court}</span>`).join('')}</div>
   </div>`;
 }
 
@@ -148,17 +151,23 @@ document.addEventListener('mousedown', (e) => {
   appeler('compagnonDeplacer').catch(() => {});
 });
 
-// Fenêtre au premier plan : les mêmes gestes au clavier.
+// Fenêtre au premier plan : les mêmes gestes au clavier, et les flèches.
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'F8' || e.key === 'ArrowRight') avancer(e.shiftKey ? 'tour' : 'suivant');
-  else if (e.key === 'PageDown' || e.key === 'ArrowDown') avancer('tour');
-  else if (e.key === 'F7' || e.key === 'ArrowLeft') avancer('precedent');
-  else return;
+  const geste = gesteDe(e, touches)
+    || { ArrowRight: 'suivant', ArrowDown: 'tour', PageDown: 'tour', ArrowLeft: 'precedent' }[e.key];
+  if (!geste) return;
+  avancer(geste);
   e.preventDefault();
 });
 
-// Un nouveau calcul dans la Rotation : le compagnon le reprend au tour 1.
+// Un nouveau calcul dans la Rotation : le compagnon le reprend au tour 1. De
+// nouvelles touches : il les affiche.
 window.addEventListener('storage', (e) => {
+  if (e.key === CLE_TOUCHES) {
+    touches = lireLesTouches();
+    dessiner();
+    return;
+  }
   if (e.key !== CLE) return;
   suivi = lire(CLE);
   position = positionDe(suivi);

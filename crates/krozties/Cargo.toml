@@ -24,3 +24,7 @@ tauri-plugin-window-state = "~2.4"
 tauri-plugin-global-shortcut = "~2.3"
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+# Le compagnon par-dessus le plein écran de macOS ; déjà tiré par Tauri.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
