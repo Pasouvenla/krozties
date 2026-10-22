@@ -518,6 +518,34 @@ try {
     lignes: document.querySelectorAll('#detailRotation .conseil tbody tr').length,
     joue: document.querySelectorAll('#detailRotation .conseil tr.joue').length,
   };
+  // Le compagnon de combat reprend la rotation dans sa page : la barre du tour
+  // 1, F8 vers le sort suivant, Maj+F8 vers le tour 2, puis la liste.
+  const CLES_COMPAGNON = ['krozties.compagnon.position', 'krozties.compagnon.disposition'];
+  CLES_COMPAGNON.forEach((cle) => localStorage.removeItem(cle));
+  const suivi = JSON.parse(localStorage.getItem('krozties.compagnon') || 'null');
+  const cadre = document.createElement('iframe');
+  cadre.src = 'compagnon.html';
+  document.body.append(cadre);
+  await attendre(() => cadre.contentDocument && cadre.contentDocument.querySelector('.cp'), 10000);
+  const cp = cadre.contentDocument;
+  const touche = (key, shiftKey) => cp.dispatchEvent(
+    new cadre.contentWindow.KeyboardEvent('keydown', { key, shiftKey, bubbles: true }));
+  const cases = cp.querySelectorAll('.cp-case').length;
+  touche('F8', false);
+  const apresF8 = cp.querySelector('.cp-case.prochain')?.dataset.lancer ?? null;
+  touche('F8', true);
+  const tour = cp.querySelector('.cp-tour')?.textContent ?? null;
+  cp.querySelector('[data-action=disposition]')?.click();
+  resultat.compagnon = {
+    tours: suivi ? suivi.tours.length : 0,
+    cases: Boolean(suivi) && cases === suivi.tours[0].lancers.length,
+    apresF8,
+    tour,
+    liste: Boolean(suivi && suivi.tours[1])
+      && cp.querySelectorAll('.cp-liste li').length === suivi.tours[1].lancers.length,
+  };
+  cadre.remove();
+  CLES_COMPAGNON.forEach((cle) => localStorage.removeItem(cle));
 
   // L'arme du build, un sort de plus au deck de la Rotation, avec son réglage
   // de Maîtrise et sa fiche : la Hachebarde de Guerre d'un Ouginak, lancée dans

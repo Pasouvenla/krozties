@@ -45,6 +45,13 @@ const ROUTES = {
   majInstaller: { commande: 'installer_la_mise_a_jour', bureau_seulement: "seule l'application de bureau se met à jour." },
   majAvancement: { commande: 'avancement_de_la_mise_a_jour', bureau_seulement: "seule l'application de bureau se met à jour." },
   redemarrer: { commande: 'redemarrer_l_application', bureau_seulement: "seule l'application de bureau redémarre." },
+  /// Bureau seulement : le compagnon de combat, sa fenêtre par-dessus le jeu, que
+  /// l'on ferme, déplace et ajuste à ce qu'elle montre. Un navigateur l'ouvre
+  /// dans une fenêtre à lui.
+  compagnon: { commande: 'ouvrir_le_compagnon', bureau_seulement: "seule l'application de bureau ouvre le compagnon par-dessus le jeu." },
+  compagnonFermer: { commande: 'fermer_le_compagnon', bureau_seulement: "seule l'application de bureau ferme le compagnon." },
+  compagnonDeplacer: { commande: 'deplacer_le_compagnon', bureau_seulement: "seule l'application de bureau déplace le compagnon." },
+  compagnonAjuster: { commande: 'ajuster_le_compagnon', bureau_seulement: "seule l'application de bureau ajuste le compagnon." },
 };
 
 export async function appeler(nom, charge) {

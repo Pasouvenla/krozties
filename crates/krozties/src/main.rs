@@ -5,6 +5,7 @@
 // Sur Windows, ne pas ouvrir de console derrière la fenêtre en release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod compagnon;
 mod import;
 
 use dofus_app::{bombes, cartes, grille, invocations, portails, reseau, solve};
@@ -269,14 +270,51 @@ fn ouvrir(adresse: &str) -> Sortie {
     Ok("null".into())
 }
 
+/// Le compagnon de combat, par-dessus le jeu. Voir `compagnon.rs`.
+#[tauri::command]
+async fn ouvrir_le_compagnon(app: tauri::AppHandle) -> Sortie {
+    compagnon::ouvrir(app).await
+}
+
+#[tauri::command]
+fn fermer_le_compagnon(app: tauri::AppHandle) -> Sortie {
+    compagnon::fermer(&app);
+    Ok("null".into())
+}
+
+/// La fenêtre sans bordure se déplace en la tirant par sa poignée.
+#[tauri::command]
+fn deplacer_le_compagnon(window: tauri::Window) -> Sortie {
+    window.start_dragging().map_err(|e| e.to_string())?;
+    Ok("null".into())
+}
+
+#[tauri::command]
+fn ajuster_le_compagnon(window: tauri::Window, largeur: f64, hauteur: f64) -> Sortie {
+    compagnon::ajuster(&window, largeur, hauteur)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         // La taille, la place, l'écran et l'état agrandi de la fenêtre, retrouvés
-        // à l'ouverture suivante.
+        // à l'ouverture suivante. Le compagnon aussi retrouve sa place.
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(compagnon::greffon())
         .manage(MiseAJour::default())
+        // Le compagnon ne survit pas à la fenêtre principale, et ses touches
+        // reviennent aux autres applications dès qu'il se ferme.
+        .on_window_event(|fenetre, evenement| {
+            use tauri::Manager;
+            if let tauri::WindowEvent::Destroyed = evenement {
+                if fenetre.label() == compagnon::ETIQUETTE {
+                    compagnon::liberer(fenetre.app_handle());
+                } else if fenetre.label() == "main" {
+                    compagnon::fermer(fenetre.app_handle());
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             classes,
             resoudre_build,
@@ -301,7 +339,11 @@ fn main() {
             chercher_la_mise_a_jour,
             installer_la_mise_a_jour,
             avancement_de_la_mise_a_jour,
-            redemarrer_l_application
+            redemarrer_l_application,
+            ouvrir_le_compagnon,
+            fermer_le_compagnon,
+            deplacer_le_compagnon,
+            ajuster_le_compagnon
         ])
         .build(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer")

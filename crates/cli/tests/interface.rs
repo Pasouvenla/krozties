@@ -402,6 +402,13 @@ fn chaque_outil_s_affiche_sans_erreur() {
         "{r}"
     );
     assert!(r["valeurs"]["lignes"].as_u64().unwrap_or(0) >= 3, "{r}");
+    // Le compagnon de combat reprend la rotation de deux tours, au clavier puis
+    // en liste.
+    assert_eq!(
+        r["compagnon"],
+        serde_json::json!({ "tours": 2, "cases": true, "apresF8": "1", "tour": "T2", "liste": true }),
+        "{r}"
+    );
     // Les données manquantes : le Sram n'a plus rien à relever, la page le
     // dit ; sur l'onglet du Crâ, le Tir Perçant, son formulaire, le refus d'un
     // envoi vide, puis l'adresse du formulaire GitHub remplie.

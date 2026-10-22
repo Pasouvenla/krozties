@@ -20,5 +20,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "~2.7"
 tauri-plugin-updater = "~2.12"
 tauri-plugin-window-state = "~2.4"
+# 2.4 exige tauri 2.12 ; la 2.3 se contente de la 2.10.
+tauri-plugin-global-shortcut = "~2.3"
 serde = { workspace = true }
 serde_json = { workspace = true }

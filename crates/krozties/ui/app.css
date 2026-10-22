@@ -1195,3 +1195,48 @@ details.hypotheses li + li { margin-top: .2rem; }
 .copie-discord .copie { font-size: .78rem; font-weight: 600; }
 .copie-discord .copie.ok { color: var(--succes); }
 .copie-discord .copie.refus { color: var(--alerte); }
+
+/*
+ * Le compagnon de combat : sa propre fenêtre, sans bordure, par-dessus le jeu.
+ * Sombre pour se fondre dans l'écran de jeu ; le sable désigne le sort à lancer.
+ * Le contenu donne sa taille à la fenêtre.
+ */
+body.compagnon { margin: 0; background: #1b1f24; color: #f2efe6; overflow: hidden; font-size: 13px; }
+.cp { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .45rem; width: max-content; }
+/* Sans poids : les règles des cases et des outils, plus bas, l'emportent. */
+.cp :where(button) { all: unset; cursor: pointer; }
+.cp img { display: block; }
+.cp-tour { font-size: .74rem; color: #b9b4a6; font-weight: 700; padding: 0 .25rem; cursor: move; }
+.cp-case { position: relative; width: 38px; height: 38px; border-radius: 6px; display: grid; place-items: center;
+           background: rgba(255, 255, 255, .06); }
+.cp-case img { width: 32px; height: 32px; border-radius: 5px; }
+.cp-case i { position: absolute; right: -3px; bottom: -3px; font-style: normal; font-size: .62rem; font-weight: 700;
+             background: #e9c46a; color: #1b1d21; border-radius: 999px; width: 15px; height: 15px;
+             display: grid; place-items: center; }
+.cp-case.fait { opacity: .35; }
+.cp-case.prochain { outline: 2px solid #e9c46a; }
+.cp-case:focus-visible, .cp-outils button:focus-visible { outline: 2px solid #fff; }
+.cp-sep { width: 1px; height: 28px; background: rgba(255, 255, 255, .2); margin: 0 .15rem; }
+.cp-suite { display: flex; gap: 2px; cursor: move; }
+.cp-suite img { width: 22px; height: 22px; border-radius: 3px; opacity: .5; }
+.cp-outils { display: flex; gap: .15rem; margin-left: .2rem; }
+.cp-outils button { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center;
+                    color: #b9b4a6; font-size: .8rem; }
+.cp-outils button:hover { background: rgba(255, 255, 255, .12); color: #f2efe6; }
+.cp-sans-icone { width: 32px; height: 32px; display: grid; place-items: center; font-size: .7rem; }
+.cp-liste { flex-direction: column; align-items: stretch; width: 270px; padding: 0; gap: 0; }
+.cp-tete { display: flex; align-items: center; gap: .5rem; padding: .45rem .55rem .3rem; cursor: move; }
+.cp-tete span { color: #b9b4a6; font-size: .72rem; margin-left: auto; }
+.cp-liste ol { list-style: none; margin: 0; padding: 0 .35rem .3rem; }
+.cp-liste li { display: flex; align-items: center; gap: .4rem; padding: .2rem .25rem; border-radius: 5px; cursor: pointer; }
+.cp-liste li img { width: 22px; height: 22px; border-radius: 4px; }
+.cp-liste li .pa { margin-left: auto; color: #b9b4a6; font-size: .72rem; font-variant-numeric: tabular-nums; }
+.cp-liste li.fait { opacity: .45; text-decoration: line-through; }
+.cp-liste li.prochain { background: rgba(233, 196, 106, .18); outline: 1px solid rgba(233, 196, 106, .55); }
+.cp-etiquette { font-size: .64rem; padding: 0 .3rem; border-radius: 999px; background: rgba(255, 255, 255, .12);
+                color: #e7e2d4; white-space: nowrap; }
+.cp-pied { display: flex; justify-content: space-between; gap: .4rem; padding: .3rem .55rem .45rem;
+           border-top: 1px solid rgba(255, 255, 255, .1); color: #b9b4a6; font-size: .68rem; }
+.cp-pied kbd { font: inherit; font-size: .66rem; padding: 0 .25rem; border: 1px solid rgba(255, 255, 255, .3);
+               border-radius: 3px; color: #f2efe6; }
+.cp-vide { color: #b9b4a6; font-size: .8rem; padding: .6rem .7rem; cursor: move; }

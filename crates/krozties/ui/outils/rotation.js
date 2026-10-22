@@ -7,6 +7,7 @@ import { brancherRepli, classeRepli, replier, titreRepliable } from '../commun/r
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import * as discord from '../commun/discord.js';
+import { ouvrirLeCompagnon, publier as publierPourLeCompagnon } from '../commun/suivi.js';
 import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
@@ -648,14 +649,22 @@ export async function rendre(cible, etat, { appeler }) {
         .map((m) => `<li>${echapper(majuscule(m))}.</li>`).join('')}</ul></details>` : ''}
       <div class="copie-discord">
         <button type="button" class="action discret" id="copierDiscord">Copier pour Discord</button>
+        <button type="button" class="action discret" id="ouvrirCompagnon">Compagnon de combat</button>
         <span class="copie" id="copieDiscord" role="status"></span>
       </div>`;
+    // Le compagnon suit chaque nouveau résultat, ouvert ou non.
+    publierPourLeCompagnon(r, nomDuBuild());
+    $('ouvrirCompagnon').addEventListener('click', () => {
+      ouvrirLeCompagnon(appeler).catch((e) => {
+        $('copieDiscord').className = 'copie refus';
+        $('copieDiscord').textContent = e.message;
+      });
+    });
     $('copierDiscord').addEventListener('click', async () => {
-      const b = etat.resolu || {};
       const texte = discord.rotation({
         r,
         demande: chargeDuResultat,
-        build: `${b.class_name || 'Build'} ${b.level || ''}`.trim() + (etat.nomDuBuild ? ` · ${etat.nomDuBuild}` : ''),
+        build: nomDuBuild(),
         version: await discord.version(appeler),
         lien: etat.lienDuBuild,
       });
@@ -663,6 +672,12 @@ export async function rendre(cible, etat, { appeler }) {
       $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
       $('copieDiscord').textContent = ok ? 'Copié.' : 'Le système refuse la copie.';
     });
+  }
+
+  /// Le build tel que la copie Discord et le compagnon le nomment.
+  function nomDuBuild() {
+    const b = etat.resolu || {};
+    return `${b.class_name || 'Build'} ${b.level || ''}`.trim() + (etat.nomDuBuild ? ` · ${etat.nomDuBuild}` : '');
   }
 
   function dessinerDetail() {

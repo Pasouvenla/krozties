@@ -6,7 +6,8 @@
         {
           "titre": "Nouveautés",
           "lignes": [
-            "La Rotation mesure ce que vaut chaque caractéristique pour votre build : la plus rentable, votre meilleure caractéristique, ce qui ne sert à rien, puis chacune ramenée à la Puissance (« 1 PA vaut 145 Puissance »)."
+            "La Rotation mesure ce que vaut chaque caractéristique pour votre build : la plus rentable, votre meilleure caractéristique, ce qui ne sert à rien, puis chacune ramenée à la Puissance (« 1 PA vaut 145 Puissance »).",
+            "Rotation › Compagnon de combat : la rotation calculée, tour par tour, dans une petite fenêtre par-dessus le jeu, en barre de sorts ou en liste. F8 passe au sort suivant, Maj+F8 au tour suivant, F7 revient en arrière."
           ]
         }
       ]
