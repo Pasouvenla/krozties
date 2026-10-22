@@ -751,6 +751,18 @@ table.mini .attenue { color: var(--doux); }
                       color: var(--doux); font-weight: 600; }
 .tuile-rythme b { font-size: 1.15rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tuile-rythme span { font-size: .74rem; color: var(--doux); margin-left: .3rem; }
+/* Ce que vaut chaque caractéristique : trois conseils, le taux de change replié. */
+.tuiles-valeurs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem;
+                  margin: .1rem 0 .5rem; max-width: 54rem; }
+.tuile-valeur { border: 1px solid var(--trait); border-radius: var(--rayon); padding: .45rem .6rem; }
+.tuile-valeur small { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+                      color: var(--doux); font-weight: 600; }
+.tuile-valeur b { display: block; font-size: 1.05rem; margin: .1rem 0; }
+.tuile-valeur span { font-size: .76rem; color: var(--doux); }
+.tuile-valeur.non b { color: var(--doux); }
+table.mini.valeurs { max-width: 40rem; margin-top: .35rem; }
+table.mini.valeurs .taux { text-align: right; font-weight: 600; white-space: nowrap; }
+@media (max-width: 700px) { .tuiles-valeurs { grid-template-columns: 1fr; } }
 /* Le pointillé de la moyenne passe en encre et non en couleur de série : il ne
    décrit aucune des deux, il les traverse. */
 .g-moyenne { stroke: var(--encre); stroke-width: 2; stroke-dasharray: 5 4;

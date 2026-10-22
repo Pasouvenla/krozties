@@ -395,6 +395,13 @@ fn chaque_outil_s_affiche_sans_erreur() {
     // Sous le résultat de la Rotation : le rythme, ses trois repères, et les dégâts par PA.
     assert_eq!(r["graphiques"], serde_json::json!({ "reperes": 3, "parPA": true }), "{r}");
     assert_eq!(r["poussees"], "Inclure les dommages de poussée", "{r}");
+    // Ce que vaut chaque caractéristique, mesuré sur la rotation du Sram.
+    assert_eq!(
+        r["valeurs"]["tuiles"],
+        serde_json::json!(["Le plus rentable", "Votre caractéristique", "Inutile ici"]),
+        "{r}"
+    );
+    assert!(r["valeurs"]["lignes"].as_u64().unwrap_or(0) >= 3, "{r}");
     // Les données manquantes : le Sram n'a plus rien à relever, la page le
     // dit ; sur l'onglet du Crâ, le Tir Perçant, son formulaire, le refus d'un
     // envoi vide, puis l'adresse du formulaire GitHub remplie.

@@ -73,6 +73,56 @@ impl PlacementInput {
     }
 }
 
+/// Une caractéristique et le montant ajouté au build résolu.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Ajout {
+    /// `pa`, `puissance`, `force`, `intelligence`, `chance`, `agilite`,
+    /// `dommages`, `dommages_<élément>`, `critique`, `dommages_critiques`,
+    /// `distance`, `melee`, `sorts`, `armes`, `poussee`.
+    pub stat: String,
+    pub montant: i32,
+}
+
+/// Le cran sur le build résolu, là où le calcul le lit : la Force monte aussi
+/// le Neutre, les Dommages montent les cinq éléments.
+fn appliquer_l_ajout(r: &mut Resolved, a: &Ajout) -> Result<(), String> {
+    use dofus_damage::Element::{Air, Earth, Fire, Neutral, Water};
+    let n = a.montant;
+    let p = &mut r.profile;
+    let element = |nom: &str| match nom {
+        "terre" => Some(Earth),
+        "feu" => Some(Fire),
+        "eau" => Some(Water),
+        "air" => Some(Air),
+        "neutre" => Some(Neutral),
+        _ => None,
+    };
+    match a.stat.as_str() {
+        "pa" => r.base_ap = u8::try_from(i32::from(r.base_ap) + n).map_err(|_| "PA hors limites".to_string())?,
+        "puissance" => p.power += n,
+        "force" => {
+            p.elements[Earth.index()].characteristic += n;
+            p.elements[Neutral.index()].characteristic += n;
+        }
+        "intelligence" => p.elements[Fire.index()].characteristic += n,
+        "chance" => p.elements[Water.index()].characteristic += n,
+        "agilite" => p.elements[Air.index()].characteristic += n,
+        "dommages" => p.elements.iter_mut().for_each(|e| e.flat_damage += n),
+        "critique" => r.crit_bonus_percent += n,
+        "dommages_critiques" => p.flat_crit_damage += n,
+        "distance" => p.percent_ranged += n,
+        "melee" => p.percent_melee += n,
+        "sorts" => p.percent_spell += n,
+        "armes" => p.percent_weapon += n,
+        "poussee" => p.push_damage += n,
+        autre => match autre.strip_prefix("dommages_").and_then(element) {
+            Some(e) => p.elements[e.index()].flat_damage += n,
+            None => return Err(format!("caractéristique inconnue : {autre}")),
+        },
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Request {
     #[serde(flatten)]
@@ -130,6 +180,10 @@ pub struct Request {
     /// repousse ajoute ses dommages de poussée. Déclaration du joueur.
     #[serde(default)]
     pub poussees_bloquees: bool,
+    /// Un cran de plus sur une caractéristique du build : la même demande,
+    /// recalculée, dit ce que ce cran rapporte.
+    #[serde(default)]
+    pub ajout: Option<Ajout>,
     /// Combien de cases séparent deux ennemis touchés par une même zone. Absent ou
     /// nul : tout le monde est collé à l'impact, et le total est un plafond.
     #[serde(default)]
@@ -1895,6 +1949,9 @@ fn preparer(
 ) -> Result<(dofus_build::BuildInput, Resolved, Ruleset, Scenario, Vec<(&'static str, String)>), String> {
     let build = request.build.normalise();
     let mut resolved = resolve_build(&build)?;
+    if let Some(a) = &request.ajout {
+        appliquer_l_ajout(&mut resolved, a)?;
+    }
     let depart = resolved.assumptions.len();
     let mut sujets: Vec<&'static str> = Vec::new();
     let mut noter = |hypotheses: &mut Vec<String>, sujet: &'static str, notes: Vec<String>| {
@@ -5173,6 +5230,31 @@ mod tests {
             v["rotation"]["effets"]["herbes_folles"],
             serde_json::json!(["Retire 3 PM aux ennemis en zone, pendant 1 tour"])
         );
+    }
+
+    /// Un cran sur une caractéristique se recalcule : +100 Puissance et +1 PA
+    /// montent le total (deux sorts à 2 PA : à 7 PA, un PA reste perdu), +100
+    /// Force ne change rien à un Crâ qui ne frappe qu'en Air, et une
+    /// caractéristique inconnue est refusée.
+    #[test]
+    fn un_cran_de_caracteristique_se_recalcule() {
+        let total = |ajout: serde_json::Value| -> Result<f64, String> {
+            let requete: Request = serde_json::from_value(serde_json::json!({
+                "class": 9, "level": 200, "deck": ["fleche_cinglante", "fleche_d_immobilisation"], "horizon": 2,
+                "invested": { "agility": 400 }, "ajout": ajout,
+            }))
+            .unwrap();
+            let v: serde_json::Value = serde_json::from_str(&solve_json(&requete)?).unwrap();
+            Ok(v["rotation"]["total"].as_f64().unwrap())
+        };
+        let base = total(serde_json::Value::Null).unwrap();
+        let puissance = total(serde_json::json!({ "stat": "puissance", "montant": 100 })).unwrap();
+        let force = total(serde_json::json!({ "stat": "force", "montant": 100 })).unwrap();
+        let pa = total(serde_json::json!({ "stat": "pa", "montant": 1 })).unwrap();
+        assert!(puissance > base * 1.1, "{puissance} / {base}");
+        assert!((force - base).abs() < 0.01, "{force} / {base}");
+        assert!(pa > base, "{pa} / {base}");
+        assert!(total(serde_json::json!({ "stat": "sagesse", "montant": 10 })).unwrap_err().contains("sagesse"));
     }
 
     /// Chaque lancer dit ce qu'il ouvre, exige ou ferme, sous le nom du jeu :

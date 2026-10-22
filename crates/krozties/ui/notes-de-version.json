@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "La Rotation mesure ce que vaut chaque caractéristique pour votre build : la plus rentable, votre meilleure caractéristique, ce qui ne sert à rien, puis chacune ramenée à la Puissance (« 1 PA vaut 145 Puissance »)."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.13.1",
       "date": "2026-10-16",
       "rubriques": [

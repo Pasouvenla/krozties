@@ -2,6 +2,7 @@
 
 import { COULEUR_ELEMENT, echapper, majuscule, nb, pluriel } from '../commun/format.js';
 import { parPA, rythme, selonCibles } from '../commun/graphique.js';
+import { aMesurer, CRANS, dessiner as dessinerLesValeurs, lire as lireLesValeurs, orientationDu } from '../commun/valeurs.js';
 import { brancherRepli, classeRepli, replier, titreRepliable } from '../commun/repli.js';
 import { borne, decrire, DOMAINES, ELEMENTS, fixe, neutres, versMoteur } from '../commun/resistances.js';
 import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
@@ -99,6 +100,9 @@ export async function rendre(cible, etat, { appeler }) {
   let chargeDuResultat = null;
   let conseilOuvert = null;
   let balayage = null;
+  // Ce que vaut chaque caractéristique pour la rotation affichée, une fois
+  // mesuré.
+  let valeurs = null;
   let enCours = false;
   let perime = false;
 
@@ -576,6 +580,7 @@ export async function rendre(cible, etat, { appeler }) {
       chargeDuResultat = demande;
       conseilOuvert = null;
       balayage = null;
+      valeurs = null;
       perime = false;
       $('panneau').classList.remove('perime');
       $('calculer').textContent = 'Recalculer';
@@ -768,8 +773,79 @@ export async function rendre(cible, etat, { appeler }) {
           ${titreRepliable(etat, 'ennemis', 'Dégâts selon le nombre d\'ennemis')}
           <div id="blocCourbe"></div>
         </div>
+        <div class="carte${classeRepli(etat, 'valeurs')}">
+          ${titreRepliable(etat, 'valeurs', 'Ce que vaut chaque caractéristique')}
+          <div id="blocValeurs"></div>
+        </div>
       </div>`;
     dessinerCourbe();
+    dessinerValeurs();
+  }
+
+  /// Les éléments d'une source de la répartition : `['meilleur']` pour un sort
+  /// qui frappe dans le meilleur élément du build, rien pour ce qui n'est pas un
+  /// sort du deck.
+  const elementsDe = (id) => {
+    const s = sorts.find((x) => x.id === id);
+    if (!s) return [];
+    return s.orientation && s.orientation.meilleur ? ['meilleur'] : (s.elements || []);
+  };
+
+  /// Ce que vaut chaque caractéristique : la rotation affichée recalculée cran
+  /// par cran. Autant de résolutions complètes que de crans : elle se demande,
+  /// et le nombre de calculs est dit avant.
+  function dessinerValeurs() {
+    const bloc = $('blocValeurs');
+    if (!bloc || !resultat || !chargeDuResultat) return;
+    if (valeurs) {
+      bloc.innerHTML = dessinerLesValeurs(valeurs, critiqueDuResultat);
+      return;
+    }
+    const n = aMesurer(resultat, chargeDuResultat, elementsDe, orientationDu(etat.resolu && etat.resolu.elements)).length;
+    bloc.innerHTML = `
+      <button type="button" class="action discret" id="mesurerValeurs">Mesurer</button>
+      <p class="aide" id="etatValeurs">${n} calculs de la même rotation, un cran de plus à chaque fois.</p>`;
+    $('mesurerValeurs').addEventListener('click', mesurerValeurs);
+  }
+
+  let arretDesValeurs = false;
+  async function mesurerValeurs() {
+    const demande = chargeDuResultat;
+    const base = resultat.total;
+    const liste = aMesurer(resultat, demande, elementsDe, orientationDu(etat.resolu && etat.resolu.elements));
+    const bloc = $('blocValeurs');
+    arretDesValeurs = false;
+    $('calculer').disabled = true;
+    bloc.innerHTML = `
+      <div class="barre"><span id="jaugeValeurs"></span></div>
+      <p class="aide" id="etatValeurs"></p>
+      <button type="button" class="action discret petit" id="arreterValeurs">Annuler</button>`;
+    $('arreterValeurs').addEventListener('click', () => {
+      arretDesValeurs = true;
+      appeler('annuler').catch(() => {});
+    });
+    const totaux = {};
+    try {
+      for (const [k, stat] of liste.entries()) {
+        if (arretDesValeurs) throw new Error('calcul annulé');
+        const { pas, nom } = CRANS[stat];
+        $('etatValeurs').textContent = `Mesure ${k + 1} sur ${liste.length} : +${pas} ${nom}`;
+        $('jaugeValeurs').style.width = `${Math.round((k / liste.length) * 100)}%`;
+        const d = await appeler('rotation', { ...demande, ajout: { stat, montant: pas } });
+        totaux[stat] = d.rotation.total;
+      }
+      // Un nouveau résultat arrivé entre-temps rend la mesure caduque.
+      if (demande !== chargeDuResultat) return;
+      valeurs = lireLesValeurs(base, totaux);
+      dessinerValeurs();
+    } catch (e) {
+      if (demande !== chargeDuResultat) return;
+      dessinerValeurs();
+      $('etatValeurs').innerHTML = e.message === 'calcul annulé'
+        ? 'Mesure annulée.' : `<span class="alerte">${echapper(e.message)}</span>`;
+    } finally {
+      $('calculer').disabled = false;
+    }
   }
 
   /// Ce que chaque sort du deck vaudrait à la place d'un lancer, à cet instant :

@@ -501,8 +501,17 @@ try {
     parPA: pointsPA > 0 && figurePA.querySelectorAll('.g-tige').length === pointsPA
       && figurePA.querySelectorAll('image').length === pointsPA,
   };
-  // Replié dans « Pour aller plus loin » : son texte se lit sans être affiché.
+  // Le libellé de la case des dommages de poussée.
   resultat.poussees = document.querySelector('label[for=pousseesBloquees] span').textContent;
+  // Ce que vaut chaque caractéristique : la mesure, cran par cran, puis ses
+  // trois conseils et son taux de change.
+  document.getElementById('mesurerValeurs').click();
+  await attendre(() => document.querySelector('#blocValeurs .tuiles-valeurs, #blocValeurs .alerte'), 60000);
+  resultat.valeurs = {
+    tuiles: [...document.querySelectorAll('#blocValeurs .tuile-valeur small')].map((s) => s.textContent),
+    lignes: document.querySelectorAll('#blocValeurs table.valeurs tr').length,
+    erreur: texte('#blocValeurs .alerte'),
+  };
   document.querySelector('#detailRotation .lancer[data-tour]').click();
   await attendre(() => document.querySelector('#detailRotation .conseil table'), 20000);
   resultat.conseil = {
