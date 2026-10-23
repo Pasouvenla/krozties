@@ -637,6 +637,50 @@ try {
     total: Number((texte('#contenu .chiffre') || '').replace(/\D/g, '')) === partage.resume.total,
     ferme: document.getElementById('rotationRecue').hidden,
   };
+  // Le lien d'un Xélor complet (objets, forgemagie, bonus, Chance), tel que
+  // « Copier le lien » le compose, collé dans Équipement pendant qu'un autre
+  // build est chargé : le même total.
+  const xelor = {
+    class: 5, level: 200, invested: { chance: 398 },
+    items: [34330, 31761, 32234, 24035, 31762, 17575, 34332, 32236, 34331, 13673, 0, 8698, 7043, 6980, 739, 7754, 7115],
+    forgemagic: { a1: { pa: 1 }, a2: { cc: 5 }, am: { cc: 8 }, ar: { cc: 6 }, bo: { cc: 6 }, br: { dc: 8 }, ca: { cc: 7 },
+      ce: { cc: 6 }, ch: { cc: 6 } },
+    boosts: [{ name: 'Rêve Nébuleux', stat: 'deg', percent: 20 }, { name: 'Bleu Turquoise', stat: 'deg', percent: 10 },
+      { name: 'Pourpre Profond', stat: 'deg', percent: 5 }],
+  };
+  app.etat.build = xelor;
+  app.etat.resolu = await appeler('resoudre', xelor);
+  await app.afficher('rotation');
+  document.getElementById('horizon').value = '2';
+  document.getElementById('horizon').dispatchEvent(new Event('input', { bubbles: true }));
+  document.getElementById('calculer').click();
+  await attendre(() => app.etat.build.class === 5 && document.getElementById('partager'), 60000);
+  document.getElementById('partager').click();
+  const entrees = [...document.querySelectorAll('#menuPartage button')].map((b) => b.firstChild.textContent.trim());
+  document.getElementById('partager').click();
+  const codec = await import('/commun/lien.js');
+  const deck = await import('/commun/deck.js');
+  const classeRecue = app.etat.classes.classes.find((c) => c.id === app.etat.build.class);
+  const lien = codec.lienDuPartage(app.etat.resolu.partage, app.etat.rotation,
+    deck.sortsDuBuild(classeRecue, app.etat.resolu),
+    { ecartes: app.etat.bonusEcartes || [], inclus: app.etat.bonusInclus || [] }, classeRecue.etats_declares || []);
+  const totalEnvoye = Number((texte('#contenu .chiffre') || '').replace(/\D/g, ''));
+  app.etat.build = autre;
+  app.etat.resolu = await appeler('resoudre', autre);
+  await app.afficher('equipement');
+  document.getElementById('lien').value = lien;
+  document.getElementById('ouvrir').click();
+  await attendre(() => !document.getElementById('rotationRecue').hidden, 5000);
+  const bandeauDuLien = texte('#rotationRecue');
+  document.querySelector('#rotationRecue [data-recue=ouvrir]').click();
+  await attendre(() => app.etat.build.class === 5 && document.getElementById('partager'), 60000);
+  resultat.lien = {
+    entrees,
+    court: lien.length < 400,
+    bandeau: Boolean(bandeauDuLien) && bandeauDuLien.startsWith('Rotation reçue Xélor 200 · 2 tours'),
+    classe: app.etat.build.class === 5,
+    total: totalEnvoye > 0 && Number((texte('#contenu .chiffre') || '').replace(/\D/g, '')) === totalEnvoye,
+  };
 
   // L'arme du build, un sort de plus au deck de la Rotation, avec son réglage
   // de Maîtrise et sa fiche : la Hachebarde de Guerre d'un Ouginak, lancée dans

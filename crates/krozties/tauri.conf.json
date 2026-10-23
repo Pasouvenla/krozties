@@ -62,6 +62,11 @@
     "createUpdaterArtifacts": true
   },
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["krozties"]
+      }
+    },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4OTU5NUYxRjk2MjE1MjYKUldRbUZXTDU4WldWbUVyR3NBOHIxWk4yNGtsMVlBSXJZOEd0ZVVXOTVuYndMWFdHcDQyZTNhNUgK",
       "endpoints": [

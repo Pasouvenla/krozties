@@ -447,6 +447,19 @@ fn chaque_outil_s_affiche_sans_erreur() {
         }),
         "{r}"
     );
+    // Le lien de la même rotation, collé dans Équipement : le menu propose les
+    // deux formes, le bandeau nomme la classe, et le total revient.
+    assert_eq!(
+        r["lien"],
+        serde_json::json!({
+            "entrees": ["Copier le lien", "Enregistrer le fichier"],
+            "court": true,
+            "bandeau": true,
+            "classe": true,
+            "total": true,
+        }),
+        "{r}"
+    );
     // Recaler au tour 2 : la fiche remplie d'après le curseur, les sorts du
     // deck à ajouter, puis la suite recalculée et marquée.
     assert_eq!(

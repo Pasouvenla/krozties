@@ -10,6 +10,7 @@ import * as discord from '../commun/discord.js';
 import { ouvrirLeCompagnon, publier as publierPourLeCompagnon } from '../commun/suivi.js';
 import { brancherLesReglages, reglages as reglagesDesTouches, signalerLesPrises } from '../commun/touches.js';
 import { contenuDuPartage, enregistrer as enregistrerLePartage, nomDuFichier } from '../commun/partage.js';
+import { lienDuPartage } from '../commun/lien.js';
 import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
@@ -654,6 +655,8 @@ export async function rendre(cible, etat, { appeler }) {
         <button type="button" class="action discret" id="partager" aria-expanded="false"
           aria-controls="menuPartage">Partager</button>
         <div class="pop" id="menuPartage" hidden>
+          ${etat.resolu && etat.resolu.partage ? `<button type="button" id="copierLien">Copier le lien<small>Le build, les
+            réglages et la rotation</small></button>` : ''}
           <button type="button" id="enregistrerPartage">Enregistrer le fichier<small>${echapper(nomDuFichier(etat))}</small></button>
         </div>
         <button type="button" class="action discret" id="ouvrirCompagnon">Compagnon de combat</button>
@@ -701,6 +704,16 @@ export async function rendre(cible, etat, { appeler }) {
       $('partager').setAttribute('aria-expanded', 'true');
       document.addEventListener('mousedown', horsDuMenu, true);
     });
+    if ($('copierLien')) {
+      $('copierLien').addEventListener('click', async () => {
+        fermerLeMenu();
+        const lien = lienDuPartage(etat.resolu.partage, reglages, sorts,
+          { ecartes: etat.bonusEcartes || [], inclus: etat.bonusInclus || [] }, declares);
+        const ok = await discord.copier(lien);
+        $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
+        $('copieDiscord').textContent = ok ? 'Lien copié.' : 'Le système refuse la copie.';
+      });
+    }
     $('enregistrerPartage').addEventListener('click', async () => {
       fermerLeMenu();
       try {

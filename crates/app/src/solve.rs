@@ -3217,6 +3217,8 @@ pub fn resolve_json(input: &BuildInput) -> Result<String, String> {
         "arme": if supported { crate::armes::fiche(&r) } else { None },
         // Les sorts temporaires des objets, de même.
         "sorts_d_objets": if supported { crate::sorts_d_objets::fiches(&r) } else { Vec::new() },
+        // Ce que le calcul lit du build, que le lien de partage emporte.
+        "partage": normalise.essentiel(),
         "class": normalise.class,
         "class_name": class_name(normalise.class),
         "class_supported": supported,

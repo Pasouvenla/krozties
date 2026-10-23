@@ -325,6 +325,16 @@ fn rotation_recue(app: tauri::AppHandle) -> Sortie {
 
 fn main() {
     tauri::Builder::default()
+        // Une seule copie de Krozties : un fichier ou un lien ouvert pendant
+        // qu'elle tourne lui arrive, au lieu d'en lancer une autre. En premier,
+        // comme le veut le greffon.
+        .plugin(tauri_plugin_single_instance::init(|app, arguments, _| {
+            for argument in arguments.iter().skip(1) {
+                partage::recevoir(app, std::path::Path::new(argument));
+            }
+            partage::montrer(app);
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         // La taille, la place, l'écran et l'état agrandi de la fenêtre, retrouvés
@@ -396,10 +406,11 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer")
         .run(|app, evenement| {
-            // Sous macOS, un fichier `.krozties` ouvert d'un double-clic.
+            // Sous macOS, un fichier `.krozties` ouvert d'un double-clic ; les
+            // liens `krozties://` passent par le greffon des liens.
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Opened { urls } = &evenement {
-                for url in urls {
+                for url in urls.iter().filter(|u| u.scheme() == "file") {
                     if let Ok(chemin) = url.to_file_path() {
                         partage::recevoir(app, &chemin);
                     }

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Rotation Krozties</title>
+<meta name="description" content="Une rotation de sorts Dofus calculée par Krozties, à ouvrir dans l'application.">
+<link rel="icon" href="icone.png">
+<style>
+:root {
+  --encre: #1b1d21; --doux: #5c6169; --trait: #d6d1c2; --fond: #ffffff; --ground: #eeebe3;
+  --accent: #3c4649; --accent-clair: #ece3cc; --alerte: #a23b2a; --rayon: 6px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem 1rem;
+  background: var(--ground); color: var(--encre);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main {
+  width: min(30rem, 100%); background: var(--fond); border: 1px solid var(--trait); border-radius: 10px;
+  padding: 1.6rem 1.5rem 1.3rem; box-shadow: 0 10px 30px rgba(27, 29, 33, .08);
+}
+.logo { display: block; width: 10rem; max-width: 100%; height: auto; margin: 0 0 1.2rem; }
+h1 { font-size: 1.3rem; line-height: 1.25; margin: 0 0 .25rem; text-wrap: balance; }
+.resume { color: var(--doux); margin: 0 0 1.3rem; font-variant-numeric: tabular-nums; }
+.actions { display: grid; gap: .55rem; }
+.actions[hidden] { display: none; }
+.bouton {
+  display: block; width: 100%; text-align: center; padding: .65rem 1rem; border-radius: var(--rayon);
+  font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; border: 1px solid var(--accent);
+}
+.principal { background: var(--accent); color: #fff; }
+.second { background: var(--fond); color: var(--accent); }
+.bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { font-size: .82rem; color: var(--doux); margin: 1.1rem 0 0; }
+.note a { color: var(--accent); }
+.erreur { color: var(--alerte); margin: 0 0 1rem; }
+.erreur[hidden] { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="logo.png" alt="Krozties" width="480" height="130">
+  <h1 id="titre">Rotation Krozties</h1>
+  <p class="resume" id="resume"></p>
+  <p class="erreur" id="erreur" role="alert" hidden></p>
+  <div class="actions" id="actions">
+    <a class="bouton principal" id="ouvrir" href="#">Ouvrir dans Krozties</a>
+    <button type="button" class="bouton second" id="enregistrer">Enregistrer le fichier .krozties</button>
+  </div>
+  <p class="note">Il faut Krozties 0.14 ou plus récent, sur ordinateur. Si le bouton n'ouvre rien, enregistrez le
+    fichier puis ouvrez-le dans Krozties. Pas encore installé ?
+    <a href="https://github.com/Pasouvenla/krozties/releases/latest">Télécharger Krozties</a>.</p>
+</main>
+<script>
+// La rotation tient dans ce qui suit le `#` : le navigateur ne l'envoie à aucun
+// serveur. La page n'en lit que l'en-tête (version, classe, niveau, tours,
+// ennemis, position) ; Krozties lit le reste.
+const CLASSES = { 1: 'Féca', 2: 'Osamodas', 3: 'Enutrof', 4: 'Sram', 5: 'Xélor', 6: 'Ecaflip', 7: 'Eniripsa', 8: 'Iop',
+  9: 'Crâ', 10: 'Sadida', 11: 'Sacrieur', 12: 'Pandawa', 13: 'Roublard', 14: 'Zobal', 15: 'Steamer', 16: 'Eliotrope',
+  17: 'Huppermage', 18: 'Ouginak', 20: 'Forgelance' };
+const POSITIONS = [null, 'à distance', 'au corps à corps'];
+const $ = (id) => document.getElementById(id);
+const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
+function enTete(charge) {
+  const octets = [...atob(charge.replace(/-/g, '+').replace(/_/g, '/'))].map((c) => c.charCodeAt(0));
+  let i = 0;
+  const entier = () => {
+    let v = 0;
+    let poids = 1;
+    let b;
+    do {
+      if (i >= octets.length) throw new Error('incomplet');
+      b = octets[i++];
+      v += (b % 128) * poids;
+      poids *= 128;
+    } while (b >= 128);
+    return v;
+  };
+  return { version: entier(), classe: entier(), niveau: entier(), tours: entier(), ennemis: entier(), position: entier() };
+}
+
+const charge = location.hash.slice(1);
+try {
+  if (!charge) throw new Error('vide');
+  const t = enTete(charge);
+  const classe = CLASSES[t.classe];
+  if (!classe || t.version < 1) throw new Error('inconnu');
+  document.title = `Rotation ${classe} ${t.niveau} · Krozties`;
+  $('titre').textContent = `Rotation ${classe} ${t.niveau}`;
+  $('resume').textContent = [pluriel(t.tours, 'tour'), pluriel(t.ennemis, 'ennemi'), POSITIONS[t.position]]
+    .filter(Boolean).join(' · ');
+  $('ouvrir').href = `krozties://r#${charge}`;
+  $('enregistrer').addEventListener('click', () => {
+    const fichier = JSON.stringify({ format: 'krozties-lien', version: 1, lien: location.href });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([fichier], { type: 'application/json' }));
+    a.download = `Rotation-${classe}-${t.niveau}.krozties`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+} catch (e) {
+  $('actions').hidden = true;
+  $('erreur').hidden = false;
+  $('erreur').textContent = charge
+    ? "Ce lien n'est pas celui d'une rotation Krozties, ou il est incomplet : copiez-le en entier."
+    : 'Ce lien ne contient pas de rotation : copiez-le en entier depuis Krozties.';
+}
+</script>
+</body>
+</html>

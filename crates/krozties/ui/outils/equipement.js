@@ -2,6 +2,7 @@
 // rappelle sur qui l'on travaille, et « Changer » y ramène.
 
 import { decoderLienCourt } from '../commun/import-dofusbook.js';
+import { chargeDuLien } from '../commun/lien.js';
 import { oublierCourant } from '../commun/personnages.js';
 import { COULEUR_ELEMENT, echapper, majuscule, nb } from '../commun/format.js';
 
@@ -31,10 +32,17 @@ export async function rendre(cible, etat, { appeler, majIdentite, afficher }) {
   const $ = (id) => cible.querySelector(`#${id}`);
 
   const importer = async () => {
+    // Un lien de rotation Krozties : le bandeau de l'entête propose de l'ouvrir.
+    if (chargeDuLien($('lien').value)) {
+      document.dispatchEvent(new CustomEvent('krozties:lien', { detail: $('lien').value.trim() }));
+      $('lien').value = '';
+      $('etatImport').textContent = '';
+      return;
+    }
     const id = decoderLienCourt($('lien').value);
     if (!id) {
       $('etatImport').innerHTML = '<span class="alerte">Lien non reconnu. '
-        + 'Attendu : https://d-bk.net/fr/d/XXXXX</span>';
+        + 'Attendu : https://d-bk.net/fr/d/XXXXX, ou le lien d\'une rotation Krozties.</span>';
       return;
     }
     // Dire que ça travaille : la lecture attend DofusBook, et un bouton qui ne

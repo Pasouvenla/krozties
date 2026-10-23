@@ -10,7 +10,9 @@ import { brancherDetails } from './commun/animation.js';
 import { garderOuverture, lireOuverture } from './commun/ouverture.js';
 import { chargerBuild, courant, lire, oublierCourant } from './commun/personnages.js';
 import { dessinerSelecteur } from './commun/selecteur-perso.js';
-import { lireLePartage, reglagesRecus, resumeDuPartage } from './commun/partage.js';
+import { lireUneReception, resumeDuPartage } from './commun/partage.js';
+import { cochesDuLien } from './commun/lien.js';
+import { sortsDuBuild } from './commun/deck.js';
 import { reglagesRotation } from './commun/reglages-rotation.js';
 
 const $ = (id) => document.getElementById(id);
@@ -192,17 +194,22 @@ if (hote === 'bureau') {
 }
 
 // Une rotation reçue : un fichier `.krozties` ouvert d'un double-clic, déposé
-// sur la fenêtre, ou passé au lancement. Un bandeau sous l'entête propose de
-// l'ouvrir : son build et ses réglages se chargent, puis elle se calcule.
+// sur la fenêtre ou passé au lancement, ou un lien ouvert dans le système ou
+// collé dans Équipement. Un bandeau sous l'entête propose de l'ouvrir : son
+// build et ses réglages se chargent, puis elle se calcule.
 let recue = null;
 
-function montrerLaRotationRecue(texte, erreur) {
+const classeDu = (id) => ((etat.classes && etat.classes.classes) || []).find((c) => c.id === id);
+
+async function montrerLaRotationRecue(recu) {
   recue = null;
   let corps;
   try {
-    if (erreur) throw new Error(erreur);
-    recue = lireLePartage(texte);
-    corps = `<span>${echapper(resumeDuPartage(recue))}</span>`;
+    if (recu.erreur) throw new Error(recu.erreur);
+    const d = lireUneReception(recu);
+    await catalogue;
+    corps = `<span>${echapper(resumeDuPartage(d, (id) => (classeDu(id) || {}).label || `Classe ${id}`))}</span>`;
+    recue = d;
   } catch (e) {
     corps = `<span class="alerte">${echapper(e.message)}</span>`;
   }
@@ -231,15 +238,21 @@ async function ouvrirLaRotationRecue() {
     // enregistrée.
     oublierCourant();
     etat.resolu = resolu;
+    // Les sorts cochés d'un lien, sur la liste que la Rotation propose pour ce
+    // build ; leur défaut si elle a changé depuis.
+    const reglages = { ...d.reglages };
+    if (d.cochesDuLien) reglages.coches = cochesDuLien(d.cochesDuLien, sortsDuBuild(classeDu(d.build.class), resolu));
     etat.rotation = null;
-    Object.assign(reglagesRotation(etat), reglagesRecus(d));
+    Object.assign(reglagesRotation(etat), reglages);
+    etat.bonusEcartes = [...d.bonus.ecartes];
+    etat.bonusInclus = [...d.bonus.inclus];
     recue = null;
     $('rotationRecue').hidden = true;
     majIdentite();
     await afficher('rotation');
     if ($('calculer')) $('calculer').click();
   } catch (e) {
-    montrerLaRotationRecue(null, e.message);
+    montrerLaRotationRecue({ erreur: e.message });
   }
 }
 
@@ -259,7 +272,7 @@ $('rotationRecue').addEventListener('click', (e) => {
 window.rotationRecue = async () => {
   try {
     const r = await appeler('rotationRecue');
-    if (r) montrerLaRotationRecue(r.texte, r.erreur);
+    if (r) montrerLaRotationRecue(r);
   } catch (e) { /* rien à proposer */ }
 };
 if (hote === 'bureau') window.rotationRecue();
@@ -273,5 +286,8 @@ document.addEventListener('drop', async (e) => {
   const fichier = [...((e.dataTransfer && e.dataTransfer.files) || [])].find((f) => f.name.endsWith('.krozties'));
   if (!fichier) return;
   e.preventDefault();
-  montrerLaRotationRecue(await fichier.text());
+  montrerLaRotationRecue({ texte: await fichier.text() });
 });
+
+// Un lien collé dans Équipement.
+document.addEventListener('krozties:lien', (e) => montrerLaRotationRecue({ lien: e.detail }));

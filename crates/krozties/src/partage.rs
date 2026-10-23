@@ -15,6 +15,9 @@ const POIDS_MAX: u64 = 1_000_000;
 #[derive(Default)]
 pub struct RotationRecue(Mutex<Option<String>>);
 
+/// Au-delà, un lien n'est pas celui d'une rotation.
+const LIEN_MAX: usize = 16_000;
+
 /// Garde la rotation d'un fichier `.krozties`, puis prévient la page.
 pub fn recevoir(app: &AppHandle, chemin: &Path) {
     if chemin.extension().and_then(|e| e.to_str()) != Some("krozties") {
@@ -27,6 +30,18 @@ pub fn recevoir(app: &AppHandle, chemin: &Path) {
             Err(e) => serde_json::json!({ "erreur": format!("Ce fichier ne se lit pas : {e}.") }),
         },
     };
+    garder(app, recue);
+}
+
+/// Garde un lien de rotation que le système ouvre (`krozties://r#…`), puis
+/// prévient la page.
+pub fn recevoir_un_lien(app: &AppHandle, lien: &str) {
+    if lien.starts_with("krozties:") && lien.len() <= LIEN_MAX {
+        garder(app, serde_json::json!({ "lien": lien }));
+    }
+}
+
+fn garder(app: &AppHandle, recue: serde_json::Value) {
     if let Ok(mut gardee) = app.state::<RotationRecue>().0.lock() {
         *gardee = Some(recue.to_string());
     }
@@ -35,12 +50,39 @@ pub fn recevoir(app: &AppHandle, chemin: &Path) {
     }
 }
 
-/// Sous Windows et Linux, un fichier ouvert d'un double-clic arrive en
-/// argument du lancement ; sous macOS, par `RunEvent::Opened`.
+/// La fenêtre principale au premier plan, quand un fichier ou un lien arrive
+/// à Krozties déjà ouvert.
+pub fn montrer(app: &AppHandle) {
+    if let Some(fenetre) = app.get_webview_window("main") {
+        let _ = fenetre.unminimize();
+        let _ = fenetre.show();
+        let _ = fenetre.set_focus();
+    }
+}
+
+/// Ce que le lancement apporte : sous Windows et Linux, un fichier ouvert d'un
+/// double-clic arrive en argument (sous macOS, par `RunEvent::Opened`) ; un
+/// lien, par le greffon des liens, au lancement comme ensuite.
 pub fn au_lancement(app: &AppHandle) {
+    use tauri_plugin_deep_link::DeepLinkExt;
     for argument in std::env::args().skip(1) {
         recevoir(app, Path::new(&argument));
     }
+    let suite = app.clone();
+    app.deep_link().on_open_url(move |evenement| {
+        for url in evenement.urls() {
+            recevoir_un_lien(&suite, url.as_str());
+        }
+        montrer(&suite);
+    });
+    if let Ok(Some(urls)) = app.deep_link().get_current() {
+        for url in urls {
+            recevoir_un_lien(app, url.as_str());
+        }
+    }
+    // Une AppImage n'inscrit pas le protocole à l'installation.
+    #[cfg(target_os = "linux")]
+    let _ = app.deep_link().register_all();
 }
 
 /// La rotation reçue, une seule fois : `null` s'il n'y en a pas.

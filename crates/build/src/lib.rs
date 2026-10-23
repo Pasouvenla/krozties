@@ -930,6 +930,31 @@ fn characteristic_code(code: &str) -> Option<&'static str> {
 }
 
 impl BuildInput {
+    /// Ce que le calcul lit d'un build déjà normalisé : classe, niveau, objets,
+    /// points investis, forgemagie, bonus actifs ou non, chacun réduit à son
+    /// montant. Un lien de partage n'emporte que cela ; la fiche DofusBook ne
+    /// sert qu'à l'affichage.
+    pub fn essentiel(&self) -> serde_json::Value {
+        serde_json::json!({
+            "class": self.class,
+            "level": self.level,
+            "items": self.items,
+            "invested": self.invested,
+            "forgemagic": self.forgemagic,
+            "fmGlobal": self.fm_global,
+            "fmWeapon": self.fm_weapon,
+            "fmStealWeapon": self.fm_steal_weapon,
+            "boosts": self.boosts.iter().map(|b| serde_json::json!({
+                "name": b.name,
+                "stat": b.stat,
+                "percent": b.amount(),
+                "class_id": b.class_id,
+                "effect_id": b.effect_id,
+                "active": b.active,
+            })).collect::<Vec<_>>(),
+        })
+    }
+
     /// The seventeen slots, in the order the resolver expects them.
     pub const SLOTS: [&'static str; 17] = [
         "ch", "am", "a1", "a2", "ce", "bo", "ca", "br", "ar", "fa", "mo", "d1", "d2", "d3", "d4",
