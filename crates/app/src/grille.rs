@@ -79,6 +79,145 @@ fn exige_la_vue(def: &SpellDef) -> bool {
     def.cast.is_none_or(|c| c.needs_line_of_sight)
 }
 
+/// Ce qu'un sort fait depuis le placement : la case qu'il vise, les cases de
+/// sa zone sur le sol, et le rang des ennemis qu'elle touche.
+pub struct Visee {
+    pub case: Case,
+    pub zone: Vec<Case>,
+    pub touches: Vec<usize>,
+}
+
+/// La meilleure visée de chaque sort du deck, mode par mode, quand le joueur a
+/// posé son personnage et les ennemis : parmi les cases d'où le sort part
+/// (portée, axe, ligne de vue, case libre ou occupée selon ce qu'il exige),
+/// celle où sa zone la plus large frappe le plus, chaque ennemi compté à son
+/// taux ; sans zone, une case où se tient un ennemi. À valeur égale, la
+/// première dans l'ordre du plateau, pour que deux calculs visent pareil. Un
+/// sort qui ne touche personne d'ici n'y est pas.
+pub fn meilleures_visees(
+    placement: &crate::solve::PlacementInput,
+    ruleset: &dofus_ruleset::Ruleset,
+    deck: &[String],
+    bonus_portee: i32,
+) -> Result<Vec<(String, Visee)>, String> {
+    let pose = placement.en_placement();
+    let plateau = Plateau::de(placement.carte, placement.damier)?;
+    let sol = plateau.sol();
+    let mut visees = Vec::new();
+    let sorts = ruleset.spells.iter().filter(|s| deck.contains(&s.id)).flat_map(SpellDef::alternatives);
+    for def in sorts {
+        let aire = la_plus_large(def.lines.iter()).and_then(|l| l.area.as_ref());
+        let contraintes = contraintes_du_sort(&def, bonus_portee);
+        // Le tir sur une case, réduit à ce qu'il frappe : sa zone, et les ennemis
+        // touchés avec leur taux.
+        let tirer = |v: Case| -> Option<(Vec<Case>, Vec<(usize, u32)>)> {
+            match aire {
+                Some(aire) => {
+                    let t = dofus_grid::tir::tir(
+                        aire.shape,
+                        u16::from(aire.size.unwrap_or(0)),
+                        u16::from(aire.size2),
+                        pose.lanceur,
+                        v,
+                        &pose.ennemis,
+                        Contraintes::libre(0, u16::MAX),
+                    )
+                    .ok()?;
+                    let touches = t
+                        .touches
+                        .iter()
+                        .take(aire.max_targets.map_or(usize::MAX, usize::from).max(1))
+                        .map(|x| (x.indice, taux(x.eloignement, aire.falloff_percent, aire.falloff_steps)))
+                        .collect();
+                    Some((t.cases, touches))
+                }
+                None => {
+                    let indice = pose.ennemis.iter().position(|&e| e == v);
+                    Some((vec![v], indice.map(|i| (i, 100)).into_iter().collect()))
+                }
+            }
+        };
+        let mut meilleure: Option<(u32, Case)> = None;
+        for &v in &sol {
+            if !refus_de_visee(&def, contraintes, &plateau, pose.lanceur, v, &pose.ennemis).is_null() {
+                continue;
+            }
+            let valeur: u32 = tirer(v).map_or(0, |(_, touches)| touches.iter().map(|(_, taux)| taux).sum());
+            if valeur > 0 && meilleure.is_none_or(|(m, _)| valeur > m) {
+                meilleure = Some((valeur, v));
+            }
+        }
+        if let Some((_, v)) = meilleure {
+            let (zone, touches) = tirer(v).unwrap_or_default();
+            visees.push((
+                def.id.clone(),
+                Visee {
+                    case: v,
+                    zone: zone.into_iter().filter(|c| plateau.est_sol(*c)).collect(),
+                    touches: touches.into_iter().map(|(i, _)| i).collect(),
+                },
+            ));
+        }
+    }
+    Ok(visees)
+}
+
+/// Une case hors de tout plateau. Personne ne bougeant, un sort qui ne touche
+/// personne d'ici y vise : sa zone n'y frappe personne, et un sort qui exige un
+/// ennemi pour cible ne part pas. Sans elle, il viserait la case du placement,
+/// sans égard pour sa portée.
+const NULLE_PART: Case = Case::new(-9000, -9000);
+
+/// La case que vise chaque sort du deck, mode par mode, pour le moteur.
+pub fn visees_au_mieux(
+    placement: &crate::solve::PlacementInput,
+    ruleset: &dofus_ruleset::Ruleset,
+    deck: &[String],
+    bonus_portee: i32,
+) -> Result<std::collections::HashMap<String, Case>, String> {
+    let mut visees: std::collections::HashMap<String, Case> = ruleset
+        .spells
+        .iter()
+        .filter(|s| deck.contains(&s.id))
+        .flat_map(SpellDef::alternatives)
+        .map(|def| (def.id, NULLE_PART))
+        .collect();
+    for (id, v) in meilleures_visees(placement, ruleset, deck, bonus_portee)? {
+        visees.insert(id, v.case);
+    }
+    Ok(visees)
+}
+
+/// Le placement tel que la Rotation le montre : pour chaque sort qui touche
+/// quelqu'un, sa case visée, sa zone et les ennemis touchés ; puis les ennemis
+/// qu'aucune zone n'atteint.
+pub fn placement_json(
+    placement: &crate::solve::PlacementInput,
+    ruleset: &dofus_ruleset::Ruleset,
+    deck: &[String],
+    bonus_portee: i32,
+) -> Result<serde_json::Value, String> {
+    let visees = meilleures_visees(placement, ruleset, deck, bonus_portee)?;
+    let atteints: std::collections::BTreeSet<usize> = visees.iter().flat_map(|(_, v)| v.touches.iter().copied()).collect();
+    let sorts: serde_json::Map<String, serde_json::Value> = visees
+        .iter()
+        .map(|(id, v)| {
+            (
+                id.clone(),
+                serde_json::json!({
+                    "visee": [v.case.x, v.case.y],
+                    "zone": v.zone.iter().map(|c| [c.x, c.y]).collect::<Vec<_>>(),
+                    "touches": v.touches,
+                }),
+            )
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "sorts": sorts,
+        "hors_de_portee": (0..placement.ennemis.len()).filter(|i| !atteints.contains(i)).collect::<Vec<_>>(),
+    }))
+}
+
 /// La ligne dont la zone est la plus large : c'est elle qui décide du dessin.
 fn la_plus_large<'a>(
     lignes: impl Iterator<Item = &'a dofus_ruleset::LineDef>,
@@ -517,6 +656,48 @@ mod tests {
     fn apercu(r: &Request) -> serde_json::Value {
         serde_json::from_str(&zones_json(r).expect("l'aperçu doit se calculer"))
             .expect("l'aperçu doit être du JSON")
+    }
+
+    /// Chaque sort vise sa meilleure case : la case visée du placement est vide,
+    /// mais l'Épée Céleste part d'elle-même sur le groupe d'ennemis, et frappe
+    /// autant que si le joueur l'y visait. Hors de portée de tout, elle ne
+    /// frappe personne.
+    #[test]
+    fn chaque_sort_vise_sa_meilleure_case() {
+        let rotation = |visee: (i16, i16), ennemis: Vec<(i16, i16)>| -> serde_json::Value {
+            let mut r = requete(&["epee_celeste"], ennemis);
+            r.placement.as_mut().unwrap().visee = visee;
+            let v: serde_json::Value = serde_json::from_str(&crate::solve::solve_json(&r).unwrap()).unwrap();
+            v["rotation"].clone()
+        };
+        let groupe = vec![(-4, 0), (-4, 1), (-3, 0)];
+        let a_vide = rotation((0, 0), groupe.clone());
+        assert!(a_vide["total"].as_f64().unwrap() > 0.0, "{a_vide}");
+        assert_eq!(a_vide["total"], rotation((-4, 0), groupe)["total"]);
+        // Ce que la page en montre : le groupe touché, personne hors de portée.
+        let epee = &a_vide["placement"]["sorts"]["epee_celeste"];
+        assert_eq!(epee["touches"], serde_json::json!([0, 1, 2]), "{epee}");
+        assert!(epee["zone"].as_array().unwrap().len() > 1, "{epee}");
+        assert_eq!(a_vide["placement"]["hors_de_portee"], serde_json::json!([]));
+        let loin = rotation((0, 0), vec![(30, 0), (30, 1)]);
+        assert_eq!(loin["total"].as_f64().unwrap(), 0.0);
+        assert_eq!(loin["placement"]["sorts"], serde_json::json!({}));
+        assert_eq!(loin["placement"]["hors_de_portee"], serde_json::json!([0, 1]));
+    }
+
+    /// Hors de portée, un sort ne touche personne, même quand un ennemi se tient
+    /// sur la case visée du placement : personne ne bouge, et la Pression (1 à 4
+    /// cases) ne part pas de six cases. À trois, elle frappe.
+    #[test]
+    fn hors_de_portee_un_sort_ne_touche_personne() {
+        let total = |lanceur: (i16, i16)| -> f64 {
+            let mut r = requete(&["pression"], vec![(0, 0)]);
+            r.placement.as_mut().unwrap().lanceur = lanceur;
+            let v: serde_json::Value = serde_json::from_str(&crate::solve::solve_json(&r).unwrap()).unwrap();
+            v["rotation"]["total"].as_f64().unwrap()
+        };
+        assert_eq!(total((-6, 0)), 0.0);
+        assert!(total((-3, 0)) > 0.0);
     }
 
     /// Le tableau `[x, y]` du JSON, en case.

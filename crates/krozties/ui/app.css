@@ -328,6 +328,28 @@ details.pourquoi > summary:hover { background: var(--panneau); }
 .plateau { width: 100%; }
 .plateau svg { display: block; width: 100%; height: auto; overflow: visible; }
 
+/* Le placement de la Rotation : le plateau, et à côté ce que chaque lancer du
+   tour touche. */
+.placement-rotation { margin-top: 1rem; }
+.case-placement { display: flex; align-items: center; gap: .45rem; font-weight: 600; cursor: pointer; }
+.placement-rotation .barre-outils { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: .7rem; }
+.outils-placement { display: inline-flex; gap: .7rem; }
+.placement-cote { display: grid; grid-template-columns: minmax(0, 3fr) minmax(12rem, 2fr); gap: 1rem; margin-top: .6rem;
+                  align-items: start; }
+@media (max-width: 70rem) { .placement-cote { grid-template-columns: 1fr; } }
+.legende-placement { display: flex; flex-wrap: wrap; gap: .8rem; font-size: .76rem; color: var(--doux); margin-top: .3rem; }
+.legende-placement i { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem;
+                       vertical-align: -1px; }
+.legende-placement i.vous { background: var(--accent); }
+.legende-placement i.ennemis { background: #f6dccd; border: 1px solid var(--cheveux); }
+.legende-placement i.zone { background: var(--accent-clair); border: 1px solid var(--accent); }
+.legende-placement i.obstacle { background: #6e6149; }
+.lancers-placement { display: grid; gap: .35rem; font-size: .84rem; }
+.lancer-place { display: flex; align-items: center; gap: .45rem; padding: .2rem .35rem; border-radius: var(--rayon); }
+.lancer-place.survole { background: var(--accent-clair); }
+.lancer-place .ic { width: 22px; height: 22px; border-radius: 4px; }
+.lancer-place .touche { margin-left: auto; color: var(--doux); font-size: .78rem; white-space: nowrap; }
+
 /* ⚠️ L'ORDRE DE CES RÈGLES EST LA RÈGLE. Même spécificité, donc la dernière
    écrite gagne : l'alternance du damier passe AVANT la zone et les jetons,
    sans quoi une case claire sur deux effacerait le coloriage. */

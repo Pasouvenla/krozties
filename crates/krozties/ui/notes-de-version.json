@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Rotation › Placer le combat sur une carte : posez votre personnage et les ennemis sur un damier ou une carte de boss, et chaque sort vise sa meilleure case depuis là (portée, ligne de vue, cases libres) ; un sort qui n'atteint personne ne frappe pas. Survolez un lancer pour voir sa zone et qui il touche. Le lien et le fichier partagés emportent le placement."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.14.0",
       "date": "2026-10-23",
       "rubriques": [

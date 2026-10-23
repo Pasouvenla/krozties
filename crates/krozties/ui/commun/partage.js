@@ -15,13 +15,18 @@ const POIDS_MAX = 1000000;
 const EN_FRANCAIS = { Earth: 'Terre', Fire: 'Feu', Water: 'Eau', Air: 'Air', Neutral: 'Neutre' };
 const POSITIONS = { distance: 'à distance', melee: 'au corps à corps' };
 
-/// Le fichier d'une rotation calculée.
+/// Le fichier d'une rotation calculée. Avec un placement, il passe en
+/// version 2 : une version qui ne sait pas le lire refuse le fichier, au lieu
+/// de calculer sans lui.
 export function contenuDuPartage(etat, resultat, demande) {
   const r = etat.resolu || {};
   const reglages = etat.rotation || {};
+  const placement = reglages.placement && etat.placement
+    ? { lanceur: etat.placement.lanceur, ennemis: etat.placement.ennemis, plateau: etat.plateau || null } : null;
   return JSON.stringify({
     format: FORMAT,
-    version: 1,
+    version: placement ? 2 : 1,
+    ...(placement ? { placement } : {}),
     build: etat.build,
     // Les sorts cochés sont un ensemble, que le JSON n'écrit pas : une liste.
     reglages: { ...reglages, coches: reglages.coches ? [...reglages.coches] : null },
@@ -72,6 +77,7 @@ function depuisUnLien(lien) {
     build: lu.build,
     reglages: { ...lu.reglages, classe: lu.build.class, coches: null },
     bonus: lu.bonus,
+    placement: lu.placement,
     resume: lu.resume,
     cochesDuLien: lu.coches,
   };
@@ -92,13 +98,16 @@ export function lireUneReception({ texte, lien }) {
     || !d.reglages || typeof d.reglages !== 'object') {
     throw new Error("Ce fichier n'est pas une rotation Krozties.");
   }
-  if (d.version > 1) throw new Error('Cette rotation vient d\'une version plus récente : mettez Krozties à jour pour l\'ouvrir.');
+  if (d.version > 2) throw new Error('Cette rotation vient d\'une version plus récente : mettez Krozties à jour pour l\'ouvrir.');
   const coches = Array.isArray(d.reglages.coches)
     ? new Set(d.reglages.coches.filter((id) => typeof id === 'string')) : null;
+  const placement = d.placement && Array.isArray(d.placement.lanceur) && Array.isArray(d.placement.ennemis)
+    ? d.placement : null;
   return {
     build: d.build,
-    reglages: { ...d.reglages, coches },
+    reglages: { ...d.reglages, coches, placement: Boolean(placement) },
     bonus: lesBonus(d.bonus),
+    placement,
     resume: d.resume || {},
     cochesDuLien: null,
   };

@@ -246,6 +246,12 @@ async function ouvrirLaRotationRecue() {
     Object.assign(reglagesRotation(etat), reglages);
     etat.bonusEcartes = [...d.bonus.ecartes];
     etat.bonusInclus = [...d.bonus.inclus];
+    // Le placement reçu devient celui des KrozTools, plateau compris.
+    if (d.placement) {
+      etat.placement = { lanceur: d.placement.lanceur, visee: d.placement.ennemis[0] || d.placement.lanceur,
+        ennemis: d.placement.ennemis.map((c) => [...c]) };
+      if (d.placement.plateau) etat.plateau = { carte: d.placement.plateau.carte ?? null, damier: d.placement.plateau.damier || 15 };
+    }
     recue = null;
     $('rotationRecue').hidden = true;
     majIdentite();

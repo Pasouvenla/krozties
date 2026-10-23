@@ -460,6 +460,25 @@ fn chaque_outil_s_affiche_sans_erreur() {
         }),
         "{r}"
     );
+    // Le placement posé au clic remplace le nombre d'ennemis ; chaque lancer
+    // dit qui il touche, le survol peint sa zone, et le fichier comme le lien
+    // l'emportent jusqu'au total.
+    assert_eq!(
+        r["placement"],
+        serde_json::json!({
+            "cibles": true,
+            "tour": true,
+            "touche": true,
+            "loin": true,
+            "zone": true,
+            "survol": true,
+            "fichier": true,
+            "lien": true,
+            "total": true,
+            "ennemisSansPlacement": "4",
+        }),
+        "{r}"
+    );
     // Recaler au tour 2 : la fiche remplie d'après le curseur, les sorts du
     // deck à ajouter, puis la suite recalculée et marquée.
     assert_eq!(

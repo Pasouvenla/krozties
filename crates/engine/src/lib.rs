@@ -109,14 +109,16 @@ pub enum When {
     EvenTurns,
 }
 
-/// Le lanceur, la case visée et les ennemis, en cases de grille. Une seule
-/// visée pour tout le tour : le solveur ne déplace personne entre deux sorts,
-/// comme `pm_depenses` déclare une dépense sans simuler le trajet.
+/// Le lanceur, la case visée et les ennemis, en cases de grille. Personne ne
+/// bouge entre deux sorts, comme `pm_depenses` déclare une dépense sans simuler
+/// le trajet ; chaque sort peut viser sa propre case (`visees`, par identifiant),
+/// celle où sa zone touche le plus d'ennemis, et vise `visee` sinon.
 #[derive(Clone, Debug)]
 pub struct Placement {
     pub lanceur: Case,
     pub visee: Case,
     pub ennemis: Vec<Case>,
+    pub visees: HashMap<String, Case>,
 }
 
 /// Où se tiennent les ennemis, pour la seule chose qui en dépende : combien de
@@ -139,6 +141,7 @@ pub enum Cibles {
         lanceur: Case,
         visee: Case,
         ennemis: Vec<Case>,
+        visees: HashMap<String, Case>,
     },
 }
 
@@ -160,11 +163,31 @@ impl Cibles {
                 lanceur: p.lanceur,
                 visee: p.visee,
                 ennemis: p.ennemis.clone(),
+                visees: p.visees.clone(),
             },
             None => Cibles::Declarees {
                 combien: scenario.targets,
                 etalement: scenario.etalement,
             },
+        }
+    }
+
+    /// Les cibles telles qu'un sort les voit : sa propre case visée, s'il en a
+    /// une.
+    pub fn pour(&self, sort: &str) -> Cibles {
+        match self {
+            Cibles::Placees {
+                lanceur,
+                visee,
+                ennemis,
+                visees,
+            } => Cibles::Placees {
+                lanceur: *lanceur,
+                visee: visees.get(sort).copied().unwrap_or(*visee),
+                ennemis: ennemis.clone(),
+                visees: HashMap::new(),
+            },
+            declarees => declarees.clone(),
         }
     }
 
@@ -184,12 +207,13 @@ impl Cibles {
     /// déclaré : le seul moyen pour un appelant de savoir que le placement n'a pas
     /// servi sur ces sorts-là.
     pub fn placement_ignore(&self, ruleset: &Ruleset) -> Vec<String> {
-        let Cibles::Placees { lanceur, visee, .. } = self else {
+        let Cibles::Placees { lanceur, visee, visees, .. } = self else {
             return Vec::new();
         };
         let mut out = Vec::new();
         // Les modes d'un sort ont leurs propres lignes, et leur nom dit lequel.
         for spell in ruleset.spells.iter().flat_map(SpellDef::alternatives) {
+            let visee = visees.get(&spell.id).unwrap_or(visee);
             for (i, line) in spell.lines.iter().enumerate() {
                 // Ni le rebond ni la ligne qui frappe chaque ennemi ne lisent
                 // leur zone.
@@ -1340,7 +1364,7 @@ impl Engine {
                     &mut tag_names,
                     &build,
                     scenario.mode,
-                    &cibles,
+                    &cibles.pour(&alt.id),
                     scenario.pm_depenses,
                     scenario.reach,
                     &vie,
@@ -1598,7 +1622,7 @@ impl Engine {
                             l.normal.known().copied(),
                             crit_rate,
                             &build.profile,
-                            &cibles,
+                            &cibles.pour(&source),
                             scenario.pm_depenses,
                             build.base_mp,
                             &vie,
@@ -4524,6 +4548,7 @@ fn eloignements(area: &AreaDef, cibles: &Cibles) -> Option<Vec<u16>> {
         lanceur,
         visee,
         ennemis,
+        ..
     } = cibles
     else {
         return None;
@@ -4624,6 +4649,7 @@ fn rebond(rayon: u8, principales: &[Option<&AreaDef>], cibles: &Cibles) -> Vec<u
         lanceur,
         visee,
         ennemis,
+        ..
     } = cibles
     else {
         return declare();

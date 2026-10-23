@@ -682,6 +682,92 @@ try {
     total: totalEnvoye > 0 && Number((texte('#contenu .chiffre') || '').replace(/\D/g, '')) === totalEnvoye,
   };
 
+  // Placer le combat : un Forgelance et quatre ennemis posés au clic, dont un
+  // hors de portée de toute zone. Chaque lancer dit qui il touche, le survol
+  // d'un lancer peint sa zone, et le fichier comme le lien emportent le
+  // placement.
+  const forgelance = { class: 20, level: 200, invested: { strength: 400 } };
+  app.etat.build = forgelance;
+  app.etat.resolu = await appeler('resoudre', forgelance);
+  await app.afficher('rotation');
+  await attendre(() => document.querySelector('#dessinPlacement polygon.case'), 5000);
+  const avecPlacement = document.getElementById('avecPlacement');
+  avecPlacement.checked = true;
+  avecPlacement.dispatchEvent(new Event('change', { bubbles: true }));
+  // Le plateau est celui des KrozTools, resté sur une carte de boss plus haut.
+  const plateauPlace = document.getElementById('plateauPlacement');
+  plateauPlace.value = 'damier:15';
+  plateauPlace.dispatchEvent(new Event('change', { bubbles: true }));
+  const poserSurLePlacement = (outil, x, y) => {
+    document.querySelector(`input[name=outilPlacement][value=${outil}]`).click();
+    document.querySelector(`#dessinPlacement polygon.case[data-x="${x}"][data-y="${y}"]`)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  };
+  document.getElementById('viderPlacement').click();
+  poserSurLePlacement('lanceur', -1, 0);
+  const ennemisPoses = [[0, 0], [0, 1], [1, 0], [5, 4]];
+  ennemisPoses.forEach(([x, y]) => poserSurLePlacement('ennemi', x, y));
+  const cibles = document.getElementById('cibles');
+  const ciblesTues = cibles.disabled && cibles.value === '4';
+  document.getElementById('calculer').click();
+  await attendre(() => document.querySelector('#lancersPlacement .lancer-place'), 60000);
+  const liste = texte('#lancersPlacement');
+  let zone = 0;
+  let survol = '';
+  for (const l of document.querySelectorAll('#detailRotation .lancer[data-tour]')) {
+    l.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    zone = document.querySelectorAll('#dessinPlacement polygon.zone-fond').length;
+    survol = texte('#lancersPlacement b');
+    if (zone > 1) break;
+  }
+  // La souris quitte la rotation : la fiche du dernier lancer survolé ne
+  // s'ouvre pas.
+  document.body.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+  const partageJs = await import('/commun/partage.js');
+  const { pourLaRequete } = await import('/commun/placement-rotation.js');
+  const fichierPlace = partageJs.lireUneReception({
+    texte: partageJs.contenuDuPartage(app.etat, { turns: [], total: 0 }, { targets: 4 }),
+  });
+  const classePlacee = app.etat.classes.classes.find((c) => c.id === 20);
+  const lienPlace = codec.lienDuPartage(app.etat.resolu.partage, app.etat.rotation,
+    deck.sortsDuBuild(classePlacee, app.etat.resolu),
+    { ecartes: app.etat.bonusEcartes || [], inclus: app.etat.bonusInclus || [] }, classePlacee.etats_declares || [],
+    pourLaRequete(app.etat));
+  const totalPlace = Number((texte('#contenu .chiffre') || '').replace(/\D/g, ''));
+  // Le placement oublié, puis le lien collé dans Équipement : il revient.
+  app.etat.placement = { lanceur: [-4, 0], visee: [0, 0], ennemis: [[0, 0]] };
+  app.etat.rotation.placement = false;
+  app.etat.build = autre;
+  app.etat.resolu = await appeler('resoudre', autre);
+  await app.afficher('equipement');
+  document.getElementById('lien').value = lienPlace;
+  document.getElementById('ouvrir').click();
+  await attendre(() => !document.getElementById('rotationRecue').hidden, 5000);
+  document.querySelector('#rotationRecue [data-recue=ouvrir]').click();
+  await attendre(() => app.etat.build.class === 20 && document.querySelector('#lancersPlacement .lancer-place'), 60000);
+  resultat.placement = {
+    cibles: ciblesTues,
+    tour: liste.startsWith('Tour 1'),
+    touche: [...document.querySelectorAll('#lancersPlacement .touche')].some((t) => t.textContent.startsWith('touche')),
+    loin: liste.includes("L'ennemi 4 reste hors de portée de toutes les zones."),
+    zone: zone > 1,
+    survol: survol.includes('survol de'),
+    fichier: Boolean(fichierPlace.placement) && fichierPlace.reglages.placement === true
+      && JSON.stringify(fichierPlace.placement.ennemis) === JSON.stringify(ennemisPoses),
+    lien: app.etat.rotation.placement === true && document.getElementById('avecPlacement').checked
+      && JSON.stringify(app.etat.placement.lanceur) === '[-1,0]'
+      && JSON.stringify(app.etat.placement.ennemis) === JSON.stringify(ennemisPoses),
+    total: totalPlace > 0 && Number((texte('#contenu .chiffre') || '').replace(/\D/g, '')) === totalPlace,
+  };
+  // Sans placement, le nombre d'ennemis reprend la main : celui du lien, que
+  // la suite ramène à un.
+  const sansPlacement = document.getElementById('avecPlacement');
+  sansPlacement.checked = false;
+  sansPlacement.dispatchEvent(new Event('change', { bubbles: true }));
+  resultat.placement.ennemisSansPlacement = document.getElementById('cibles').value;
+  document.getElementById('cibles').value = '1';
+  document.getElementById('cibles').dispatchEvent(new Event('input', { bubbles: true }));
+
   // L'arme du build, un sort de plus au deck de la Rotation, avec son réglage
   // de Maîtrise et sa fiche : la Hachebarde de Guerre d'un Ouginak, lancée dans
   // un calcul de deux tours.

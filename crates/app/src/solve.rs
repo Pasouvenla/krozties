@@ -69,6 +69,7 @@ impl PlacementInput {
                 .take(usize::from(MAX_ENNEMIS))
                 .map(|&(x, y)| Case::new(x, y))
                 .collect(),
+            visees: std::collections::HashMap::new(),
         }
     }
 }
@@ -505,6 +506,9 @@ pub struct Outcome {
     /// Les sorts dont la zone ne se dessine pas, laissés au régime déclaré : un
     /// joueur qui a posé ses ennemis doit savoir lesquels l'ignorent.
     pub placement_ignore: Vec<String>,
+    /// Ce que le placement donne, sort par sort, pour la page : la case visée,
+    /// la zone et les ennemis touchés, puis ceux qu'aucune zone n'atteint.
+    pub placement: Option<serde_json::Value>,
     /// La rotation qui se répète, indépendante de l'horizon demandé.
     pub steady: dofus_engine::SteadyState,
     /// Ce que joue chaque invocation du deck, par sort (« Brise Automnale ×1, un
@@ -2036,7 +2040,16 @@ fn preparer(
         // parc, qui retirent au plus quatre crans : la borne évite de laisser
         // croire qu'au-delà le réglage change quelque chose.
         etalement: request.etalement.unwrap_or(0).min(4),
-        placement: request.placement.as_ref().map(PlacementInput::en_placement),
+        // Chaque sort vise sa meilleure case depuis la position du joueur.
+        placement: match &request.placement {
+            Some(p) => {
+                let mut pose = p.en_placement();
+                let bonus_portee = resolved.totals.get("range").copied().unwrap_or(0);
+                pose.visees = crate::grille::visees_au_mieux(p, &ruleset, &request.deck, bonus_portee)?;
+                Some(pose)
+            }
+            None => None,
+        },
         etats_declares: request
             .etats_declares
             .iter()
@@ -2354,6 +2367,17 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
                 .any(|s| joues.contains(s.id.as_str()) && libelle.starts_with(&s.name.fr))
         })
         .collect();
+    // Calculé sur les règles que le moteur a lues : ce que la page montre est
+    // ce qu'il a compté.
+    let placement = match &request.placement {
+        Some(p) => Some(crate::grille::placement_json(
+            p,
+            &ruleset,
+            &request.deck,
+            resolved.totals.get("range").copied().unwrap_or(0),
+        )?),
+        None => None,
+    };
     Ok(Outcome {
         resolved,
         sujets_des_remarques: remarques.iter().map(|(s, _)| (*s).to_string()).collect(),
@@ -2368,6 +2392,7 @@ pub fn run(request: &Request) -> Result<Outcome, String> {
         zones_sans_plafond: zones,
         zones_degressives: degressives,
         placement_ignore: ignores,
+        placement,
         // Les compteurs « invocation_<sort> » sont ceux de la greffe, qui
         // portent ce que joue l'invocation.
         jeu_des_invocations: ruleset
@@ -3521,6 +3546,7 @@ pub fn solve_json(request: &Request) -> Result<String, String> {
             "zones_sans_plafond": outcome.zones_sans_plafond,
             "zones_degressives": outcome.zones_degressives,
             "placement_ignore": outcome.placement_ignore,
+            "placement": outcome.placement,
             "ecartes": outcome.ecartes.iter().map(|(s, r)| {
                 serde_json::json!({ "sort": s, "raison": r })
             }).collect::<Vec<_>>(),

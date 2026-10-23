@@ -330,6 +330,7 @@ fn place(lanceur: (i16, i16), visee: (i16, i16), ennemis: &[(i16, i16)]) -> Plac
         lanceur: Case::new(lanceur.0, lanceur.1),
         visee: Case::new(visee.0, visee.1),
         ennemis: ennemis.iter().map(|e| Case::new(e.0, e.1)).collect(),
+        visees: Default::default(),
     }
 }
 

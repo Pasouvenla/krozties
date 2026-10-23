@@ -11,6 +11,10 @@ import { ouvrirLeCompagnon, publier as publierPourLeCompagnon } from '../commun/
 import { brancherLesReglages, reglages as reglagesDesTouches, signalerLesPrises } from '../commun/touches.js';
 import { contenuDuPartage, enregistrer as enregistrerLePartage, nomDuFichier } from '../commun/partage.js';
 import { lienDuPartage } from '../commun/lien.js';
+import {
+  actif as placementActif, brancher as brancherLePlacement, encart as encartPlacement,
+  pourLaRequete as placementPourLaRequete,
+} from '../commun/placement-rotation.js';
 import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
@@ -129,6 +133,7 @@ export async function rendre(cible, etat, { appeler }) {
             </div>
             <div class="sorts" id="listeSorts"></div>
           </div>
+          ${encartPlacement(etat)}
           <div id="detailRotation" style="margin-top:1rem"></div>
           <div class="carte" id="carteInvocations" style="margin-top:1rem" hidden></div>
         </div>
@@ -378,6 +383,30 @@ export async function rendre(cible, etat, { appeler }) {
     $('reglagesModifies').textContent = n ? `${n} ${pluriel(n, 'modifié')}` : '';
   }
 
+  // Le placement : posé sur un plateau, il décide qui chaque sort touche, et
+  // le nombre d'ennemis déclaré se tait.
+  const majCibles = () => {
+    const on = placementActif(etat);
+    $('cibles').disabled = on;
+    $('cibles').title = on ? 'Le placement décide : posez les ennemis sur le plateau.' : '';
+    $('cibles').value = String(on ? Math.max(1, etat.placement.ennemis.length) : reglages.cibles);
+  };
+  const placementUI = await brancherLePlacement(cible, etat, {
+    appeler,
+    maxEnnemis: MAX_ENNEMIS,
+    change: () => { majCibles(); marquerPerime(); },
+  });
+  majCibles();
+  // Un lancer survolé dans la rotation : sa zone sur le plateau.
+  const survolerUnLancer = (e) => {
+    const l = e.target.closest && e.target.closest('.lancer[data-tour]');
+    if (!l || !placementActif(etat)) return;
+    placementUI.survoler({ sort: l.dataset.sort, tour: Number(l.dataset.tour), lancer: Number(l.dataset.lancer) });
+  };
+  $('detailRotation').addEventListener('mouseover', survolerUnLancer);
+  $('detailRotation').addEventListener('focusin', survolerUnLancer);
+  $('detailRotation').addEventListener('mouseleave', () => placementUI.survoler(null));
+
   function marquerPerime() {
     majModifies();
     garder(reglages);
@@ -530,7 +559,7 @@ export async function rendre(cible, etat, { appeler }) {
     maitrise_d_arme: reglages.maitrise ?? 300,
     position: position(),
     poussees_bloquees: Boolean(reglages.pousseesBloquees),
-    targets: reglages.cibles,
+    targets: placementActif(etat) ? Math.max(1, etat.placement.ennemis.length) : reglages.cibles,
     etalement: reglages.etalement,
     exhaustif: reglages.exhaustif,
     invocations_de_classe: reglages.invocationsDeClasse !== false,
@@ -539,6 +568,7 @@ export async function rendre(cible, etat, { appeler }) {
     bonus_ecartes: ecartes(),
     bonus_inclus: inclus(),
     ...(estRoublard ? { mur_de_bombes: mur() } : {}),
+    ...(placementActif(etat) ? { placement: placementPourLaRequete(etat) } : {}),
     ...versMoteur(res(), Boolean(arme)),
     ...extra,
   });
@@ -592,6 +622,7 @@ export async function rendre(cible, etat, { appeler }) {
       dessinerResume();
       dessinerDetail();
       dessinerInvocations();
+      placementUI.montrer(resultat);
       if ($('hypothesesMur')) {
         $('hypothesesMur').innerHTML = hypotheses('mur').map((m) => `${echapper(majuscule(m))}.`).join('<br>');
       }
@@ -708,7 +739,7 @@ export async function rendre(cible, etat, { appeler }) {
       $('copierLien').addEventListener('click', async () => {
         fermerLeMenu();
         const lien = lienDuPartage(etat.resolu.partage, reglages, sorts,
-          { ecartes: etat.bonusEcartes || [], inclus: etat.bonusInclus || [] }, declares);
+          { ecartes: etat.bonusEcartes || [], inclus: etat.bonusInclus || [] }, declares, placementPourLaRequete(etat));
         const ok = await discord.copier(lien);
         $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
         $('copieDiscord').textContent = ok ? 'Lien copié.' : 'Le système refuse la copie.';

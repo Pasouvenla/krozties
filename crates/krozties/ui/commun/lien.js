@@ -4,7 +4,9 @@
 // qui ouvre le lien.
 //
 // L'en-tête vient d'abord, seul lu par la page du lien : version, classe,
-// niveau, tours, ennemis, position. Puis le build, puis les réglages. Les sorts
+// niveau, tours, ennemis, position. Puis le build, puis les réglages ; en
+// version 2, le placement à la fin (plateau, case du joueur, cases des
+// ennemis). Les sorts
 // cochés s'écrivent en cases, dans l'ordre des sorts que la Rotation propose
 // pour ce build, avec leur nombre et une empreinte : une liste changée par une
 // mise à jour les fait reprendre leur défaut.
@@ -12,7 +14,8 @@
 export const ADRESSE = 'https://pasouvenla.github.io/krozties/r/';
 /// Le même lien, tel que le système le donne à l'application de bureau.
 export const PROTOCOLE = 'krozties://r';
-const VERSION = 1;
+/// La version 1 n'a pas de placement ; la 2 en porte un.
+const VERSION = 2;
 const EMPLACEMENTS = ['ch', 'am', 'a1', 'a2', 'ce', 'bo', 'ca', 'br', 'ar', 'fa', 'mo', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6'];
 const CARACTERISTIQUES = ['vitality', 'wisdom', 'strength', 'intelligence', 'chance', 'agility'];
 const POSITIONS = ['libre', 'distance', 'melee'];
@@ -119,14 +122,15 @@ const empreinte = (sorts) => [...sorts.map((s) => s.id).join(',')]
 /// (`resolu.partage`) ; les réglages de la Rotation ; les sorts qu'elle propose
 /// pour ce build, dans leur ordre ; les bonus de Dofus écartés ou inclus ; les
 /// états que la classe déclare, dont seuls ceux qui quittent leur défaut
-/// s'écrivent : la Rotation de celui qui reçoit remet les autres.
-export function lienDuPartage(essentiel, reglages, sorts, bonus, declares) {
+/// s'écrivent : la Rotation de celui qui reçoit remet les autres ; le placement,
+/// s'il y en a un (`{ lanceur, ennemis, carte }` ou `damier`).
+export function lienDuPartage(essentiel, reglages, sorts, bonus, declares, placement) {
   const e = new Ecrit();
-  e.entier(VERSION);
+  e.entier(placement ? 2 : 1);
   e.entier(essentiel.class);
   e.entier(essentiel.level);
   e.entier(reglages.horizon);
-  e.entier(reglages.cibles);
+  e.entier(placement ? Math.max(1, placement.ennemis.length) : reglages.cibles);
   e.entier(Math.max(0, POSITIONS.indexOf(reglages.position)));
 
   const objets = essentiel.items || [];
@@ -189,6 +193,14 @@ export function lienDuPartage(essentiel, reglages, sorts, bonus, declares) {
     e.entier(liste.length);
     liste.forEach((nom) => e.nom(nom, BONUS));
   }
+  if (placement) {
+    e.entier(placement.carte != null ? placement.carte + 1 : 0);
+    if (placement.carte == null) e.entier(placement.damier || 15);
+    e.signe(placement.lanceur[0]);
+    e.signe(placement.lanceur[1]);
+    e.entier(placement.ennemis.length);
+    placement.ennemis.forEach(([x, y]) => { e.signe(x); e.signe(y); });
+  }
   return `${ADRESSE}#${versBase64(e.octets)}`;
 }
 
@@ -208,7 +220,7 @@ export function enTete(charge) {
   const l = new Lit(depuisBase64(charge));
   const version = l.entier();
   if (version > VERSION) throw new Error('Ce lien vient d\'une version plus récente : mettez Krozties à jour pour l\'ouvrir.');
-  return { classe: l.entier(), niveau: l.entier(), tours: l.entier(), ennemis: l.entier(), position: POSITIONS[l.entier()] || 'libre', lecteur: l };
+  return { version, classe: l.entier(), niveau: l.entier(), tours: l.entier(), ennemis: l.entier(), position: POSITIONS[l.entier()] || 'libre', lecteur: l };
 }
 
 /// Un lien lu : le build, les réglages, et les sorts cochés en attente de la
@@ -285,10 +297,22 @@ export function lireLeLien(charge) {
     const n = l.entier();
     for (let i = 0; i < n; i++) liste.push(l.nom(BONUS));
   }
+  let placement = null;
+  if (tete.version >= 2) {
+    const carte = l.entier();
+    const plateau = carte ? { carte: carte - 1, damier: 15 } : { carte: null, damier: l.entier() };
+    const lanceur = [l.signe(), l.signe()];
+    const n = l.entier();
+    const ennemis = [];
+    for (let i = 0; i < n; i++) ennemis.push([l.signe(), l.signe()]);
+    placement = { lanceur, ennemis, plateau };
+  }
+  reglages.placement = Boolean(placement);
   return {
     build,
     reglages,
     bonus,
+    placement,
     coches,
     resume: { classe: tete.classe, niveau: tete.niveau, tours: tete.tours, ennemis: tete.ennemis, position: tete.position },
   };
