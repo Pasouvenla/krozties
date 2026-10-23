@@ -431,6 +431,20 @@ fn chaque_outil_s_affiche_sans_erreur() {
         }),
         "{r}"
     );
+    // Recaler au tour 2 : la fiche remplie d'après le curseur, les sorts du
+    // deck à ajouter, puis la suite recalculée et marquée.
+    assert_eq!(
+        r["recaler"],
+        serde_json::json!({
+            "jetons": true,
+            "sorts": true,
+            "ferme": true,
+            "erreur": null,
+            "badge": "recalé",
+            "recale": 1,
+        }),
+        "{r}"
+    );
     // Les données manquantes : le Sram n'a plus rien à relever, la page le
     // dit ; sur l'onglet du Crâ, le Tir Perçant, son formulaire, le refus d'un
     // envoi vide, puis l'adresse du formulaire GitHub remplie.

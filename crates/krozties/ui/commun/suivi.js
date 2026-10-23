@@ -1,6 +1,7 @@
 // Ce que la Rotation laisse au compagnon de combat : la rotation affichée, tour
-// par tour, dans le stockage local que ses deux fenêtres partagent. Le
-// compagnon la relit à chaque nouveau calcul.
+// par tour, et la requête qui l'a calculée, dans le stockage local que ses deux
+// fenêtres partagent. Le compagnon la relit à chaque nouveau calcul, et la
+// recalcule lui-même quand le combat dévie.
 
 import { hote } from '../pont.js';
 import { lireLesTouches } from './touches.js';
@@ -8,10 +9,11 @@ import { lireLesTouches } from './touches.js';
 export const CLE = 'krozties.compagnon';
 
 /// La rotation, réduite à ce que le compagnon montre.
-export function publier(r, build) {
-  const suivi = {
+export function suiviDe(r, build, requete) {
+  return {
     calcule_le: Date.now(),
     build,
+    requete,
     tours: (r.turns || []).map((t) => ({
       degats: Math.round(t.damage),
       pa: t.casts.reduce((s, c) => s + (c.ap || 0), 0),
@@ -25,8 +27,11 @@ export function publier(r, build) {
       })),
     })),
   };
+}
+
+export function publier(r, build, requete) {
   try {
-    localStorage.setItem(CLE, JSON.stringify(suivi));
+    localStorage.setItem(CLE, JSON.stringify(suiviDe(r, build, requete)));
   } catch (e) {
     // Stockage refusé : le compagnon reste vide, la Rotation n'en souffre pas.
   }

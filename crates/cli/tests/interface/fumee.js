@@ -576,6 +576,24 @@ try {
       && cp.querySelectorAll('.cp-liste li').length === suivi.tours[1].lancers.length,
     pied: [...cp.querySelectorAll('.cp-pied kbd')].map((k) => k.textContent),
   };
+  // La fiche de l'écart, au tour 2 : remplie d'après le curseur, la bande des
+  // sorts du deck, puis la suite recalculée depuis là.
+  cp.querySelector('[data-action=recaler]').click();
+  await attendre(() => cp.querySelector('.cp-fiche .cp-jeton[data-jeton]'), 5000);
+  const jetons = cp.querySelectorAll('.cp-fiche .cp-jeton[data-jeton]').length;
+  cp.querySelector('[data-action=ajouter]').click();
+  await attendre(() => cp.querySelector('.cp-sorts [data-sort]'), 5000);
+  const sortsDuDeck = cp.querySelectorAll('.cp-sorts [data-sort]').length;
+  cp.querySelector('[data-action=recalculer]').click();
+  await attendre(() => !cp.querySelector('.cp-fiche') || cp.querySelector('.cp-erreur'), 20000);
+  resultat.recaler = {
+    jetons: Boolean(suivi && suivi.tours[1]) && jetons === suivi.tours[1].lancers.length,
+    sorts: sortsDuDeck > 0,
+    ferme: !cp.querySelector('.cp-fiche'),
+    erreur: cp.querySelector('.cp-erreur')?.textContent ?? null,
+    badge: cp.querySelector('.cp-recale')?.textContent ?? null,
+    recale: JSON.parse(localStorage.getItem('krozties.compagnon') || '{}').recale ?? null,
+  };
   cadre.remove();
   // Les touches d'origine, rétablies.
   reglage.querySelector('[data-action=origine]').click();

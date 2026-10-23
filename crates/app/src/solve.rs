@@ -2169,6 +2169,106 @@ pub fn conseil_json(demande: &DemandeDeConseil) -> Result<String, String> {
     .to_string())
 }
 
+/// Une reprise : la requête de la rotation suivie, les tours joués, les
+/// lancers déjà faits ce tour (par le nom que la rotation leur donne, ou par
+/// l'identifiant du sort), et ce qui a changé. En aperçu, rien ne se calcule :
+/// la fiche de l'écart reçoit les compteurs nommés à cet instant et les sorts
+/// du deck.
+#[derive(Debug, Deserialize)]
+pub struct DemandeDeReprise {
+    pub requete: Request,
+    pub tours: Vec<Vec<String>>,
+    pub ce_tour: Vec<String>,
+    #[serde(default)]
+    pub pa_en_moins: i16,
+    #[serde(default)]
+    pub ennemis: Option<u8>,
+    #[serde(default)]
+    pub compteurs: BTreeMap<String, u8>,
+    #[serde(default)]
+    pub apercu: bool,
+}
+
+/// Le combat repris là où il en est : voir [`Engine::reprendre`]. Les tours
+/// se rendent comme ceux de la Rotation, réduits à ce que le compagnon montre.
+pub fn reprise_json(demande: &DemandeDeReprise) -> Result<String, String> {
+    let mut requete = demande.requete.telle_que_jouee()?.into_owned();
+    if let Some(ennemis) = demande.ennemis {
+        requete.targets = Some(ennemis.max(1));
+    }
+    let (build, resolved, ruleset, mut scenario, _) = preparer(&requete)?;
+    scenario.prune_spells = false;
+    let mut engine_build = to_engine_build(&requete, &resolved);
+    engine_build.name = format!("classe {}", build.class);
+    let hors = ecartes_par_la_position(&requete, &ruleset);
+    engine_build.deck.retain(|s| !hors.iter().any(|(id, _)| id == s));
+    let deck = engine_build.deck.clone();
+    let engine = Engine::new(&ruleset, engine_build, scenario).map_err(|e| e.to_string())?;
+    let icones: BTreeMap<&str, Option<u32>> = ruleset.spells.iter().map(|s| (s.id.as_str(), s.dofusdb_id)).collect();
+    let icone_objet = |id: &str| {
+        if id == crate::armes::ID {
+            crate::armes::icone(&resolved)
+        } else {
+            crate::sorts_d_objets::icone(&resolved, id)
+        }
+    };
+    if demande.apercu {
+        let valeurs = engine.compteurs_a_la_reprise(&demande.tours, &demande.ce_tour)?;
+        let compteurs: Vec<_> = ruleset
+            .resources
+            .iter()
+            .filter_map(|r| {
+                let nom = r.name.as_ref()?;
+                let valeur = valeurs.iter().find(|(id, _)| id == &r.id)?.1;
+                Some(serde_json::json!({ "id": r.id, "nom": nom.fr, "valeur": valeur, "max": r.max }))
+            })
+            .collect();
+        let sorts: Vec<_> = deck
+            .iter()
+            .filter_map(|id| ruleset.spells.iter().find(|s| &s.id == id))
+            .map(|s| {
+                serde_json::json!({
+                    "id": s.id, "nom": s.name.fr, "dofusdb_id": s.dofusdb_id, "icone_objet": icone_objet(&s.id),
+                })
+            })
+            .collect();
+        return Ok(serde_json::json!({ "compteurs": compteurs, "sorts": sorts }).to_string());
+    }
+    let compteurs: Vec<(String, u8)> = demande.compteurs.iter().map(|(id, v)| (id.clone(), *v)).collect();
+    let solution = engine.reprendre(&demande.tours, &demande.ce_tour, demande.pa_en_moins, &compteurs)?;
+    let noms_d_etats: BTreeMap<&str, &str> = ruleset
+        .resources
+        .iter()
+        .filter_map(|r| r.name.as_ref().map(|n| (r.id.as_str(), n.fr.as_str())))
+        .collect();
+    let turns: Vec<_> = solution
+        .turns
+        .iter()
+        .map(|t| {
+            serde_json::json!({
+                "turn": t.turn,
+                "damage": (t.opening_damage + t.damage).as_f64(),
+                "ap_left": t.ap_left,
+                "casts": t.casts.iter().map(|c| serde_json::json!({
+                    "id": c.id,
+                    "name": c.spell,
+                    "ap": c.ap_cost,
+                    "damage": c.damage.as_f64(),
+                    "dofusdb_id": icones.get(c.id.as_str()).copied().flatten(),
+                    "icone_objet": icone_objet(&c.id),
+                    "indications": indications(&c.notes, &noms_d_etats),
+                })).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "total": solution.total.as_f64(),
+        "turns": turns,
+        "targets": requete.targets.unwrap_or(1),
+    })
+    .to_string())
+}
+
 impl Request {
     /// Les mécaniques coûteuses comptées : toutes celles de la classe, sauf
     /// liste donnée.
@@ -5280,6 +5380,139 @@ mod tests {
                 ("ydra".to_string(), serde_json::json!(["Exige Lance", "Retire Lance"])),
             ]
         );
+    }
+
+    /// Un Forgelance dont la rotation est exacte : sans les deux passes, sa
+    /// suite est la meilleure depuis chaque état, comme celle d'une reprise.
+    fn forgelance_a_reprendre(horizon: u8) -> Request {
+        serde_json::from_value(serde_json::json!({
+            "class": 20, "level": 200, "deck": ["fer_rouge", "ydra"], "horizon": horizon,
+            "invested": { "strength": 400, "intelligence": 400 }, "exhaustif": true,
+        }))
+        .unwrap()
+    }
+
+    fn lancers_par_tour(tours: &serde_json::Value) -> Vec<Vec<String>> {
+        tours
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t["casts"].as_array().unwrap().iter().map(|c| c["name"].as_str().unwrap().to_string()).collect())
+            .collect()
+    }
+
+    fn reprise(
+        requete: &Request,
+        tours: &[Vec<String>],
+        ce_tour: &[String],
+        pa_en_moins: i16,
+        compteurs: &[(&str, u8)],
+        apercu: bool,
+    ) -> serde_json::Value {
+        let demande = DemandeDeReprise {
+            requete: requete.clone(),
+            tours: tours.to_vec(),
+            ce_tour: ce_tour.to_vec(),
+            pa_en_moins,
+            ennemis: None,
+            compteurs: compteurs.iter().map(|(id, v)| (id.to_string(), *v)).collect(),
+            apercu,
+        };
+        serde_json::from_str(&reprise_json(&demande).unwrap()).unwrap()
+    }
+
+    /// Une reprise sans écart retrouve la rotation : les tours passés et les
+    /// lancers déjà faits tels quels, puis le même total.
+    #[test]
+    fn une_reprise_sans_ecart_retrouve_la_rotation() {
+        let requete = forgelance_a_reprendre(4);
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let tours = lancers_par_tour(&v["rotation"]["turns"]);
+        let r = reprise(&requete, &tours[..2], &tours[2][..1], 0, &[], false);
+        assert_eq!(r["total"], v["rotation"]["total"], "{r}");
+        let repris = lancers_par_tour(&r["turns"]);
+        assert_eq!(repris.len(), 4);
+        assert_eq!(repris[..2], tours[..2]);
+        assert_eq!(repris[2][..1], tours[2][..1]);
+    }
+
+    /// Les lancers déjà faits restent ceux du tour repris, quels qu'ils soient :
+    /// la suite part d'eux, même quand la rotation aurait commencé autrement.
+    /// Chaque sort du deck, imposé en premier lancer du tour 2.
+    #[test]
+    fn une_reprise_part_des_lancers_faits() {
+        let requete: Request = serde_json::from_value(serde_json::json!({
+            "class": 20, "level": 200, "horizon": 2, "targets": 4, "position": "distance",
+            "invested": { "strength": 400, "intelligence": 400 },
+            "deck": ["ydra", "fer_rouge", "vajra", "charge_heroique", "estoc_brulant", "lance_pierre",
+                     "moulin_rouge", "maelstrom", "lance_a_incendie", "eclipse", "poincon", "prelude_au_fer"],
+        }))
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let tours = lancers_par_tour(&v["rotation"]["turns"]);
+        let apercu = reprise(&requete, &tours[..1], &[], 0, &[], true);
+        assert!(apercu["sorts"].as_array().unwrap().len() >= 8, "{apercu}");
+        let mut essayes = 0;
+        for sort in apercu["sorts"].as_array().unwrap() {
+            let id = sort["id"].as_str().unwrap().to_string();
+            let demande = DemandeDeReprise {
+                requete: requete.clone(),
+                tours: tours[..1].to_vec(),
+                ce_tour: vec![id.clone()],
+                pa_en_moins: 0,
+                ennemis: None,
+                compteurs: BTreeMap::new(),
+                apercu: false,
+            };
+            // Un sort qui ne peut pas partir en premier : la reprise le dit.
+            let Ok(json) = reprise_json(&demande) else {
+                continue;
+            };
+            let r: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(r["turns"][1]["casts"][0]["id"], id, "{r}");
+            essayes += 1;
+        }
+        assert!(essayes >= 3, "{essayes} sorts seulement ont pu partir en premier");
+    }
+
+    /// Des PA perdus au dernier tour, qui dépensait tous les siens : il ne
+    /// dépense plus que ce qui reste, et aucun tour suivant ne rattrape la
+    /// perte. Plus tôt, la rotation peut décaler l'Ydra et garder son total.
+    #[test]
+    fn une_reprise_compte_les_pa_perdus() {
+        let requete = forgelance_a_reprendre(1);
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let pa = v["build"]["ap"].as_i64().unwrap();
+        assert_eq!(v["rotation"]["turns"][0]["ap_left"], 0, "{v}");
+        let r = reprise(&requete, &[], &[], 3, &[], false);
+        let depenses: i64 = r["turns"][0]["casts"].as_array().unwrap().iter().map(|c| c["ap"].as_i64().unwrap()).sum();
+        assert!(depenses <= pa - 3, "{depenses} PA dépensés sur {pa} moins 3 : {r}");
+        assert!(r["total"].as_f64().unwrap() < v["rotation"]["total"].as_f64().unwrap(), "{r}");
+    }
+
+    /// La Lance posée par le Fer Rouge se lit à la reprise ; retirée par le
+    /// joueur, l'Ydra qui l'exige ne suit plus.
+    #[test]
+    fn une_reprise_corrige_un_compteur() {
+        let requete = forgelance_a_reprendre(1);
+        let v: serde_json::Value = serde_json::from_str(&solve_json(&requete).unwrap()).unwrap();
+        let tours = lancers_par_tour(&v["rotation"]["turns"]);
+        let fer_rouge = &tours[0][..1];
+        let apercu = reprise(&requete, &[], fer_rouge, 0, &[], true);
+        assert_eq!(
+            apercu["compteurs"],
+            serde_json::json!([{ "id": "lance", "nom": "Lance", "valeur": 1, "max": 1 }]),
+            "{apercu}"
+        );
+        assert_eq!(
+            apercu["sorts"].as_array().unwrap().iter().map(|s| s["id"].as_str().unwrap()).collect::<Vec<_>>(),
+            ["fer_rouge", "ydra"]
+        );
+        let telle_quelle = lancers_par_tour(&reprise(&requete, &[], fer_rouge, 0, &[], false)["turns"]);
+        assert_eq!(telle_quelle[0], tours[0]);
+        let sans_lance = lancers_par_tour(&reprise(&requete, &[], fer_rouge, 0, &[("lance", 0)], false)["turns"]);
+        assert_eq!(sans_lance[0][..1], tours[0][..1]);
+        assert_ne!(sans_lance[0].get(1), tours[0].get(1), "{sans_lance:?}");
     }
 
     /// Les tourelles ne sont pas des invocations : sans aucun bonus

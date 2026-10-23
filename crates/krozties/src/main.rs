@@ -88,6 +88,15 @@ fn conseil_par_tour(demande: solve::DemandeDeConseil) -> Sortie {
     solve::conseil_json(&demande)
 }
 
+/// Le combat repris là où il en est, pour le compagnon. Hors du fil de
+/// l'interface, comme la rotation : la suite peut prendre une seconde ou deux.
+#[tauri::command]
+async fn reprise_du_combat(demande: solve::DemandeDeReprise) -> Sortie {
+    tauri::async_runtime::spawn_blocking(move || solve::reprise_json(&demande))
+        .await
+        .map_err(|e| format!("le calcul n'a pas pu aller au bout : {e}"))?
+}
+
 #[tauri::command]
 fn cartes_de_boss() -> Sortie {
     Ok(cartes::cartes_json())
@@ -334,6 +343,7 @@ fn main() {
             bombes_du_roublard,
             invocations_du_build,
             conseil_par_tour,
+            reprise_du_combat,
             cartes_de_boss,
             beta_en_cours,
             donnees_manquantes,

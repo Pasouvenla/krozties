@@ -2340,6 +2340,7 @@ impl Engine {
             plans: None,
             seen: Map::default(),
             script: None,
+            reprise: None,
             fin: None,
             atteint: 0,
         };
@@ -2377,6 +2378,7 @@ impl Engine {
             plans: Some(Map::default()),
             seen: Map::default(),
             script: None,
+            reprise: None,
             fin: None,
             atteint: 0,
         };
@@ -2396,7 +2398,7 @@ impl Engine {
 
     fn walk(
         &self,
-        node: Node,
+        mut node: Node,
         damage: Damage,
         seq: &mut Vec<Cast>,
         incoming: &State,
@@ -2417,6 +2419,25 @@ impl Engine {
             }
         }
 
+        // Un tour imposé n'a pas de fin tant que ses lancers ne sont pas tous
+        // passés. Passés, un rejeu s'arrête ; une reprise applique ce qui a
+        // changé, et la recherche continue librement.
+        let mut fin = false;
+        if let Some(longueur) = search.script.as_ref().map(Vec::len) {
+            search.atteint = search.atteint.max(seq.len());
+            if seq.len() == longueur {
+                match search.reprise.take() {
+                    Some(reprise) => {
+                        search.script = None;
+                        node.ap = (node.ap - reprise.pa_en_moins).max(0);
+                        for (r, v) in reprise.compteurs {
+                            node.res[r] = v;
+                        }
+                    }
+                    None => fin = true,
+                }
+            }
+        }
         let outcome = Outcome {
             res: node.res,
             carry: node.carry,
@@ -2426,18 +2447,20 @@ impl Engine {
             arming: node.arming,
             remises: node.remises & self.cooldown_mask,
         };
-        if let Some(script) = &search.script {
-            search.atteint = search.atteint.max(seq.len());
-            if seq.len() == script.len() {
-                search.fin = Some((outcome, damage, seq.clone(), node.ap));
-                return;
-            }
+        if fin {
+            search.fin = Some((outcome, damage, seq.clone(), node.ap));
+            return;
         }
+        // Le lancer imposé à ce nœud, lu avant de descendre : la reprise lève le
+        // script plus bas dans l'arbre, et ce nœud ne doit pas s'ouvrir pour
+        // autant aux autres sorts.
+        let impose = search.script.as_ref().and_then(|s| s.get(seq.len()).copied());
         let lancers = node.used.iter().fold(0u8, |n, &u| n.saturating_add(u));
-        let improves = match search.best.get(&outcome) {
-            Some(&(d, l)) => damage > d || (damage == d && lancers < l),
-            None => true,
-        };
+        let improves = impose.is_none()
+            && match search.best.get(&outcome) {
+                Some(&(d, l)) => damage > d || (damage == d && lancers < l),
+                None => true,
+            };
         if improves {
             search.best.insert(outcome, (damage, lancers));
             if let Some(plans) = &mut search.plans {
@@ -2449,9 +2472,9 @@ impl Engine {
 
         for (i, spell) in self.spells.iter().enumerate() {
             // Un tour rejoué ne lance que le lancer imposé, élagué ou non.
-            match &search.script {
-                Some(script) => {
-                    if script.get(seq.len()) != Some(&i) {
+            match impose {
+                Some(j) => {
+                    if i != j {
                         continue;
                     }
                 }
@@ -3167,9 +3190,18 @@ impl Engine {
     /// Walk the winning chain of outcomes and rebuild the cast sequences, once
     /// per turn rather than once per node.
     fn reconstruct(&self, memo: &Map<(u8, State), (Damage, u16, Option<Outcome>)>) -> Vec<TurnPlan> {
-        let mut state = self.initial_state();
+        self.reconstruct_from(0, self.initial_state(), memo)
+    }
+
+    /// La même chaîne, depuis un tour et un état donnés : ceux d'une reprise.
+    fn reconstruct_from(
+        &self,
+        depuis: u8,
+        mut state: State,
+        memo: &Map<(u8, State), (Damage, u16, Option<Outcome>)>,
+    ) -> Vec<TurnPlan> {
         let mut out = Vec::new();
-        for turn in 0..self.scenario.horizon {
+        for turn in depuis..self.scenario.horizon {
             let Some((_, _, Some(outcome))) = memo.get(&(turn, state)) else {
                 break;
             };
@@ -3204,46 +3236,60 @@ impl Engine {
     /// son tour (PA, relance, lancers par tour, condition) arrête tout et se
     /// nomme.
     pub fn replay(&self, tours: &[Vec<String>]) -> Result<Solution, String> {
+        self.rejeu_et_etat(tours).map(|(solution, _)| solution)
+    }
+
+    /// Les lancers d'un tour, nommés comme la rotation les nomme ou par
+    /// l'identifiant du sort.
+    fn indices(&self, t: usize, lancers: &[String]) -> Result<Vec<usize>, String> {
+        lancers
+            .iter()
+            .enumerate()
+            .map(|(k, nom)| {
+                self.spells
+                    .iter()
+                    .position(|s| &s.name == nom)
+                    .or_else(|| self.spells.iter().position(|s| &s.id == nom))
+                    .ok_or_else(|| format!("tour {}, lancer {} : « {nom} » n'est pas dans le deck", t + 1, k + 1))
+            })
+            .collect()
+    }
+
+    /// Un tour rejoué jusqu'au dernier lancer imposé : son issue, ses dégâts,
+    /// ses lancers et les PA qui restent.
+    fn rejouer_le_tour(
+        &self,
+        t: usize,
+        lancers: &[String],
+        opened: &State,
+        odd: bool,
+    ) -> Result<(Outcome, Damage, Vec<Cast>, i16), String> {
+        let mut search = Search {
+            best: Map::default(),
+            plans: Some(Map::default()),
+            seen: Map::default(),
+            script: Some(self.indices(t, lancers)?),
+            reprise: None,
+            fin: None,
+            atteint: 0,
+        };
+        let mut seq = Vec::new();
+        self.walk(self.start_node(opened), Damage::ZERO, &mut seq, opened, odd, &mut search);
+        search.fin.ok_or_else(|| ne_peut_pas_partir(t, search.atteint, lancers))
+    }
+
+    /// Le rejeu, et l'état du combat au début du tour qui suit.
+    fn rejeu_et_etat(&self, tours: &[Vec<String>]) -> Result<(Solution, State), String> {
         let mut state = self.initial_state();
         let mut turns = Vec::new();
         let mut total = Damage::ZERO;
         for (t, lancers) in tours.iter().enumerate() {
             let turn = u8::try_from(t).map_err(|_| "trop de tours à rejouer".to_string())?;
-            let script = lancers
-                .iter()
-                .enumerate()
-                .map(|(k, nom)| {
-                    self.spells
-                        .iter()
-                        .position(|s| &s.name == nom)
-                        .or_else(|| self.spells.iter().position(|s| &s.id == nom))
-                        .ok_or_else(|| format!("tour {}, lancer {} : « {nom} » n'est pas dans le deck", t + 1, k + 1))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
             let odd = self.turn_is_odd(turn);
             let (opening_damage, opened) = self.turn_start(&state, odd);
             let opening = self.turn_start_notes(&state, odd);
             let opening_sources = self.turn_start_sources(&state, odd);
-            let mut search = Search {
-                best: Map::default(),
-                plans: Some(Map::default()),
-                seen: Map::default(),
-                script: Some(script),
-                fin: None,
-                atteint: 0,
-            };
-            let mut seq = Vec::new();
-            self.walk(self.start_node(&opened), Damage::ZERO, &mut seq, &opened, odd, &mut search);
-            let Some((outcome, damage, casts, ap_left)) = search.fin else {
-                let k = search.atteint;
-                return Err(format!(
-                    "tour {}, lancer {} : « {} » ne peut pas partir à cet instant (PA, relance, lancers \
-                     par tour ou condition)",
-                    t + 1,
-                    k + 1,
-                    lancers[k]
-                ));
-            };
+            let (outcome, damage, casts, ap_left) = self.rejouer_le_tour(t, lancers, &opened, odd)?;
             total += opening_damage + damage;
             turns.push(TurnPlan {
                 turn: turn + 1,
@@ -3257,11 +3303,106 @@ impl Engine {
             });
             state = self.advance(&opened, &outcome);
         }
-        Ok(Solution {
+        let solution = Solution {
             total,
             turns,
             inter_turn_states: 0,
-        })
+        };
+        Ok((solution, state))
+    }
+
+    /// Les compteurs à l'instant d'une reprise, par l'identifiant de leur
+    /// règle : les tours passés rejoués, puis les lancers déjà faits du tour en
+    /// cours. Ce que le joueur voit avant de les corriger.
+    pub fn compteurs_a_la_reprise(&self, passes: &[Vec<String>], ce_tour: &[String]) -> Result<Vec<(String, u8)>, String> {
+        let (_, state) = self.rejeu_et_etat(passes)?;
+        let turn = u8::try_from(passes.len()).map_err(|_| "trop de tours à rejouer".to_string())?;
+        let odd = self.turn_is_odd(turn);
+        let (_, opened) = self.turn_start(&state, odd);
+        let (issue, ..) = self.rejouer_le_tour(passes.len(), ce_tour, &opened, odd)?;
+        Ok(self.resources.iter().zip(issue.res).map(|(r, v)| (r.label.clone(), v)).collect())
+    }
+
+    /// Reprend un combat qui a dévié : les tours passés rejoués tels qu'ils
+    /// ont été joués, le tour en cours repris après ses lancers déjà faits,
+    /// moins les PA perdus et avec les compteurs que le joueur corrige (la
+    /// Lance retirée), puis la meilleure suite jusqu'à l'horizon.
+    pub fn reprendre(
+        &self,
+        passes: &[Vec<String>],
+        ce_tour: &[String],
+        pa_en_moins: i16,
+        compteurs: &[(String, u8)],
+    ) -> Result<Solution, String> {
+        let (mut solution, state) = self.rejeu_et_etat(passes)?;
+        let turn = u8::try_from(passes.len()).map_err(|_| "trop de tours à rejouer".to_string())?;
+        if turn >= self.scenario.horizon {
+            return Err(format!("le combat a déjà joué ses {} tours", self.scenario.horizon));
+        }
+        let compteurs = compteurs
+            .iter()
+            .map(|(id, v)| {
+                self.resources
+                    .iter()
+                    .position(|r| &r.label == id)
+                    .map(|i| (i, *v))
+                    .ok_or_else(|| format!("« {id} » n'est pas un compteur de la classe"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let odd = self.turn_is_odd(turn);
+        let (opening_damage, opened) = self.turn_start(&state, odd);
+        let opening = self.turn_start_notes(&state, odd);
+        let opening_sources = self.turn_start_sources(&state, odd);
+        let mut search = Search {
+            best: Map::default(),
+            plans: Some(Map::default()),
+            seen: Map::default(),
+            script: Some(self.indices(passes.len(), ce_tour)?),
+            reprise: Some(Reprise { pa_en_moins, compteurs }),
+            fin: None,
+            atteint: 0,
+        };
+        let mut seq = Vec::new();
+        self.walk(self.start_node(&opened), Damage::ZERO, &mut seq, &opened, odd, &mut search);
+        if search.best.is_empty() {
+            return Err(ne_peut_pas_partir(passes.len(), search.atteint, ce_tour));
+        }
+        let plans = search.plans.unwrap_or_default();
+        // Chaque fin possible du tour, avec la meilleure suite qu'elle ouvre. À
+        // dégâts égaux, la rotation la plus courte, puis l'ordre des lancers,
+        // pour qu'une même reprise rende toujours la même suite.
+        let mut memo: Map<(u8, State), (Damage, u16, Option<Outcome>)> = Map::default();
+        let mut issues: Vec<(Damage, u16, String, Outcome)> = search
+            .best
+            .iter()
+            .map(|(issue, &(damage, lancers))| {
+                let (future, ensuite) = self.search(turn + 1, self.advance(&opened, issue), &mut memo);
+                let ordre = plans.get(issue).map(|(c, _)| c.iter().map(|c| c.id.as_str()).collect::<Vec<_>>().join(","));
+                (damage + future, u16::from(lancers).saturating_add(ensuite), ordre.unwrap_or_default(), *issue)
+            })
+            .collect();
+        issues.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)).then_with(|| a.2.cmp(&b.2)));
+        let issue = issues[0].3;
+        let damage = search.best[&issue].0;
+        let (casts, ap_left) = plans.get(&issue).cloned().unwrap_or_default();
+        solution.total += opening_damage + damage;
+        solution.turns.push(TurnPlan {
+            turn: turn + 1,
+            odd,
+            opening_damage,
+            opening_sources,
+            opening,
+            damage,
+            casts,
+            ap_left,
+        });
+        let suite = self.reconstruct_from(turn + 1, self.advance(&opened, &issue), &memo);
+        for tour in &suite {
+            solution.total += tour.opening_damage + tour.damage;
+        }
+        solution.turns.extend(suite);
+        solution.inter_turn_states = memo.len();
+        Ok(solution)
     }
 
     /// Ce que chaque sort du deck vaudrait à la place d'un lancer d'une
@@ -3300,6 +3441,23 @@ impl Engine {
     }
 }
 
+/// Ce qu'un combat qui a dévié change au tour en cours : des PA perdus, et
+/// des compteurs que le joueur corrige, par leur indice.
+#[derive(Clone, Debug, Default)]
+struct Reprise {
+    pa_en_moins: i16,
+    compteurs: Vec<(usize, u8)>,
+}
+
+fn ne_peut_pas_partir(t: usize, k: usize, lancers: &[String]) -> String {
+    format!(
+        "tour {}, lancer {} : « {} » ne peut pas partir à cet instant (PA, relance, lancers par tour ou condition)",
+        t + 1,
+        k + 1,
+        lancers.get(k).map_or("?", String::as_str)
+    )
+}
+
 struct Search {
     /// Pour chaque issue, ses meilleurs dégâts et le nombre de lancers qui y
     /// mènent : à dégâts égaux, le plus court l'emporte.
@@ -3309,6 +3467,10 @@ struct Search {
     /// Les lancers imposés, dans l'ordre, pour rejouer un tour donné (voir
     /// [`Engine::replay`]). `None` pour une recherche.
     script: Option<Vec<usize>>,
+    /// Une reprise : une fois les lancers imposés passés, ce qui a changé
+    /// s'applique et la recherche continue librement (voir
+    /// [`Engine::reprendre`]). `None` pour un rejeu ou une recherche.
+    reprise: Option<Reprise>,
     /// Le tour rejoué jusqu'au bout : son issue, ses dégâts, ses lancers et
     /// les PA qui restent.
     fin: Option<(Outcome, Damage, Vec<Cast>, i16)>,

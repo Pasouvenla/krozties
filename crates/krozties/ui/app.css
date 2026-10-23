@@ -1259,3 +1259,37 @@ body.compagnon { margin: 0; background: #1b1f24; color: #f2efe6; overflow: hidde
 .cp-pied kbd { font: inherit; font-size: .66rem; padding: 0 .25rem; border: 1px solid rgba(255, 255, 255, .3);
                border-radius: 3px; color: #f2efe6; }
 .cp-vide { color: #b9b4a6; font-size: .8rem; padding: .6rem .7rem; cursor: move; }
+.cp-recale { font-size: .58rem; font-weight: 700; color: #1b1d21; background: #e9c46a; border-radius: 999px;
+             padding: 0 .3rem; margin-left: .25rem; vertical-align: middle; }
+
+/* La fiche de l'écart : ce qui a changé, puis la suite recalculée. */
+.cp-fiche { flex-direction: column; align-items: stretch; width: 300px; padding: .5rem .6rem .6rem; gap: .45rem; }
+.cp-fiche .cp-tete { padding: 0; }
+.cp-ligne { display: flex; align-items: center; gap: .45rem; font-size: .74rem; }
+.cp-ligne > span:first-child { flex: 1; color: #d9d4c6; }
+.cp-jetons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .3rem; max-width: 11rem; }
+.cp-jeton { position: relative; width: 30px; height: 30px; border-radius: 5px; display: grid; place-items: center;
+            background: rgba(255, 255, 255, .06); }
+.cp-jeton img { width: 26px; height: 26px; border-radius: 4px; }
+.cp-jeton b { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 999px;
+              font-size: .58rem; display: grid; place-items: center; }
+.cp-jeton.oui b { background: #7fb069; color: #10140e; }
+.cp-jeton.non { opacity: .55; }
+.cp-jeton.non b { background: #c8553d; color: #fff; }
+.cp-jeton.cp-plus { border: 1px dashed rgba(255, 255, 255, .35); background: none; color: #b9b4a6; font-size: 1rem; }
+.cp-sorts { display: flex; flex-wrap: wrap; gap: .3rem; padding: .35rem; border-radius: 5px; background: rgba(255, 255, 255, .05); }
+.cp-pas { display: inline-flex; align-items: center; gap: .3rem; }
+.cp-pas button { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, .3);
+                 display: grid; place-items: center; color: #f2efe6; }
+.cp-pas output { min-width: 1.2rem; text-align: center; font-weight: 700; }
+.cp-bascule { display: inline-flex; border: 1px solid rgba(255, 255, 255, .3); border-radius: 4px; overflow: hidden; }
+.cp-bascule button { padding: .05rem .45rem; font-size: .7rem; }
+.cp-bascule button.actif { background: #e9c46a; color: #1b1d21; font-weight: 700; }
+.cp-erreur { margin: 0; color: #f0a08f; font-size: .7rem; }
+.cp-boutons { display: flex; justify-content: flex-end; gap: .4rem; margin-top: .1rem; }
+.cp-principal, .cp-second { border-radius: 4px; font-size: .72rem; padding: .18rem .55rem; }
+.cp-principal { background: #e9c46a; color: #1b1d21; font-weight: 700; }
+.cp-principal[disabled] { opacity: .6; cursor: progress; }
+.cp-second { color: #d9d4c6; border: 1px solid rgba(255, 255, 255, .3); }
+.cp-jeton:focus-visible, .cp-pas button:focus-visible, .cp-bascule button:focus-visible,
+.cp-principal:focus-visible, .cp-second:focus-visible { outline: 2px solid #fff; }

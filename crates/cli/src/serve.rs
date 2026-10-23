@@ -250,6 +250,21 @@ fn handle(mut stream: TcpStream, port: u16) -> Result<(), String> {
                 ),
             }
         }
+        // Le combat repris là où il en est, pour le compagnon.
+        ("POST", "/api/reprise") => {
+            match serde_json::from_str::<dofus_app::solve::DemandeDeReprise>(&request.body)
+                .map_err(|e| e.to_string())
+                .and_then(|d| dofus_app::solve::reprise_json(&d))
+            {
+                Ok(json) => respond(&mut stream, "200 OK", "application/json", &json),
+                Err(e) => respond(
+                    &mut stream,
+                    "400 Bad Request",
+                    "application/json",
+                    &error_json(&e),
+                ),
+            }
+        }
         // Les invocations du build : les dégâts de chaque attaque.
         ("POST", "/api/invocations") => {
             match serde_json::from_str::<dofus_build::BuildInput>(&request.body)

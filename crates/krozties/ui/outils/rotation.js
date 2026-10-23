@@ -655,7 +655,7 @@ export async function rendre(cible, etat, { appeler }) {
       </div>
       ${reglagesDesTouches()}`;
     // Le compagnon suit chaque nouveau résultat, ouvert ou non.
-    publierPourLeCompagnon(r, nomDuBuild());
+    publierPourLeCompagnon(r, nomDuBuild(), chargeDuResultat);
     brancherLesReglages($('touchesCompagnon'));
     $('ouvrirCompagnon').addEventListener('click', () => {
       ouvrirLeCompagnon(appeler).then((ouvert) => {

@@ -20,6 +20,7 @@ const ROUTES = {
   bombes: { commande: 'bombes_du_roublard', chemin: '/api/bombes', argument: 'requete' },
   invocations: { commande: 'invocations_du_build', chemin: '/api/invocations', argument: 'build' },
   conseil: { commande: 'conseil_par_tour', chemin: '/api/conseil', argument: 'demande' },
+  reprise: { commande: 'reprise_du_combat', chemin: '/api/reprise', argument: 'demande' },
   cartes: { commande: 'cartes_de_boss', chemin: '/api/cartes', methode: 'GET' },
   beta: { commande: 'beta_en_cours', chemin: '/api/beta', methode: 'GET' },
   manquantes: { commande: 'donnees_manquantes', chemin: '/api/manquantes', methode: 'GET' },
