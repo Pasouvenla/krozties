@@ -8,7 +8,8 @@
           "lignes": [
             "La Rotation mesure ce que vaut chaque caractéristique pour votre build : la plus rentable, votre meilleure caractéristique, ce qui ne sert à rien, puis chacune ramenée à la Puissance (« 1 PA vaut 145 Puissance »).",
             "Rotation › Compagnon de combat : la rotation calculée, tour par tour, dans une petite fenêtre par-dessus le jeu, en barre de sorts ou en liste. F8 passe au sort suivant, Maj+F8 au tour suivant, F7 revient en arrière ; les trois touches se changent sous le bouton du compagnon. Sur Mac, il passe aussi par-dessus le plein écran : Krozties quitte le Dock tant qu'il est ouvert.",
-            "Compagnon de combat : quand le combat dévie, ⟲ ouvre la fiche de l'écart. Dites quels sorts sont partis ce tour, ajoutez un sort hors plan, les PA perdus, les ennemis encore debout, l'état de la Lance (ou de la Rune, de la Rage, du Téléfrag) : la suite se recalcule depuis là."
+            "Compagnon de combat : quand le combat dévie, ⟲ ouvre la fiche de l'écart. Dites quels sorts sont partis ce tour, ajoutez un sort hors plan, les PA perdus, les ennemis encore debout, l'état de la Lance (ou de la Rune, de la Rage, du Téléfrag) : la suite se recalcule depuis là.",
+            "Rotation › Partager : enregistrez la rotation dans un fichier .krozties. Celui qui l'ouvre (double-clic, ou dépôt sur la fenêtre de Krozties) retrouve le même build, les mêmes réglages et la même rotation."
           ]
         }
       ]

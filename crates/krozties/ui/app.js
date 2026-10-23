@@ -4,12 +4,14 @@
 // reçoit cet état et rend son écran.
 
 import { appeler, hote } from './pont.js';
-import { nb } from './commun/format.js';
+import { echapper, nb } from './commun/format.js';
 import { brancherInfobulles, ficheDeSort, ficheDObjet } from './commun/infobulle.js';
 import { brancherDetails } from './commun/animation.js';
 import { garderOuverture, lireOuverture } from './commun/ouverture.js';
 import { chargerBuild, courant, lire, oublierCourant } from './commun/personnages.js';
 import { dessinerSelecteur } from './commun/selecteur-perso.js';
+import { lireLePartage, reglagesRecus, resumeDuPartage } from './commun/partage.js';
+import { reglagesRotation } from './commun/reglages-rotation.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -164,8 +166,7 @@ if (dernier && exigeBuild) {
 } else {
   afficher(voulu);
 }
-if (dernier) {
-  catalogue
+const demarrage = !dernier ? catalogue : catalogue
     .then(() => chargerBuild(etat, dernier.perso, dernier.build, { appeler, majIdentite }))
     .then(() => {
       const attendu = etat.ouverture && etat.outil === 'equipement';
@@ -177,7 +178,6 @@ if (dernier) {
       oublierCourant();
       majIdentite();
     });
-}
 
 // Les nouveautés de la version qu'on vient d'installer, puis une version plus
 // récente : seule l'application de bureau les cherche, et une lecture qui
@@ -190,3 +190,88 @@ if (hote === 'bureau') {
     .then((m) => m.verifier())
     .catch(() => {});
 }
+
+// Une rotation reçue : un fichier `.krozties` ouvert d'un double-clic, déposé
+// sur la fenêtre, ou passé au lancement. Un bandeau sous l'entête propose de
+// l'ouvrir : son build et ses réglages se chargent, puis elle se calcule.
+let recue = null;
+
+function montrerLaRotationRecue(texte, erreur) {
+  recue = null;
+  let corps;
+  try {
+    if (erreur) throw new Error(erreur);
+    recue = lireLePartage(texte);
+    corps = `<span>${echapper(resumeDuPartage(recue))}</span>`;
+  } catch (e) {
+    corps = `<span class="alerte">${echapper(e.message)}</span>`;
+  }
+  $('rotationRecue').innerHTML = `<b>Rotation reçue</b>${corps}<span class="actions">${recue
+    ? '<button type="button" class="action petit" data-recue="ouvrir">Ouvrir</button>' : ''}<button type="button"
+    class="action discret petit" data-recue="ignorer">${recue ? 'Ignorer' : 'Fermer'}</button></span>`;
+  $('rotationRecue').hidden = false;
+}
+
+async function ouvrirLaRotationRecue() {
+  const d = recue;
+  if (!d) return;
+  $('rotationRecue').querySelector('[data-recue=ouvrir]').disabled = true;
+  try {
+    // Le dernier build enregistré, rechargé au démarrage, ne doit pas
+    // remplacer celui qu'on ouvre.
+    await demarrage.catch(() => {});
+    const resolu = await appeler('resoudre', d.build);
+    if (resolu.error) throw new Error(resolu.error);
+    etat.build = d.build;
+    etat.nomDuBuild = null;
+    etat.lienDuBuild = null;
+    etat.luLe = null;
+    etat.ficheDofusbook = null;
+    // Une rotation reçue n'est à aucun personnage tant qu'on ne l'a pas
+    // enregistrée.
+    oublierCourant();
+    etat.resolu = resolu;
+    etat.rotation = null;
+    Object.assign(reglagesRotation(etat), reglagesRecus(d));
+    recue = null;
+    $('rotationRecue').hidden = true;
+    majIdentite();
+    await afficher('rotation');
+    if ($('calculer')) $('calculer').click();
+  } catch (e) {
+    montrerLaRotationRecue(null, e.message);
+  }
+}
+
+$('rotationRecue').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-recue]');
+  if (!b) return;
+  if (b.dataset.recue === 'ouvrir') {
+    ouvrirLaRotationRecue();
+  } else {
+    recue = null;
+    $('rotationRecue').hidden = true;
+  }
+});
+
+// L'application de bureau garde la rotation reçue jusqu'à ce que la page la
+// lise : au démarrage, puis chaque fois qu'elle en reçoit une.
+window.rotationRecue = async () => {
+  try {
+    const r = await appeler('rotationRecue');
+    if (r) montrerLaRotationRecue(r.texte, r.erreur);
+  } catch (e) { /* rien à proposer */ }
+};
+if (hote === 'bureau') window.rotationRecue();
+
+// Dans un navigateur, le fichier se dépose sur la page ; l'application de
+// bureau reçoit les fichiers déposés avant elle.
+document.addEventListener('dragover', (e) => {
+  if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault();
+});
+document.addEventListener('drop', async (e) => {
+  const fichier = [...((e.dataTransfer && e.dataTransfer.files) || [])].find((f) => f.name.endsWith('.krozties'));
+  if (!fichier) return;
+  e.preventDefault();
+  montrerLaRotationRecue(await fichier.text());
+});

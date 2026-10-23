@@ -601,6 +601,43 @@ try {
   resultat.touches.retablie = JSON.parse(localStorage.getItem('krozties.compagnon.touches') || '{}').tour ?? null;
   CLES_COMPAGNON.forEach((cle) => localStorage.removeItem(cle));
 
+  // Partager : le fichier du bouton « Enregistrer le fichier », déposé sur la
+  // page pendant qu'un autre build est chargé, puis ouvert : le même build,
+  // les mêmes réglages, le même total.
+  let telecharge = null;
+  const cliquerUnLien = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () {
+    if (this.download) telecharge = { href: this.href, nom: this.download };
+    else cliquerUnLien.call(this);
+  };
+  document.getElementById('partager').click();
+  document.getElementById('enregistrerPartage').click();
+  await attendre(() => telecharge, 5000);
+  HTMLAnchorElement.prototype.click = cliquerUnLien;
+  const fichier = telecharge ? await (await fetch(telecharge.href)).text() : '{}';
+  const partage = JSON.parse(fichier);
+  const enregistre = texte('#copieDiscord');
+  const autre = { class: 8, level: 200, invested: { strength: 400 } };
+  app.etat.build = autre;
+  app.etat.resolu = await appeler('resoudre', autre);
+  const depot = new DataTransfer();
+  depot.items.add(new File([fichier], telecharge ? telecharge.nom : 'rien.krozties', { type: 'application/json' }));
+  document.dispatchEvent(new DragEvent('drop', { dataTransfer: depot, bubbles: true, cancelable: true }));
+  await attendre(() => !document.getElementById('rotationRecue').hidden, 5000);
+  const bandeau = texte('#rotationRecue');
+  document.querySelector('#rotationRecue [data-recue=ouvrir]').click();
+  await attendre(() => app.etat.build.class === partage.build.class && document.getElementById('partager'), 60000);
+  resultat.partage = {
+    nom: Boolean(telecharge) && telecharge.nom.endsWith('.krozties'),
+    enregistre: Boolean(telecharge) && enregistre === `Fichier enregistré : ${telecharge.nom}`,
+    bandeau: bandeau && bandeau.startsWith('Rotation reçue'),
+    classe: app.etat.build.class === partage.build.class,
+    horizon: app.etat.rotation.horizon === partage.reglages.horizon,
+    coches: app.etat.rotation.coches instanceof Set && app.etat.rotation.coches.size === partage.reglages.coches.length,
+    total: Number((texte('#contenu .chiffre') || '').replace(/\D/g, '')) === partage.resume.total,
+    ferme: document.getElementById('rotationRecue').hidden,
+  };
+
   // L'arme du build, un sort de plus au deck de la Rotation, avec son réglage
   // de Maîtrise et sa fiche : la Hachebarde de Guerre d'un Ouginak, lancée dans
   // un calcul de deux tours.

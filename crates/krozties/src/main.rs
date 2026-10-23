@@ -7,6 +7,7 @@
 
 mod compagnon;
 mod import;
+mod partage;
 
 use dofus_app::{bombes, cartes, grille, invocations, portails, reseau, solve};
 use dofus_build::BuildInput;
@@ -309,6 +310,19 @@ fn ajuster_le_compagnon(window: tauri::Window, largeur: f64, hauteur: f64) -> So
     compagnon::ajuster(&window, largeur, hauteur)
 }
 
+/// Une rotation partagée, dans le fichier que le joueur choisit. Voir
+/// `partage.rs`.
+#[tauri::command]
+async fn enregistrer_une_rotation(app: tauri::AppHandle, nom: String, contenu: String) -> Sortie {
+    partage::enregistrer(app, nom, contenu).await
+}
+
+/// La rotation reçue que la page n'a pas encore lue.
+#[tauri::command]
+fn rotation_recue(app: tauri::AppHandle) -> Sortie {
+    partage::prendre(&app)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -319,16 +333,30 @@ fn main() {
         .plugin(compagnon::greffon())
         .manage(MiseAJour::default())
         .manage(compagnon::Raccourcis::default())
+        .manage(partage::RotationRecue::default())
+        .setup(|app| {
+            partage::au_lancement(app.handle());
+            Ok(())
+        })
         // Le compagnon ne survit pas à la fenêtre principale, et ses touches
-        // reviennent aux autres applications dès qu'il se ferme.
+        // reviennent aux autres applications dès qu'il se ferme. Un fichier
+        // `.krozties` déposé sur la fenêtre est une rotation reçue.
         .on_window_event(|fenetre, evenement| {
             use tauri::Manager;
-            if let tauri::WindowEvent::Destroyed = evenement {
-                if fenetre.label() == compagnon::ETIQUETTE {
-                    compagnon::liberer(fenetre.app_handle());
-                } else if fenetre.label() == "main" {
-                    compagnon::fermer(fenetre.app_handle());
+            match evenement {
+                tauri::WindowEvent::Destroyed => {
+                    if fenetre.label() == compagnon::ETIQUETTE {
+                        compagnon::liberer(fenetre.app_handle());
+                    } else if fenetre.label() == "main" {
+                        compagnon::fermer(fenetre.app_handle());
+                    }
                 }
+                tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
+                    for chemin in paths {
+                        partage::recevoir(fenetre.app_handle(), chemin);
+                    }
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -361,11 +389,22 @@ fn main() {
             fermer_le_compagnon,
             deplacer_le_compagnon,
             ajuster_le_compagnon,
-            regler_les_touches_du_compagnon
+            regler_les_touches_du_compagnon,
+            enregistrer_une_rotation,
+            rotation_recue
         ])
         .build(tauri::generate_context!())
         .expect("Krozties n'a pas pu démarrer")
         .run(|app, evenement| {
+            // Sous macOS, un fichier `.krozties` ouvert d'un double-clic.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = &evenement {
+                for url in urls {
+                    if let Ok(chemin) = url.to_file_path() {
+                        partage::recevoir(app, &chemin);
+                    }
+                }
+            }
             // Une mise à jour remise à plus tard sur Windows s'installe à la
             // fermeture, sans rouvrir l'application.
             if let tauri::RunEvent::Exit = evenement {

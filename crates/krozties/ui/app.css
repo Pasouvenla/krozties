@@ -119,6 +119,14 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
 #entete .titre { font-weight: 600; font-size: .95rem; }
 #entete .vide { color: var(--doux); }
 
+/* Une rotation reçue, sous l'entête : son résumé, puis l'ouvrir ou l'ignorer. */
+.bandeau-ouvrir { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; padding: .55rem .7rem;
+                  background: var(--accent-clair); border: 1px solid var(--cheveux); border-radius: var(--rayon);
+                  font-size: .84rem; }
+.bandeau-ouvrir[hidden] { display: none; }
+.bandeau-ouvrir .actions { margin-left: auto; display: flex; gap: .4rem; }
+#entete .bandeau-ouvrir { flex-basis: 100%; }
+
 /* Le personnage puis son build, en deux listes ouvrantes ; et l'enregistrement
    d'un build importé. Une liste est un <details> : clavier et lecteur d'écran
    la lisent sans rien de plus. */
@@ -1195,6 +1203,14 @@ details.hypotheses li + li { margin-top: .2rem; }
 .copie-discord .copie { font-size: .78rem; font-weight: 600; }
 .copie-discord .copie.ok { color: var(--succes); }
 .copie-discord .copie.refus { color: var(--alerte); }
+
+/* Partager : un menu sous le bouton, chaque entrée avec ce qu'elle emporte. */
+.pop { border: 1px solid var(--cheveux); border-radius: var(--rayon); background: var(--fond);
+       box-shadow: 0 8px 22px rgba(27, 29, 33, .14); padding: .5rem; display: grid; gap: .3rem; }
+.pop[hidden] { display: none; }
+.pop button { all: unset; cursor: pointer; padding: .35rem .5rem; border-radius: 5px; font-size: .84rem; }
+.pop button:hover, .pop button:focus-visible { background: var(--panneau); }
+.pop small { display: block; color: var(--doux); font-size: .72rem; overflow-wrap: anywhere; }
 
 /* Les touches du compagnon, sous son bouton : un clic, puis la nouvelle touche. */
 .touches-compagnon .touches { display: grid; gap: .4rem; margin-top: .5rem; }

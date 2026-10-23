@@ -33,6 +33,19 @@
       "icons/icon-512.png",
       "icons/icon.ico"
     ],
+    "fileAssociations": [
+      {
+        "ext": ["krozties"],
+        "name": "Rotation Krozties",
+        "description": "Rotation Krozties",
+        "role": "Viewer",
+        "mimeType": "application/x-krozties",
+        "exportedType": {
+          "identifier": "io.github.pasouvenla.krozties.rotation",
+          "conformsTo": ["public.json"]
+        }
+      }
+    ],
     "macOS": {
       "signingIdentity": "-"
     },

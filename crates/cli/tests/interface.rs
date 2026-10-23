@@ -431,6 +431,22 @@ fn chaque_outil_s_affiche_sans_erreur() {
         }),
         "{r}"
     );
+    // Partager : le fichier enregistré, reçu sur un autre build, rouvert à
+    // l'identique, jusqu'au total.
+    assert_eq!(
+        r["partage"],
+        serde_json::json!({
+            "nom": true,
+            "enregistre": true,
+            "bandeau": true,
+            "classe": true,
+            "horizon": true,
+            "coches": true,
+            "total": true,
+            "ferme": true,
+        }),
+        "{r}"
+    );
     // Recaler au tour 2 : la fiche remplie d'après le curseur, les sorts du
     // deck à ajouter, puis la suite recalculée et marquée.
     assert_eq!(

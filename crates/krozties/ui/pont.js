@@ -53,6 +53,11 @@ const ROUTES = {
   compagnonFermer: { commande: 'fermer_le_compagnon', bureau_seulement: "seule l'application de bureau ferme le compagnon." },
   compagnonDeplacer: { commande: 'deplacer_le_compagnon', bureau_seulement: "seule l'application de bureau déplace le compagnon." },
   compagnonAjuster: { commande: 'ajuster_le_compagnon', bureau_seulement: "seule l'application de bureau ajuste le compagnon." },
+  /// Bureau seulement : une rotation partagée, enregistrée dans le fichier que le
+  /// joueur choisit, et celle qu'un fichier ouvert ou déposé apporte. Un
+  /// navigateur télécharge le fichier, et le reçoit par la page.
+  enregistrerRotation: { commande: 'enregistrer_une_rotation', bureau_seulement: "seule l'application de bureau passe par cette commande." },
+  rotationRecue: { commande: 'rotation_recue', bureau_seulement: "seule l'application de bureau garde une rotation reçue." },
   compagnonTouches: { commande: 'regler_les_touches_du_compagnon', bureau_seulement: "seule l'application de bureau prend des raccourcis globaux." },
 };
 

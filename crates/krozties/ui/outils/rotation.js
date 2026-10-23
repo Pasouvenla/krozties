@@ -9,6 +9,7 @@ import { cochesParDefaut, MAX_SORTS, sortsDuBuild } from '../commun/deck.js';
 import * as discord from '../commun/discord.js';
 import { ouvrirLeCompagnon, publier as publierPourLeCompagnon } from '../commun/suivi.js';
 import { brancherLesReglages, reglages as reglagesDesTouches, signalerLesPrises } from '../commun/touches.js';
+import { contenuDuPartage, enregistrer as enregistrerLePartage, nomDuFichier } from '../commun/partage.js';
 import { garder, reglagesRotation } from '../commun/reglages-rotation.js';
 
 const ROUBLARD = 13;
@@ -650,6 +651,11 @@ export async function rendre(cible, etat, { appeler }) {
         .map((m) => `<li>${echapper(majuscule(m))}.</li>`).join('')}</ul></details>` : ''}
       <div class="copie-discord">
         <button type="button" class="action discret" id="copierDiscord">Copier pour Discord</button>
+        <button type="button" class="action discret" id="partager" aria-expanded="false"
+          aria-controls="menuPartage">Partager</button>
+        <div class="pop" id="menuPartage" hidden>
+          <button type="button" id="enregistrerPartage">Enregistrer le fichier<small>${echapper(nomDuFichier(etat))}</small></button>
+        </div>
         <button type="button" class="action discret" id="ouvrirCompagnon">Compagnon de combat</button>
         <span class="copie" id="copieDiscord" role="status"></span>
       </div>
@@ -676,6 +682,36 @@ export async function rendre(cible, etat, { appeler }) {
       const ok = await discord.copier(texte);
       $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
       $('copieDiscord').textContent = ok ? 'Copié.' : 'Le système refuse la copie.';
+    });
+    // Partager : un menu sous le bouton, refermé par un clic ailleurs.
+    const fermerLeMenu = () => {
+      if ($('menuPartage')) $('menuPartage').hidden = true;
+      if ($('partager')) $('partager').setAttribute('aria-expanded', 'false');
+      document.removeEventListener('mousedown', horsDuMenu, true);
+    };
+    function horsDuMenu(e) {
+      if (!e.target.closest('#menuPartage, #partager')) fermerLeMenu();
+    }
+    $('partager').addEventListener('click', () => {
+      if (!$('menuPartage').hidden) {
+        fermerLeMenu();
+        return;
+      }
+      $('menuPartage').hidden = false;
+      $('partager').setAttribute('aria-expanded', 'true');
+      document.addEventListener('mousedown', horsDuMenu, true);
+    });
+    $('enregistrerPartage').addEventListener('click', async () => {
+      fermerLeMenu();
+      try {
+        const chemin = await enregistrerLePartage(contenuDuPartage(etat, r, chargeDuResultat), nomDuFichier(etat));
+        if (chemin === null) return;
+        $('copieDiscord').className = 'copie ok';
+        $('copieDiscord').textContent = `Fichier enregistré : ${chemin.split(/[\\/]/).pop()}`;
+      } catch (e) {
+        $('copieDiscord').className = 'copie refus';
+        $('copieDiscord').textContent = e.message;
+      }
     });
   }
 
