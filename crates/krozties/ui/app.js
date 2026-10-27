@@ -4,7 +4,7 @@
 // reçoit cet état et rend son écran.
 
 import { appeler, hote } from './pont.js';
-import { echapper, nb } from './commun/format.js';
+import { echapper, nb, pluriel } from './commun/format.js';
 import { brancherInfobulles, ficheDeSort, ficheDObjet } from './commun/infobulle.js';
 import { brancherDetails } from './commun/animation.js';
 import { garderOuverture, lireOuverture } from './commun/ouverture.js';
@@ -47,10 +47,35 @@ const OUTILS = {
   comparaison: () => import('./outils/comparaison.js'),
 };
 
+/// La donnée gardée d'un lancement à l'autre : la bêta, ou la version en ligne.
+const CLE_DONNEE = 'krozties.donnee';
+function donneeGardee() {
+  try {
+    return localStorage.getItem(CLE_DONNEE) === 'beta';
+  } catch (e) {
+    return false;
+  }
+}
+function garderLaDonnee(beta) {
+  try {
+    if (beta) localStorage.setItem(CLE_DONNEE, 'beta');
+    else localStorage.removeItem(CLE_DONNEE);
+  } catch (e) { /* un stockage qui refuse ne gêne rien */ }
+}
+
+/// La donnée se règle avant tout appel qui la lit : en bêta, le catalogue des
+/// sorts est déjà celui de la bêta. Une bêta finie ramène à la version en ligne.
+const donnee = appeler('donnee', { beta: donneeGardee() })
+  .catch(() => {
+    garderLaDonnee(false);
+    return appeler('donnee', { beta: false });
+  })
+  .catch(() => {});
+
 /// Le catalogue des classes se charge une fois, au démarrage. C'est une promesse
 /// qu'on attend, pas un champ rempli plus tard : dans un navigateur, il arrive
 /// après le premier dessin.
-const catalogue = appeler('classes')
+const catalogue = donnee.then(() => appeler('classes'))
   .then((c) => { etat.classes = c; })
   .catch((e) => { etat.classes = null; etat.refusCatalogue = e.message; });
 
@@ -141,6 +166,73 @@ function verrouiller(sansBuild) {
     : '';
 }
 
+/// Le choix de la donnée dans l'entête, quand une bêta se calcule dans cette
+/// version, et le bandeau qui rappelle qu'on calcule avec elle.
+async function dessinerLaDonnee() {
+  let d;
+  try {
+    d = await appeler('beta');
+  } catch (e) {
+    return;
+  }
+  const hote = $('choixDonnee');
+  const bandeau = $('bandeauBeta');
+  hote.hidden = !d.disponible;
+  bandeau.hidden = !(d.disponible && d.active);
+  if (!d.disponible) return;
+  const c = d.calcul || {};
+  const date = (((d.notes || [])[0] || {}).titre || '').match(/(\d{2}\/\d{2})\/\d{4}/);
+  const du = date ? ` du ${date[1]}` : '';
+  const sorts = `${c.sorts} ${pluriel(c.sorts, 'sort')}`;
+  const beta = `${d.version ? `${d.version} ` : ''}bêta`;
+  hote.classList.toggle('en-beta', Boolean(d.active));
+  hote.innerHTML = `
+    <details class="choix" data-choix>
+      <summary><span class="etiquette">Donnée</span>
+        <span class="valeur">${echapper(d.active ? beta : d.version_en_ligne || 'en ligne')}</span></summary>
+      <div class="panneau-choix">
+        <button type="button" class="option-donnee${d.active ? '' : ' choisi'}" data-donnee="en-ligne">
+          <b>${echapper(d.version_en_ligne || 'En ligne')}</b><small>la version en ligne</small></button>
+        <button type="button" class="option-donnee${d.active ? ' choisi' : ''}" data-donnee="beta">
+          <b>${echapper(beta)}</b><small>note de bêta${du}, ${sorts} ${pluriel(c.sorts, 'changé')}</small></button>
+      </div>
+    </details>
+    <span class="alerte" id="etatDonnee"></span>`;
+  const n = c.non_comptes || 0;
+  bandeau.innerHTML = d.active ? `<span><b>Mode bêta</b> : ${sorts} ${c.sorts > 1 ? 'suivent' : 'suit'} la note de bêta${
+    du}. Ce que vous calculez ici changera peut-être à la sortie.${n ? ` ${n} ${pluriel(n, 'changement')} de la note ${
+    n > 1 ? 'ne sont pas comptés' : "n'est pas compté"} : <button type="button" class="lien" data-voir-beta>voyez Bêta en cours</button>.`
+    : ''}</span>` : '';
+  hote.querySelectorAll('[data-donnee]').forEach((b) => b.addEventListener('click', () => {
+    hote.querySelector('details').open = false;
+    if ((b.dataset.donnee === 'beta') !== Boolean(d.active)) choisirLaDonnee(b.dataset.donnee === 'beta');
+  }));
+  const voir = bandeau.querySelector('[data-voir-beta]');
+  if (voir) voir.addEventListener('click', () => afficher('beta'));
+}
+
+/// Toute l'application passe à la donnée choisie : le catalogue des sorts et le
+/// build chargé se relisent, puis l'outil ouvert se redessine. Le choix se garde.
+async function choisirLaDonnee(beta) {
+  try {
+    await appeler('donnee', { beta });
+    garderLaDonnee(beta);
+    etat.classes = await appeler('classes');
+    if (etat.build) {
+      const resolu = await appeler('resoudre', etat.build);
+      if (resolu.error) throw new Error(resolu.error);
+      etat.resolu = resolu;
+    }
+  } catch (e) {
+    const etatDonnee = $('etatDonnee');
+    if (etatDonnee) etatDonnee.textContent = e.message;
+    return;
+  }
+  majIdentite();
+  await dessinerLaDonnee();
+  await afficher(etat.outil);
+}
+
 $('rail').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-outil]');
   if (b && !b.disabled) afficher(b.dataset.outil);
@@ -159,6 +251,7 @@ const voulu = OUTILS[ouverture.outil] ? ouverture.outil : 'equipement';
 if (ouverture.kroztool) etat.kroztool = ouverture.kroztool;
 const exigeBuild = Boolean(document.querySelector(`#rail button[data-outil="${voulu}"][data-exige-build]`));
 majIdentite();
+donnee.then(dessinerLaDonnee);
 
 // Le dernier build enregistré chargé l'est de nouveau à l'ouverture.
 const dernier = courant(lire());

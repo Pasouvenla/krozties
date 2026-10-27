@@ -205,6 +205,16 @@ fn handle(mut stream: TcpStream, port: u16) -> Result<(), String> {
                 &error_json(&e),
             ),
         },
+        // Toute l'application passe à la donnée de la bêta, ou en revient.
+        ("POST", "/api/donnee") => {
+            match serde_json::from_str::<serde_json::Value>(&request.body)
+                .map_err(|e| format!("requête illisible : {e}"))
+                .and_then(|d| dofus_app::donnees::regler_la_beta(d["beta"].as_bool().unwrap_or(false)))
+            {
+                Ok(beta) => respond(&mut stream, "200 OK", "application/json", &serde_json::json!({ "beta": beta }).to_string()),
+                Err(e) => respond(&mut stream, "400 Bad Request", "application/json", &error_json(&e)),
+            }
+        }
         ("POST", "/api/resolve") => {
             match serde_json::from_str::<dofus_build::BuildInput>(&request.body)
                 .map_err(|e| format!("requête illisible : {e}"))

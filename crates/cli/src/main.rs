@@ -91,14 +91,17 @@ fn usage() {
     eprintln!("                         une note de patch confrontée à la donnée, à blanc");
     eprintln!("  dofus note <note.json> --appliquer [--donnees data]");
     eprintln!("                         une note de SORTIE appliquée aux fichiers de la donnée");
-    eprintln!("  dofus beta <note.json>...");
-    eprintln!("                         les notes de la bêta, pour data/beta.json (onglet « Bêta en cours »)");
+    eprintln!("  dofus beta <note.json>... [--donnees data]");
+    eprintln!("                         les notes de la bêta, pour data/beta.json (onglet « Bêta en cours », mode bêta)");
 }
 
 /// Les notes de la bêta, lues à blanc et rangées pour l'onglet « Bêta en
 /// cours » : la sortie se range dans `data/beta.json`.
-fn print_beta(chemins: &[String]) -> Result<(), String> {
-    use dofus_app::notes::{beta::pour_l_onglet, Note};
+fn print_beta(chemins: &[String], dossier: &str) -> Result<(), String> {
+    use dofus_app::notes::{
+        beta::{pour_l_onglet, pour_le_calcul},
+        Note,
+    };
     let notes = chemins
         .iter()
         .map(|c| {
@@ -106,7 +109,8 @@ fn print_beta(chemins: &[String]) -> Result<(), String> {
             serde_json::from_str::<Note>(&texte).map_err(|e| format!("{c}: {e}"))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let d = pour_l_onglet(&notes);
+    let mut d = pour_l_onglet(&notes);
+    d["calcul"] = pour_le_calcul(&notes, std::path::Path::new(dossier))?;
     println!("{}", serde_json::to_string_pretty(&d).map_err(|e| e.to_string())?);
     Ok(())
 }
@@ -274,7 +278,17 @@ fn main() -> ExitCode {
         // `gaps` sans argument donne le tableau des dix-neuf classes, avec un
         // nom de classe il détaille ce qui manque à chacun de ses sorts.
         Some("gaps") => print_gaps(args.get(2).map(String::as_str)),
-        Some("beta") if args.len() > 2 => print_beta(&args[2..]),
+        Some("beta") if args.len() > 2 => {
+            let donnees = args.iter().position(|a| a == "--donnees");
+            let notes: Vec<String> = args
+                .iter()
+                .enumerate()
+                .skip(2)
+                .filter(|(i, _)| donnees.is_none_or(|d| *i != d && *i != d + 1))
+                .map(|(_, a)| a.clone())
+                .collect();
+            print_beta(&notes, donnees.and_then(|i| args.get(i + 1)).map_or("data", String::as_str))
+        }
         Some("effets") => print_effets(
             args.get(2).map(String::as_str).filter(|a| !a.starts_with("--")),
             args.iter().any(|a| a == "--tout"),

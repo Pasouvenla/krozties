@@ -481,6 +481,16 @@ fn chaque_outil_s_affiche_sans_erreur() {
         }),
         "{r}"
     );
+    // Sans bêta à calculer, rien n'en parle, et la demander est refusé.
+    assert_eq!(
+        r["donnee"],
+        serde_json::json!({
+            "choix": true,
+            "bandeau": true,
+            "refus": "Aucune bêta à calculer dans cette version de Krozties.",
+        }),
+        "{r}"
+    );
     // Recaler au tour 2 : la fiche remplie d'après le curseur, les sorts du
     // deck à ajouter, puis la suite recalculée et marquée.
     assert_eq!(

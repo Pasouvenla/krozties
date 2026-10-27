@@ -94,6 +94,12 @@ pub fn appliquer(note: &Note, dossier: &Path, date: &str) -> Result<Application,
     if est_une_beta(note) {
         return Err("une note de bêta ne s'applique jamais : passez-la à blanc".into());
     }
+    appliquer_a(note, dossier, date)
+}
+
+/// La même chose, note de bêta comprise : seule la copie de la donnée que le
+/// mode bêta prépare la reçoit (`beta::pour_le_calcul`).
+pub(super) fn appliquer_a(note: &Note, dossier: &Path, date: &str) -> Result<Application, String> {
     let charger = |c: u32| charger_depuis(dossier, c).ok();
     let lignes = lire_avec(note, &charger);
     let mut fichiers: Vec<Fichiers> = Vec::new();

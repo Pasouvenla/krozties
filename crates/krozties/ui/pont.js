@@ -23,6 +23,9 @@ const ROUTES = {
   reprise: { commande: 'reprise_du_combat', chemin: '/api/reprise', argument: 'demande' },
   cartes: { commande: 'cartes_de_boss', chemin: '/api/cartes', methode: 'GET' },
   beta: { commande: 'beta_en_cours', chemin: '/api/beta', methode: 'GET' },
+  /// Toute l'application passe à la donnée de la bêta (`{ beta: true }`), ou en
+  /// revient.
+  donnee: { commande: 'regler_la_donnee', chemin: '/api/donnee' },
   manquantes: { commande: 'donnees_manquantes', chemin: '/api/manquantes', methode: 'GET' },
   vue: { commande: 'ligne_de_vue', chemin: '/api/vue', argument: 'requete' },
   /// Bureau seulement : elle lit un équipement par une vue invisible sur la page de

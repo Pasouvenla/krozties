@@ -6,7 +6,8 @@
         {
           "titre": "Nouveautés",
           "lignes": [
-            "Rotation › Placer le combat sur une carte : posez votre personnage et les ennemis sur un damier ou une carte de boss, et chaque sort vise sa meilleure case depuis là (portée, ligne de vue, cases libres) ; un sort qui n'atteint personne ne frappe pas. Une poussée ne fait ses dommages que si elle bute : sur un mur, un trou, le bord de la carte, ou un autre ennemi, qui en prend la moitié. Survolez un lancer pour voir sa zone et qui il touche. Le lien et le fichier partagés emportent le placement."
+            "Rotation › Placer le combat sur une carte : posez votre personnage et les ennemis sur un damier ou une carte de boss, et chaque sort vise sa meilleure case depuis là (portée, ligne de vue, cases libres) ; un sort qui n'atteint personne ne frappe pas. Une poussée ne fait ses dommages que si elle bute : sur un mur, un trou, le bord de la carte, ou un autre ennemi, qui en prend la moitié. Survolez un lancer pour voir sa zone et qui il touche. Le lien et le fichier partagés emportent le placement.",
+            "Pendant une bêta, choisissez-la dans l'entête (Donnée) : toute l'application calcule alors avec les sorts qu'elle change. Un bandeau le rappelle, dit les changements de la note qui ne sont pas comptés, et le choix se garde jusqu'à ce que vous reveniez à la version en ligne. Hors bêta, rien ne s'affiche."
           ]
         }
       ]

@@ -1,11 +1,18 @@
 //! La donnée du jeu, compilée dans l'application : l'application installée n'a
-//! pas accès au dossier du code, et chaque version emporte sa donnée.
+//! pas accès au dossier du code, et chaque version emporte sa donnée. En mode
+//! bêta, les règles et les relevés que la bêta change se lisent tels qu'elle les
+//! change.
+
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 /// La version du jeu décrite par la donnée, et les notes de sortie appliquées.
 pub const VERSION: &str = include_str!("../../../data/version.json");
 
 /// Les changements de sorts annoncés par la bêta en cours, pour l'onglet
-/// « Bêta en cours ». Rien n'entre dans le calcul.
+/// « Bêta en cours », et les lignes de fichiers que le mode bêta rejoue
+/// (`calcul`, voir `notes::beta::pour_le_calcul`).
 pub const BETA: &str = include_str!("../../../data/beta.json");
 
 /// Le catalogue des objets et des panoplies.
@@ -26,8 +33,95 @@ pub const INVOCATIONS: &str = include_str!("../../../data/snapshots/invocations.
 /// Les sorts communs qui invoquent (l'Arakne, le Chaferfu et leurs variantes).
 pub const COMMUNS: &str = include_str!("../../../data/communs.yaml");
 
-/// L'instantané des sorts d'une classe, par son identifiant de race.
+/// L'instantané des sorts d'une classe, par son identifiant de race : celui de
+/// la bêta quand le joueur calcule avec elle.
 pub fn instantane(breed: u32) -> Option<&'static str> {
+    corrige(&format!("snapshots/breed-{breed}.json")).or_else(|| instantane_compile(breed))
+}
+
+/// Les règles d'une classe, par le nom de leur fichier : celles de la bêta quand
+/// le joueur calcule avec elle.
+pub fn regles(nom: &str) -> Option<&'static str> {
+    corrige(&format!("rulesets/{nom}.yaml")).or_else(|| regles_compilees(nom))
+}
+
+static BETA_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// Le joueur calcule-t-il avec la bêta.
+pub fn beta_active() -> bool {
+    BETA_ACTIVE.load(Ordering::Relaxed)
+}
+
+/// Une bêta se calcule-t-elle dans cette version : `beta.json` porte des lignes,
+/// et elles se rejouent sur la donnée compilée.
+pub fn beta_disponible() -> bool {
+    corriges().as_ref().is_ok_and(|c| !c.is_empty())
+}
+
+/// Passe toute l'application à la donnée de la bêta, ou l'en ramène.
+pub fn regler_la_beta(active: bool) -> Result<bool, String> {
+    if active && !beta_disponible() {
+        return Err(match corriges() {
+            Err(e) => format!("La bêta ne se calcule pas dans cette version de Krozties : {e}"),
+            Ok(_) => "Aucune bêta à calculer dans cette version de Krozties.".to_string(),
+        });
+    }
+    BETA_ACTIVE.store(active, Ordering::Relaxed);
+    Ok(active)
+}
+
+/// Un fichier tel que la bêta le change, en mode bêta seulement.
+fn corrige(chemin: &str) -> Option<&'static str> {
+    if !beta_active() {
+        return None;
+    }
+    corriges().as_ref().ok()?.get(chemin).copied()
+}
+
+/// Les fichiers que la bêta change, par leur chemin dans `data`, ses lignes
+/// rejouées sur la donnée compilée, une fois.
+fn corriges() -> &'static Result<HashMap<String, &'static str>, String> {
+    static CORRIGES: OnceLock<Result<HashMap<String, &'static str>, String>> = OnceLock::new();
+    CORRIGES.get_or_init(|| {
+        let d: serde_json::Value = serde_json::from_str(BETA).map_err(|e| e.to_string())?;
+        let mut corriges = HashMap::new();
+        for (chemin, lignes) in d["calcul"]["fichiers"].as_object().into_iter().flatten() {
+            let origine = compile(chemin).ok_or_else(|| format!("{chemin} n'est pas dans la donnée"))?;
+            let texte = rejouer(origine, lignes).map_err(|e| format!("{chemin}, {e}"))?;
+            corriges.insert(chemin.clone(), &*Box::leak(texte.into_boxed_str()));
+        }
+        Ok(corriges)
+    })
+}
+
+/// Un fichier compilé, par son chemin dans `data`.
+fn compile(chemin: &str) -> Option<&'static str> {
+    if let Some(nom) = chemin.strip_prefix("rulesets/").and_then(|n| n.strip_suffix(".yaml")) {
+        return regles_compilees(nom);
+    }
+    instantane_compile(chemin.strip_prefix("snapshots/breed-")?.strip_suffix(".json")?.parse().ok()?)
+}
+
+/// Les lignes `[rang, avant, après]` d'un fichier de la bêta rejouées sur son
+/// texte. Un avant qui ne s'y trouve pas dit une bêta préparée sur une autre
+/// donnée : rien ne se rejoue.
+pub(crate) fn rejouer(origine: &str, lignes: &serde_json::Value) -> Result<String, String> {
+    let mut texte: Vec<&str> = origine.split('\n').collect();
+    for l in lignes.as_array().into_iter().flatten() {
+        let (Some(rang), Some(avant), Some(apres)) = (l[0].as_u64(), l[1].as_str(), l[2].as_str()) else {
+            return Err(format!("ligne illisible : {l}"));
+        };
+        let rang = usize::try_from(rang).map_err(|e| e.to_string())?;
+        if texte.get(rang) != Some(&avant) {
+            return Err(format!("ligne {} : la bêta a été préparée sur une autre donnée", rang + 1));
+        }
+        texte[rang] = apres;
+    }
+    Ok(texte.join("\n"))
+}
+
+/// L'instantané compilé d'une classe, par son identifiant de race.
+pub(crate) fn instantane_compile(breed: u32) -> Option<&'static str> {
     Some(match breed {
         1 => include_str!("../../../data/snapshots/breed-1.json"),
         2 => include_str!("../../../data/snapshots/breed-2.json"),
@@ -52,8 +146,8 @@ pub fn instantane(breed: u32) -> Option<&'static str> {
     })
 }
 
-/// Les règles d'une classe, par le nom de leur fichier.
-pub fn regles(nom: &str) -> Option<&'static str> {
+/// Les règles compilées d'une classe, par le nom de leur fichier.
+pub(crate) fn regles_compilees(nom: &str) -> Option<&'static str> {
     Some(match nom {
         "feca" => include_str!("../../../data/rulesets/feca.yaml"),
         "osamodas" => include_str!("../../../data/rulesets/osamodas.yaml"),
@@ -121,6 +215,22 @@ pub fn version_du_jeu() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// La bêta embarquée se rejoue sur la donnée compilée : préparée sur une
+    /// autre donnée, elle le dirait ici plutôt que chez le joueur.
+    #[test]
+    fn la_beta_embarquee_se_rejoue() {
+        assert!(corriges().is_ok(), "{:?}", corriges().as_ref().err());
+    }
+
+    /// Une ligne de la bêta se rejoue là où se trouve son avant, et nulle part
+    /// ailleurs.
+    #[test]
+    fn une_ligne_de_la_beta_exige_son_avant() {
+        let lignes = serde_json::json!([[1, "b", "B"]]);
+        assert_eq!(rejouer("a\nb\nc", &lignes).unwrap(), "a\nB\nc");
+        assert!(rejouer("a\nx\nc", &lignes).is_err());
+    }
 
     /// Chaque classe proposée a sa donnée embarquée, et chaque fichier de donnée
     /// est embarqué.

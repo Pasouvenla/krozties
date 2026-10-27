@@ -1,7 +1,7 @@
 // Bêta en cours : les changements de sorts que la note de la bêta annonce,
-// classe par classe, avant leur sortie. La donnée vient de `dofus beta`, qui lit
-// les notes de la bêta à blanc : rien de la bêta n'entre dans le calcul. Chaque
-// changement se montre au plus haut grade.
+// classe par classe, avant leur sortie. La donnée vient de `dofus beta` : rien de
+// la bêta n'entre dans le calcul tant que le joueur ne choisit pas sa donnée dans
+// l'entête. Chaque changement se montre au plus haut grade.
 
 import { echapper } from '../commun/format.js';
 

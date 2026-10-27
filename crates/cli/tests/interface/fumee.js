@@ -942,6 +942,20 @@ try {
     boutons: document.querySelectorAll('[data-maj]').length,
   };
   localStorage.removeItem(CLE_PERSOS);
+
+  // Sans bêta à calculer dans cette version, l'entête ne propose pas de donnée,
+  // aucun bandeau ne parle de bêta, et la demander est refusé.
+  let refusBeta = null;
+  try {
+    await appeler('donnee', { beta: true });
+  } catch (e) {
+    refusBeta = e.message;
+  }
+  resultat.donnee = {
+    choix: document.getElementById('choixDonnee').hidden,
+    bandeau: document.getElementById('bandeauBeta').hidden,
+    refus: refusBeta,
+  };
 } catch (e) {
   erreurs.push(`exception : ${e.message}`);
 }

@@ -110,6 +110,13 @@ fn beta_en_cours() -> Sortie {
     Ok(dofus_app::notes::beta::beta_json())
 }
 
+/// Toute l'application passe à la donnée de la bêta, ou en revient : les
+/// calculs qui suivent la lisent.
+#[tauri::command]
+fn regler_la_donnee(beta: bool) -> Sortie {
+    dofus_app::donnees::regler_la_beta(beta).map(|beta| serde_json::json!({ "beta": beta }).to_string())
+}
+
 /// Ce que la rotation ne compte pas et qu'un joueur peut relever en jeu, pour
 /// la page « Données manquantes ».
 #[tauri::command]
@@ -384,6 +391,7 @@ fn main() {
             reprise_du_combat,
             cartes_de_boss,
             beta_en_cours,
+            regler_la_donnee,
             donnees_manquantes,
             ligne_de_vue,
             importer_equipement,

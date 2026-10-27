@@ -1,18 +1,131 @@
-//! L'onglet « Bêta en cours » : les changements de sorts qu'annoncent les notes
-//! de la bêta, classe par classe, prêts à afficher.
+//! La bêta en cours : les changements de sorts qu'annoncent ses notes, classe
+//! par classe, prêts à afficher dans l'onglet « Bêta en cours », et ce que le
+//! mode bêta rejoue pour calculer avec eux.
 //!
-//! `dofus beta <note.json>…` les tire des notes, à blanc, et `data/beta.json`
-//! les embarque dans l'application, qui ne sort jamais sur le réseau. Rien de la
-//! bêta n'entre dans le calcul. Chaque changement se montre au plus haut grade :
-//! « Portée maximale : 4 / 5 / 6 → 6 / 7 / 8 » devient « Portée maximale,
-//! 6 → 8 ».
+//! `dofus beta <note.json>…` les tire des notes et `data/beta.json` les embarque
+//! dans l'application, qui ne sort jamais sur le réseau. Rien de la bêta n'entre
+//! dans le calcul tant que le joueur ne passe pas en mode bêta. Chaque
+//! changement se montre au plus haut grade : « Portée maximale : 4 / 5 / 6 →
+//! 6 / 7 / 8 » devient « Portée maximale, 6 → 8 ».
+
+use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::OnceLock;
 
 use super::{lire, Champ, Etat, Ligne, Note};
 use crate::solve::{load_ruleset, CLASSES};
 
-/// La donnée de l'onglet, telle que l'application la sert.
+/// La donnée de l'onglet et du mode bêta, telle que l'application la sert :
+/// sans les lignes de fichiers, que seul le calcul lit, avec la version en
+/// ligne, et ce que le mode bêta peut faire ici (`disponible`) et fait
+/// (`active`).
 pub fn beta_json() -> String {
-    crate::donnees::BETA.to_string()
+    static SERVIE: OnceLock<serde_json::Value> = OnceLock::new();
+    let mut d = SERVIE
+        .get_or_init(|| {
+            let mut d: serde_json::Value = serde_json::from_str(crate::donnees::BETA).unwrap_or_default();
+            if let Some(c) = d.get_mut("calcul").and_then(serde_json::Value::as_object_mut) {
+                c.remove("fichiers");
+            }
+            let version: serde_json::Value = serde_json::from_str(crate::donnees::VERSION).unwrap_or_default();
+            d["version_en_ligne"] = version["version_du_jeu"].clone();
+            d
+        })
+        .clone();
+    d["disponible"] = crate::donnees::beta_disponible().into();
+    d["active"] = crate::donnees::beta_active().into();
+    d.to_string()
+}
+
+/// Le mode bêta : les notes de la bêta appliquées à une copie des règles et des
+/// relevés du dossier `data`, comme une note de sortie le serait, et les lignes
+/// de fichiers qu'elles changent, que l'application rejoue sur sa donnée
+/// compilée quand le joueur passe en bêta (`donnees::regler_la_beta`). Avec
+/// elles, ce que le mode compte (`sorts`, `lignes`) et ce qu'il ne compte pas
+/// (`non_comptes`). Une application refusée arrête tout : le mode bêta
+/// calculerait faux.
+pub fn pour_le_calcul(notes: &[Note], data: &Path) -> Result<serde_json::Value, String> {
+    static ESSAIS: AtomicUsize = AtomicUsize::new(0);
+    let copie = std::env::temp_dir().join(format!(
+        "krozties-beta-{}-{}",
+        std::process::id(),
+        ESSAIS.fetch_add(1, Ordering::Relaxed)
+    ));
+    let _ = std::fs::remove_dir_all(&copie);
+    let resultat = copier_la_donnee(data, &copie).and_then(|chemins| {
+        // Ce que le mode ne sait pas compter : les lignes d'un sort que la
+        // donnée ne relit pas, et celles qu'une application laisse.
+        let mut non_comptes = 0;
+        let mut appliquees = Vec::new();
+        for note in notes {
+            non_comptes += super::lire_avec(note, &|c| super::appliquer::charger_depuis(&copie, c).ok())
+                .iter()
+                .filter(|l| !l.sorts.is_empty())
+                .filter(|l| !matches!(l.etat, Etat::AAppliquer | Etat::DejaAJour | Etat::AutreGrade))
+                .count();
+            let a = super::appliquer::appliquer_a(note, &copie, "")?;
+            non_comptes += a.laissees.len();
+            appliquees.extend(a.appliquees);
+        }
+        let mut fichiers = serde_json::Map::new();
+        for chemin in chemins {
+            let lire_dans = |d: &Path| std::fs::read_to_string(d.join(&chemin)).map_err(|e| format!("{chemin}: {e}"));
+            let (avant, apres) = (lire_dans(data)?, lire_dans(&copie)?);
+            if avant == apres {
+                continue;
+            }
+            let (a, b): (Vec<&str>, Vec<&str>) = (avant.split('\n').collect(), apres.split('\n').collect());
+            if a.len() != b.len() {
+                return Err(format!("{chemin} : la bêta change le nombre de lignes, ce que le mode bêta ne rejoue pas"));
+            }
+            let lignes: Vec<serde_json::Value> = a
+                .iter()
+                .zip(&b)
+                .enumerate()
+                .filter(|(_, (x, y))| x != y)
+                .map(|(i, (x, y))| serde_json::json!([i, x, y]))
+                .collect();
+            fichiers.insert(chemin, lignes.into());
+        }
+        let mut sorts: Vec<(u32, &str)> =
+            appliquees.iter().flat_map(|l| l.sorts.iter().map(move |s| (l.classe, s.as_str()))).collect();
+        sorts.sort_unstable();
+        sorts.dedup();
+        Ok(serde_json::json!({
+            "sorts": sorts.len(),
+            "lignes": appliquees.len(),
+            "non_comptes": non_comptes,
+            "fichiers": fichiers,
+        }))
+    });
+    let _ = std::fs::remove_dir_all(&copie);
+    resultat
+}
+
+/// Copie ce qu'une note touche du dossier `data` : les règles, les relevés des
+/// classes et `version.json`. Rend leurs chemins dans `data`, triés.
+fn copier_la_donnee(data: &Path, copie: &Path) -> Result<Vec<String>, String> {
+    let gardes: [(&str, fn(&str) -> bool); 2] = [
+        ("rulesets", |n| n.ends_with(".yaml")),
+        ("snapshots", |n| n.starts_with("breed-") && n.ends_with(".json")),
+    ];
+    let mut chemins = Vec::new();
+    for (dossier, garde) in gardes {
+        std::fs::create_dir_all(copie.join(dossier)).map_err(|e| format!("{}: {e}", copie.display()))?;
+        let source = data.join(dossier);
+        for entree in std::fs::read_dir(&source).map_err(|e| format!("{}: {e}", source.display()))? {
+            let nom = entree.map_err(|e| e.to_string())?.file_name().to_string_lossy().into_owned();
+            if !garde(&nom) {
+                continue;
+            }
+            let chemin = format!("{dossier}/{nom}");
+            std::fs::copy(data.join(&chemin), copie.join(&chemin)).map_err(|e| format!("{chemin}: {e}"))?;
+            chemins.push(chemin);
+        }
+    }
+    std::fs::copy(data.join("version.json"), copie.join("version.json")).map_err(|e| format!("version.json: {e}"))?;
+    chemins.sort();
+    Ok(chemins)
 }
 
 /// La valeur d'un côté de la flèche, au plus haut grade : le dernier morceau
@@ -124,6 +237,54 @@ mod tests {
 
     fn noeud(balise: &str, profondeur: u8, texte: &str) -> Noeud {
         Noeud { balise: balise.into(), profondeur, texte: texte.into() }
+    }
+
+    /// Le mode bêta : une note de bêta qui retire un PA à la Flèche de Recul,
+    /// appliquée à une copie de la donnée, donne les lignes de fichiers qui,
+    /// rejouées sur la donnée compilée, la font coûter un PA de moins. La phrase
+    /// sur le sort ne se compte pas, et la donnée du dépôt ne bouge pas.
+    #[test]
+    fn la_beta_se_rejoue_sur_la_donnee_compilee() {
+        let data = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../data"));
+        let avant = std::fs::read_to_string(data.join("rulesets/cra.yaml")).unwrap();
+        let r = load_ruleset(9).unwrap();
+        let s = r.spells.iter().find(|s| s.id == "fleche_de_recul").unwrap();
+        let pa = s.ap_cost.base;
+        let note = Note {
+            id: "1".into(),
+            titre: "Patch Notes Bêta 9.9 - 17/09/2026".into(),
+            forum: "Beta".into(),
+            url: String::new(),
+            noeuds: vec![
+                noeud("h3", 0, "Crâ"),
+                noeud("li", 2, &s.name.fr),
+                noeud("li", 3, &format!("Coût en PA : {pa} → {}", pa - 1)),
+                noeud("li", 3, "Le sort fait autre chose."),
+            ],
+        };
+        let calcul = pour_le_calcul(&[note], data).unwrap();
+        assert_eq!(
+            (calcul["sorts"].as_u64(), calcul["lignes"].as_u64(), calcul["non_comptes"].as_u64()),
+            (Some(1), Some(1), Some(1)),
+            "{calcul}"
+        );
+        let fichiers = calcul["fichiers"].as_object().unwrap();
+        let rejoue = |chemin: &str, origine: &str| match fichiers.get(chemin) {
+            Some(lignes) => crate::donnees::rejouer(origine, lignes).unwrap(),
+            None => origine.to_string(),
+        };
+        let mut regles =
+            dofus_ruleset::Ruleset::from_yaml(&rejoue("rulesets/cra.yaml", crate::donnees::regles_compilees("cra").unwrap()))
+                .unwrap();
+        let releve = dofus_ruleset::snapshot::Snapshot::from_json(&rejoue(
+            "snapshots/breed-9.json",
+            crate::donnees::instantane_compile(9).unwrap(),
+        ))
+        .unwrap();
+        assert!(regles.merge_snapshot(&releve).conflicts.is_empty());
+        let recul = regles.spells.iter().find(|s| s.id == "fleche_de_recul").unwrap();
+        assert_eq!(recul.ap_cost.base, pa - 1);
+        assert_eq!(std::fs::read_to_string(data.join("rulesets/cra.yaml")).unwrap(), avant);
     }
 
     /// La donnée embarquée se lit, et chaque classe a son nom.

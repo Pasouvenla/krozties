@@ -161,6 +161,12 @@ input, textarea, .selectionnable, .selectionnable * { -webkit-user-select: text;
 .panneau-choix.formulaire label { font-size: .76rem; color: var(--doux); }
 .panneau-choix.formulaire > button { justify-content: center; margin-top: .3rem; background: var(--accent);
                                      color: #fff; }
+/* La donnée : la version en ligne ou la bêta, quand une bêta se calcule. */
+.choix-donnee[hidden] { display: none; }
+.choix-donnee.en-beta .valeur { background: var(--accent-clair); }
+.option-donnee { display: grid !important; gap: .05rem; line-height: 1.2; }
+.bandeau-beta .lien { background: none; border: 0; padding: 0; color: var(--accent); font: inherit;
+                      cursor: pointer; text-decoration: underline; }
 .badge-perso { display: inline-grid; place-items: center; flex: none; width: 1.8rem; height: 1.8rem;
                border-radius: 50%; background: var(--accent); color: var(--rail-texte);
                font-size: .62rem; font-weight: 700; }
