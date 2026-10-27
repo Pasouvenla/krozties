@@ -90,7 +90,7 @@ try {
   }
 
   // Le message pour Discord : les tours identiques qui se suivent réunis, la
-  // répartition et le lien.
+  // répartition et les liens, masqués.
   const discord = await import('/commun/discord.js');
   resultat.discord = discord.rotation({
     r: {
@@ -108,7 +108,28 @@ try {
     build: 'Sram 200 · Agilité',
     version: '0.8.0',
     lien: 'https://d-bk.net/fr/d/XXXX',
+    partage: 'https://pasouvenla.github.io/krozties/r/#AQID',
   }).split('\n');
+  // Trop long pour Discord : le tableau se coupe, les liens restent.
+  const long = discord.rotation({
+    r: {
+      total: 9000,
+      per_turn: 300,
+      turns: [...Array(30).keys()].map((i) => ({
+        damage: 300 + i, casts: [{ name: `Sort au nom assez long ${i}` }, { name: `Autre sort ${i}` }],
+      })),
+    },
+    demande: { horizon: 30 },
+    build: 'Sram 200',
+    lien: 'https://d-bk.net/fr/d/XXXX',
+    partage: `https://pasouvenla.github.io/krozties/r/#${'A'.repeat(400)}`,
+  });
+  const lignesLongues = long.split('\n');
+  resultat.discordLong = {
+    tient: long.length <= 2000,
+    coupe: lignesLongues.includes('…'),
+    pied: lignesLongues[lignesLongues.length - 1].startsWith('-# [Ouvrir dans Krozties](<https://pasouvenla.github.io/'),
+  };
 
   // Les notes de mise à jour : les versions à présenter après une mise à jour,
   // la fenêtre, puis la page, une ligne par version, la plus récente ouverte,

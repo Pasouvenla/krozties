@@ -1,6 +1,17 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": [
+        {
+          "titre": "Nouveautés",
+          "lignes": [
+            "Rotation › Copier pour Discord : le message porte aussi le lien qui ouvre la rotation dans Krozties, derrière « Ouvrir dans Krozties », à côté du lien DofusBook."
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.15.0",
       "date": "2026-10-27",
       "rubriques": [

@@ -101,11 +101,19 @@ function message(avant, bloc, apres) {
   return assembler(lignes);
 }
 
-const lienDofusBook = (lien) => (lien ? [`-# [Le build sur DofusBook](<${lien}>)`] : []);
+/// Le pied du message : la rotation à ouvrir dans Krozties, puis le build sur
+/// DofusBook, chacun derrière son nom. Sous le bloc, la coupe ne les touche pas.
+const pied = (partage, dofusbook) => {
+  const liens = [
+    partage ? `[Ouvrir dans Krozties](<${partage}>)` : null,
+    dofusbook ? `[Le build sur DofusBook](<${dofusbook}>)` : null,
+  ].filter(Boolean);
+  return liens.length ? [`-# ${liens.join(' · ')}`] : [];
+};
 
 /// Une rotation : le build et son total, les réglages, puis les tours et la
-/// répartition dans un bloc, et le lien DofusBook.
-export function rotation({ r, demande, build, version: v, lien }) {
+/// répartition dans un bloc, et les liens de la rotation et du build.
+export function rotation({ r, demande, build, version: v, lien, partage }) {
   const entete = `**${build}** · **${nb(r.total)} dégâts** · ${nb(r.per_turn)} par tour${
     r.steady && r.steady.per_turn ? ` · ${nb(r.steady.per_turn)} sur la durée` : ''}`;
   const tours = tableau([
@@ -120,7 +128,7 @@ export function rotation({ r, demande, build, version: v, lien }) {
   return message(
     [entete, sousTitre(demande, v)],
     parts.length ? [...tours, '', ...parts] : tours,
-    lienDofusBook(lien),
+    pied(partage, lien),
   );
 }
 

@@ -710,6 +710,12 @@ export async function rendre(cible, etat, { appeler }) {
         $('copieDiscord').textContent = e.message;
       });
     });
+    // Le lien de la rotation, celui que Partager copie et que le message pour
+    // Discord porte ; aucun sans le build résolu pour le partage.
+    const lienDeLaRotation = () => (etat.resolu && etat.resolu.partage
+      ? lienDuPartage(etat.resolu.partage, reglages, sorts,
+        { ecartes: etat.bonusEcartes || [], inclus: etat.bonusInclus || [] }, declares, placementPourLaRequete(etat))
+      : null);
     $('copierDiscord').addEventListener('click', async () => {
       const texte = discord.rotation({
         r,
@@ -717,6 +723,7 @@ export async function rendre(cible, etat, { appeler }) {
         build: nomDuBuild(),
         version: await discord.version(appeler),
         lien: etat.lienDuBuild,
+        partage: lienDeLaRotation(),
       });
       const ok = await discord.copier(texte);
       $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
@@ -743,9 +750,7 @@ export async function rendre(cible, etat, { appeler }) {
     if ($('copierLien')) {
       $('copierLien').addEventListener('click', async () => {
         fermerLeMenu();
-        const lien = lienDuPartage(etat.resolu.partage, reglages, sorts,
-          { ecartes: etat.bonusEcartes || [], inclus: etat.bonusInclus || [] }, declares, placementPourLaRequete(etat));
-        const ok = await discord.copier(lien);
+        const ok = await discord.copier(lienDeLaRotation());
         $('copieDiscord').className = `copie ${ok ? 'ok' : 'refus'}`;
         $('copieDiscord').textContent = ok ? 'Lien copié.' : 'Le système refuse la copie.';
       });

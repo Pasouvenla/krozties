@@ -190,10 +190,12 @@ fn chaque_outil_s_affiche_sans_erreur() {
             "Arnaque   ████████████████  60,0 %",
             "Épidémie  ███████████       40,0 %",
             "```",
-            "-# [Le build sur DofusBook](<https://d-bk.net/fr/d/XXXX>)",
+            "-# [Ouvrir dans Krozties](<https://pasouvenla.github.io/krozties/r/#AQID>) · [Le build sur DofusBook](<https://d-bk.net/fr/d/XXXX>)",
         ]),
         "{r}"
     );
+    // Trop long pour Discord, le message coupe son tableau et garde ses liens.
+    assert_eq!(r["discordLong"], serde_json::json!({ "tient": true, "coupe": true, "pied": true }), "{r}");
     assert_eq!(r["copierRotation"], true, "{r}");
     assert_eq!(
         r["miseAJourBuild"],
