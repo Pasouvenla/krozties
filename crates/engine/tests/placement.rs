@@ -82,6 +82,7 @@ fn pose(ennemis: Vec<Case>) -> Placement {
         visee: Case::new(0, 0),
         ennemis,
         visees: Default::default(),
+        poussees: Default::default(),
     }
 }
 
@@ -172,6 +173,7 @@ fn viser_le_vide_ne_frappe_personne() {
         visee: Case::new(0, 0),
         ennemis: vec![Case::new(8, 0), Case::new(8, 1), Case::new(9, 0)],
         visees: Default::default(),
+        poussees: Default::default(),
     };
     let mesure = total(&rs, SORT, scenario(3, 1, Some(loin)));
     assert_eq!(
@@ -218,6 +220,7 @@ fn la_fourche_se_place_sur_la_grille() {
                     visee: Case::new(0, 0),
                     ennemis,
                     visees: Default::default(),
+                    poussees: Default::default(),
                 }),
             ),
         )

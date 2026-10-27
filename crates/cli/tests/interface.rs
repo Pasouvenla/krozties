@@ -467,6 +467,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
         r["placement"],
         serde_json::json!({
             "cibles": true,
+            "poussees": true,
             "tour": true,
             "touche": true,
             "loin": true,
@@ -476,6 +477,7 @@ fn chaque_outil_s_affiche_sans_erreur() {
             "lien": true,
             "total": true,
             "ennemisSansPlacement": "4",
+            "pousseesRendues": true,
         }),
         "{r}"
     );

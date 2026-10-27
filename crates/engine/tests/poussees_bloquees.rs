@@ -79,17 +79,26 @@ fn le_tibia_ajoute_ses_dommages_de_poussee() {
 }
 
 /// L'Épouvante repousse de deux cases le Pandawa Sobre, d'une le Pandawa
-/// Saoul : la donnée le dit par deux effets à masque (`*E3531`, `*E498`).
+/// Saoul : la donnée le dit par deux effets à masque (`*E3531`, `*E498`), sur
+/// la cible seule.
 #[test]
 fn la_poussee_de_l_epouvante_depend_de_l_etat_du_lanceur() {
-    use dofus_ruleset::{Critere, PushDef};
+    use dofus_ruleset::{AreaDef, Critere, PushDef};
     let rs = regles("pandawa", 12);
     let epouvante = rs.spells.iter().find(|s| s.id == "epouvante").unwrap();
+    let la_cible = Some(AreaDef {
+        shape: 'P',
+        size: Some(1),
+        size2: 0,
+        max_targets: Some(1),
+        falloff_percent: 10,
+        falloff_steps: 4,
+    });
     assert_eq!(
         epouvante.pushes,
         vec![
-            PushDef { cells: 2, caster: Some(Critere::Etat { etat: 3531, present: true }) },
-            PushDef { cells: 1, caster: Some(Critere::Etat { etat: 498, present: true }) },
+            PushDef { cells: 2, caster: Some(Critere::Etat { etat: 3531, present: true }), zone: la_cible },
+            PushDef { cells: 1, caster: Some(Critere::Etat { etat: 498, present: true }), zone: la_cible },
         ]
     );
     // Sobre au départ : deux cases, 91.

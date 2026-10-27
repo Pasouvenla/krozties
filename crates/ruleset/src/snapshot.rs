@@ -205,7 +205,15 @@ fn poussee_sur_l_ennemi(e: &PlacedEffect) -> Option<crate::PushDef> {
         1 => conditions.pop(),
         _ => Some(crate::Critere::Et(conditions)),
     };
-    Some(crate::PushDef { cells, caster })
+    let zone = e.zone.as_ref().map(|z| crate::AreaDef {
+        shape: z.shape,
+        size: z.size,
+        size2: z.size2,
+        max_targets: z.cells,
+        falloff_percent: z.falloff_percent,
+        falloff_steps: z.falloff_steps,
+    });
+    Some(crate::PushDef { cells, caster, zone })
 }
 
 /// Casting constraints from the game data: Xelor's Sablier can only be cast in a

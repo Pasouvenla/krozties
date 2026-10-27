@@ -70,6 +70,7 @@ impl PlacementInput {
                 .map(|&(x, y)| Case::new(x, y))
                 .collect(),
             visees: std::collections::HashMap::new(),
+            poussees: std::collections::HashMap::new(),
         }
     }
 }
@@ -1974,6 +1975,20 @@ fn preparer(
         ruleset.avec_mecaniques(&request.mecaniques_de(&ruleset))
     };
     ruleset.spells.extend(sorts_communs().iter().cloned());
+    // Sur la carte, ce que « Inclure les dommages de poussée » déclarait se lit :
+    // l'Œil du Cauchemar suit les poussées des sorts qui butent, les Bottes du
+    // Cul Botté celles de leurs deux cases sur l'ennemi au contact.
+    let sur_la_carte;
+    let (request, bottes_butent) = match &request.placement {
+        Some(p) => {
+            let bonus_portee = resolved.totals.get("range").copied().unwrap_or(0);
+            let visees = crate::grille::visees_au_mieux(p, &ruleset, &request.deck, bonus_portee)?;
+            let butent = !crate::grille::poussees_sur_la_carte(p, &ruleset, &request.deck, &visees)?.is_empty();
+            sur_la_carte = Request { poussees_bloquees: butent, ..request.clone() };
+            (&sur_la_carte, crate::grille::bute_au_contact(p, 2)?)
+        }
+        None => (request, request.poussees_bloquees),
+    };
     let entravants = if request.poussees_bloquees && resolved.puissance_si_poussee > 0 {
         snapshot_for(build.class)?.sorts_qui_entravent_le_lanceur()
     } else {
@@ -2015,7 +2030,8 @@ fn preparer(
     // ce que font les sorts.
     let combat = crate::effets_d_objets::Combat {
         ennemis: request.targets.unwrap_or(1).clamp(1, MAX_ENNEMIS),
-        poussees_bloquees: request.poussees_bloquees,
+        poussees_bloquees: bottes_butent,
+        sur_la_carte: request.placement.is_some(),
         pm_depenses: request.pm_depenses.unwrap_or(0).min(resolved.base_mp),
     };
     let lectures = if crate::effets_d_objets::lit_la_donnee(&build) {
@@ -2027,7 +2043,9 @@ fn preparer(
         crate::effets_d_objets::greffer(&mut ruleset, &build, &request.bonus_ecartes, &combat, &lectures);
     noter(&mut resolved.assumptions, "Équipement", greffes.remarques);
     let mut scenario = Scenario {
-        poussees_bloquees: request.poussees_bloquees,
+        // Sur la carte, seules les poussées des objets le lisent : celles des
+        // sorts viennent du placement.
+        poussees_bloquees: bottes_butent,
         horizon: request.horizon.clamp(1, 20),
         // Une cible par défaut : c'est le combat que décrit le reste de la
         // page, et un joueur qui ne demande rien ne doit pas se voir servir
@@ -2046,6 +2064,7 @@ fn preparer(
                 let mut pose = p.en_placement();
                 let bonus_portee = resolved.totals.get("range").copied().unwrap_or(0);
                 pose.visees = crate::grille::visees_au_mieux(p, &ruleset, &request.deck, bonus_portee)?;
+                pose.poussees = crate::grille::poussees_sur_la_carte(p, &ruleset, &request.deck, &pose.visees)?;
                 Some(pose)
             }
             None => None,
@@ -2083,6 +2102,29 @@ fn preparer(
         scenario.etats_declares.push(("poussee_subie".to_string(), 1));
         let bottes = "Bottes du Cul Botté : « La cible subit des dommages de poussée à chaque tour » compté coché";
         noter(&mut resolved.assumptions, "Équipement", vec![bottes.to_string()]);
+    }
+    // Sur la carte, ce que le calcul suppose des déplacements et des poussées.
+    if scenario.placement.is_some() {
+        let mut notes = vec!["Personne ne bouge d'un lancer à l'autre, pas même un ennemi poussé".to_string()];
+        let poussent = ruleset
+            .spells
+            .iter()
+            .filter(|s| request.deck.contains(&s.id))
+            .flat_map(dofus_ruleset::SpellDef::alternatives)
+            .any(|s| !s.pushes.is_empty());
+        if poussent {
+            notes.push(
+                "Poussées : chaque ennemi s'éloigne de la case visée (celui qui s'y tient, de vous), dans la plus \
+                 proche des huit directions ; d'un même lancer, le plus éloigné part le premier"
+                    .to_string(),
+            );
+            notes.push(
+                "Poussées : un mur, un trou ou le bord de la carte arrêtent l'ennemi comme une entité ; l'ennemi \
+                 percuté prend la moitié des dommages"
+                    .to_string(),
+            );
+        }
+        noter(&mut resolved.assumptions, "Placement", notes);
     }
     let remarques: Vec<(&'static str, String)> =
         sujets.into_iter().zip(resolved.assumptions[depart..].iter().cloned()).collect();

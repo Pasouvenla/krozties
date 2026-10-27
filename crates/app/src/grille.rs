@@ -91,9 +91,10 @@ pub struct Visee {
 /// posé son personnage et les ennemis : parmi les cases d'où le sort part
 /// (portée, axe, ligne de vue, case libre ou occupée selon ce qu'il exige),
 /// celle où sa zone la plus large frappe le plus, chaque ennemi compté à son
-/// taux ; sans zone, une case où se tient un ennemi. À valeur égale, la
-/// première dans l'ordre du plateau, pour que deux calculs visent pareil. Un
-/// sort qui ne touche personne d'ici n'y est pas.
+/// taux ; sans zone, une case où se tient un ennemi. À valeur égale, celle dont
+/// les poussées butent le plus, puis la première dans l'ordre du plateau, pour
+/// que deux calculs visent pareil. Un sort qui ne touche personne d'ici n'y est
+/// pas.
 pub fn meilleures_visees(
     placement: &crate::solve::PlacementInput,
     ruleset: &dofus_ruleset::Ruleset,
@@ -137,14 +138,27 @@ pub fn meilleures_visees(
                 }
             }
         };
-        let mut meilleure: Option<(u32, Case)> = None;
+        let mut meilleure: Option<((u32, i32), Case)> = None;
         for &v in &sol {
             if !refus_de_visee(&def, contraintes, &plateau, pose.lanceur, v, &pose.ennemis).is_null() {
                 continue;
             }
             let valeur: u32 = tirer(v).map_or(0, |(_, touches)| touches.iter().map(|(_, taux)| taux).sum());
-            if valeur > 0 && meilleure.is_none_or(|(m, _)| valeur > m) {
-                meilleure = Some((valeur, v));
+            if valeur == 0 {
+                continue;
+            }
+            // Les poussées qui butent, en demi-cases : l'ennemi poussé compte ses
+            // cases restantes, celui qu'il percute la moitié.
+            let butent: i32 = if def.pushes.is_empty() {
+                0
+            } else {
+                butees(&def, &plateau, pose.lanceur, v, &pose.ennemis)
+                    .iter()
+                    .map(|b| if matches!(b.contre, Obstacle::Ennemi(_)) { 3 * b.cases } else { 2 * b.cases })
+                    .sum()
+            };
+            if meilleure.is_none_or(|(m, _)| (valeur, butent) > m) {
+                meilleure = Some(((valeur, butent), v));
             }
         }
         if let Some((_, v)) = meilleure {
@@ -188,6 +202,160 @@ pub fn visees_au_mieux(
     Ok(visees)
 }
 
+/// Contre quoi une poussée bute : le décor (un mur, un trou, le bord de la
+/// carte), le lanceur, ou un autre ennemi, par son rang.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Obstacle {
+    Decor,
+    Lanceur,
+    Ennemi(usize),
+}
+
+/// Une poussée qui bute : laquelle des poussées du sort (son rang dans
+/// `pushes`), l'ennemi poussé, contre quoi, et les cases que l'obstacle lui
+/// retire.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Butee {
+    pub poussee: usize,
+    pub ennemi: usize,
+    pub contre: Obstacle,
+    pub cases: i32,
+}
+
+/// La direction d'une poussée, de son origine vers la cible : la plus proche des
+/// huit du jeu, les quatre axes et les quatre diagonales. L'axe l'emporte quand
+/// l'écart le long de lui dépasse l'autre de plus de 1 + √2 fois, un angle de
+/// moins de 22,5 degrés. `None` sur la case même.
+fn direction_de_poussee(origine: Case, cible: Case) -> Option<(i16, i16)> {
+    let (dx, dy) = (i32::from(cible.x - origine.x), i32::from(cible.y - origine.y));
+    if dx == 0 && dy == 0 {
+        return None;
+    }
+    let pas = |d: i32| i16::try_from(d.signum()).unwrap_or(0);
+    let (ax, ay) = (dx.abs(), dy.abs());
+    Some(if ax * 1000 > ay * 2414 {
+        (pas(dx), 0)
+    } else if ay * 1000 > ax * 2414 {
+        (0, pas(dy))
+    } else {
+        (pas(dx), pas(dy))
+    })
+}
+
+/// Pousse les ennemis `pousses`, dans cet ordre, de `cases` depuis `origine`
+/// (depuis le lanceur, celui qui se tient sur l'origine) ; rend ceux qui butent,
+/// avec ce qu'ils percutent et les cases qui restaient. Un ennemi poussé s'arrête
+/// où il bute, et les suivants butent sur lui là.
+fn pousser(
+    plateau: &Plateau,
+    lanceur: Case,
+    origine: Case,
+    ennemis: &[Case],
+    pousses: &[usize],
+    cases: u8,
+) -> Vec<(usize, Obstacle, i32)> {
+    let mut ici = ennemis.to_vec();
+    let mut butent = Vec::new();
+    for &i in pousses {
+        let depuis = if ici[i] == origine { lanceur } else { origine };
+        let Some((dx, dy)) = direction_de_poussee(depuis, ici[i]) else {
+            continue;
+        };
+        let mut reste = i32::from(cases);
+        while reste > 0 {
+            let suivante = Case::new(ici[i].x + dx, ici[i].y + dy);
+            let contre = if !plateau.est_sol(suivante) {
+                Some(Obstacle::Decor)
+            } else if suivante == lanceur {
+                Some(Obstacle::Lanceur)
+            } else {
+                ici.iter().position(|&c| c == suivante).map(Obstacle::Ennemi)
+            };
+            if let Some(contre) = contre {
+                butent.push((i, contre, reste));
+                break;
+            }
+            ici[i] = suivante;
+            reste -= 1;
+        }
+    }
+    butent
+}
+
+/// Les poussées d'un sort lancé sur `visee` qui butent. Chaque poussée prend les
+/// ennemis de sa zone autour de la case visée (la cible seule, sans zone) et les
+/// éloigne de la case visée. D'un même lancer, le plus éloigné de la case visée
+/// part le premier. Entre deux lancers, chacun revient à sa case : personne ne
+/// bouge.
+pub fn butees(def: &SpellDef, plateau: &Plateau, lanceur: Case, visee: Case, ennemis: &[Case]) -> Vec<Butee> {
+    let mut out = Vec::new();
+    for (k, p) in def.pushes.iter().enumerate() {
+        let mut pris: Vec<(usize, u16)> = match &p.zone {
+            Some(z) => match dofus_grid::tir::tir(
+                z.shape,
+                u16::from(z.size.unwrap_or(0)),
+                u16::from(z.size2),
+                lanceur,
+                visee,
+                ennemis,
+                Contraintes::libre(0, u16::MAX),
+            ) {
+                Ok(t) => t.touches.iter().map(|x| (x.indice, x.eloignement)).collect(),
+                Err(_) => continue,
+            },
+            None => ennemis.iter().position(|&e| e == visee).map(|i| (i, 0)).into_iter().collect(),
+        };
+        pris.sort_by_key(|&(i, eloignement)| (std::cmp::Reverse(eloignement), i));
+        let pousses: Vec<usize> = pris.into_iter().map(|(i, _)| i).collect();
+        out.extend(
+            pousser(plateau, lanceur, visee, ennemis, &pousses, p.cells)
+                .into_iter()
+                .map(|(ennemi, contre, cases)| Butee { poussee: k, ennemi, contre, cases }),
+        );
+    }
+    out
+}
+
+/// Pour le moteur, les poussées qui butent, sort par sort, depuis la case que
+/// chacun vise : l'ennemi poussé subit les cases restantes, et celui qu'il
+/// percute les mêmes, à moitié.
+pub fn poussees_sur_la_carte(
+    placement: &crate::solve::PlacementInput,
+    ruleset: &dofus_ruleset::Ruleset,
+    deck: &[String],
+    visees: &std::collections::HashMap<String, Case>,
+) -> Result<std::collections::HashMap<String, Vec<dofus_engine::PousseeSurLaCarte>>, String> {
+    let pose = placement.en_placement();
+    let plateau = Plateau::de(placement.carte, placement.damier)?;
+    let mut out = std::collections::HashMap::new();
+    for def in ruleset.spells.iter().filter(|s| deck.contains(&s.id)).flat_map(SpellDef::alternatives) {
+        let Some(&visee) = visees.get(&def.id) else {
+            continue;
+        };
+        let mut liste = Vec::new();
+        for b in butees(&def, &plateau, pose.lanceur, visee, &pose.ennemis) {
+            let poussee = |percute| dofus_engine::PousseeSurLaCarte { poussee: b.poussee, cases: b.cases, percute };
+            liste.push(poussee(false));
+            if matches!(b.contre, Obstacle::Ennemi(_)) {
+                liste.push(poussee(true));
+            }
+        }
+        if !liste.is_empty() {
+            out.insert(def.id.clone(), liste);
+        }
+    }
+    Ok(out)
+}
+
+/// Un ennemi au contact du lanceur bute-t-il, repoussé de `cases` depuis lui :
+/// les poussées des Bottes du Cul Botté.
+pub fn bute_au_contact(placement: &crate::solve::PlacementInput, cases: u8) -> Result<bool, String> {
+    let pose = placement.en_placement();
+    let plateau = Plateau::de(placement.carte, placement.damier)?;
+    let contact: Vec<usize> = (0..pose.ennemis.len()).filter(|&i| pose.ennemis[i].distance(pose.lanceur) == 1).collect();
+    Ok(!pousser(&plateau, pose.lanceur, pose.lanceur, &pose.ennemis, &contact, cases).is_empty())
+}
+
 /// Le placement tel que la Rotation le montre : pour chaque sort qui touche
 /// quelqu'un, sa case visée, sa zone et les ennemis touchés ; puis les ennemis
 /// qu'aucune zone n'atteint.
@@ -199,15 +367,42 @@ pub fn placement_json(
 ) -> Result<serde_json::Value, String> {
     let visees = meilleures_visees(placement, ruleset, deck, bonus_portee)?;
     let atteints: std::collections::BTreeSet<usize> = visees.iter().flat_map(|(_, v)| v.touches.iter().copied()).collect();
+    let pose = placement.en_placement();
+    let plateau = Plateau::de(placement.carte, placement.damier)?;
+    let defs: std::collections::HashMap<String, SpellDef> = ruleset
+        .spells
+        .iter()
+        .filter(|s| deck.contains(&s.id))
+        .flat_map(SpellDef::alternatives)
+        .map(|d| (d.id.clone(), d))
+        .collect();
     let sorts: serde_json::Map<String, serde_json::Value> = visees
         .iter()
         .map(|(id, v)| {
+            // Une ligne par ennemi et obstacle : deux poussées du même sort qui
+            // ne diffèrent que par l'état du lanceur ne se répètent pas.
+            let mut vus = std::collections::BTreeSet::new();
+            let butees: Vec<serde_json::Value> = defs
+                .get(id)
+                .map(|d| butees(d, &plateau, pose.lanceur, v.case, &pose.ennemis))
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|b| vus.insert((b.ennemi, b.contre)))
+                .map(|b| match b.contre {
+                    Obstacle::Decor => serde_json::json!({ "ennemi": b.ennemi, "contre": "decor", "cases": b.cases }),
+                    Obstacle::Lanceur => serde_json::json!({ "ennemi": b.ennemi, "contre": "vous", "cases": b.cases }),
+                    Obstacle::Ennemi(j) => {
+                        serde_json::json!({ "ennemi": b.ennemi, "contre": "ennemi", "percute": j, "cases": b.cases })
+                    }
+                })
+                .collect();
             (
                 id.clone(),
                 serde_json::json!({
                     "visee": [v.case.x, v.case.y],
                     "zone": v.zone.iter().map(|c| [c.x, c.y]).collect::<Vec<_>>(),
                     "touches": v.touches,
+                    "butees": butees,
                 }),
             )
         })
@@ -698,6 +893,108 @@ mod tests {
         };
         assert_eq!(total((-6, 0)), 0.0);
         assert!(total((-3, 0)) > 0.0);
+    }
+
+    /// Les huit directions d'une poussée : les axes, les diagonales, et l'angle
+    /// arrondi entre les deux.
+    #[test]
+    fn la_poussee_suit_la_plus_proche_des_huit_directions() {
+        let o = Case::new(0, 0);
+        assert_eq!(direction_de_poussee(o, Case::new(3, 0)), Some((1, 0)));
+        assert_eq!(direction_de_poussee(o, Case::new(0, -2)), Some((0, -1)));
+        assert_eq!(direction_de_poussee(o, Case::new(-2, 2)), Some((-1, 1)));
+        // 26,6 degrés : plus près de la diagonale ; 18,4 : de l'axe.
+        assert_eq!(direction_de_poussee(o, Case::new(2, 1)), Some((1, 1)));
+        assert_eq!(direction_de_poussee(o, Case::new(3, 1)), Some((1, 0)));
+        assert_eq!(direction_de_poussee(o, o), None);
+    }
+
+    /// Un tour de Flèche de Recul (une case, deux de poussée, portée 1 à 8)
+    /// depuis (0, 0), sur le damier de quinze cases, qui va de -7 à 7.
+    fn recul(ennemis: Vec<(i16, i16)>) -> serde_json::Value {
+        let r: Request = serde_json::from_value(serde_json::json!({
+            "class": 9,
+            "level": 200,
+            "invested": { "agility": 400 },
+            "deck": ["fleche_de_recul"],
+            "horizon": 1,
+            "placement": { "lanceur": [0, 0], "visee": [0, 0], "ennemis": ennemis },
+        }))
+        .expect("la requête de test doit se lire");
+        let v: serde_json::Value = serde_json::from_str(&crate::solve::solve_json(&r).unwrap()).unwrap();
+        v["rotation"].clone()
+    }
+
+    /// Les dommages de chaque lancer d'une rotation.
+    fn par_lancer(rotation: &serde_json::Value) -> Vec<f64> {
+        rotation["turns"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|t| t["casts"].as_array().unwrap().iter().map(|c| c["damage"].as_f64().unwrap()))
+            .collect()
+    }
+
+    /// Au milieu du damier, rien n'arrête la Flèche de Recul. À une case du
+    /// bord, l'ennemi bute et la case qui reste fait ses dommages de poussée ;
+    /// contre un autre ennemi, il bute de toute sa poussée, et le percuté en
+    /// prend la moitié.
+    #[test]
+    fn une_poussee_bute_sur_le_bord_ou_sur_un_ennemi() {
+        let poussee = |cases, percute| f64::from(dofus_damage::degats_de_poussee(200, 0, 0, cases, percute));
+        let libre = recul(vec![(3, 0)]);
+        let sec = par_lancer(&libre);
+        assert!(!sec.is_empty() && sec[0] > 0.0, "{libre}");
+        assert_eq!(libre["placement"]["sorts"]["fleche_de_recul"]["butees"], serde_json::json!([]));
+
+        let bord = recul(vec![(6, 0)]);
+        assert_eq!(
+            bord["placement"]["sorts"]["fleche_de_recul"]["butees"],
+            serde_json::json!([{ "ennemi": 0, "contre": "decor", "cases": 1 }])
+        );
+        assert_eq!(par_lancer(&bord), sec.iter().map(|d| d + poussee(1, false)).collect::<Vec<_>>());
+
+        let deux = recul(vec![(3, 0), (4, 0)]);
+        assert_eq!(
+            deux["placement"]["sorts"]["fleche_de_recul"]["butees"],
+            serde_json::json!([{ "ennemi": 0, "contre": "ennemi", "percute": 1, "cases": 2 }])
+        );
+        assert_eq!(
+            par_lancer(&deux),
+            sec.iter().map(|d| d + poussee(2, false) + poussee(2, true)).collect::<Vec<_>>()
+        );
+    }
+
+    /// Deux ennemis que la Flèche de Recul touche autant : elle vise celui
+    /// qu'elle écrase contre le bord, et non le premier du plateau, que ses deux
+    /// cases de poussée en diagonale n'amènent contre rien.
+    #[test]
+    fn a_touches_egales_la_poussee_qui_bute_decide_de_la_visee() {
+        let rotation = recul(vec![(3, 2), (6, 0)]);
+        let recul = &rotation["placement"]["sorts"]["fleche_de_recul"];
+        assert_eq!(recul["visee"], serde_json::json!([6, 0]), "{recul}");
+        assert_eq!(recul["butees"], serde_json::json!([{ "ennemi": 1, "contre": "decor", "cases": 1 }]));
+    }
+
+    /// La Violence du Iop repousse de quatre cases tout ce qui se tient à deux
+    /// cases d'elle. Le plus éloigné part le premier : l'ennemi collé derrière
+    /// lui suit sans buter. Au bord du damier, le plus éloigné bute sur le bord,
+    /// et l'autre sur lui.
+    #[test]
+    fn le_plus_eloigne_part_le_premier() {
+        let ruleset = crate::solve::load_ruleset(8).unwrap();
+        let violence = ruleset.spells.iter().find(|s| s.id == "violence").unwrap();
+        let plateau = Plateau::de(None, None).unwrap();
+        let milieu = Case::new(0, 0);
+        assert_eq!(butees(violence, &plateau, milieu, milieu, &[Case::new(1, 0), Case::new(2, 0)]), vec![]);
+        let pres_du_bord = Case::new(5, 0);
+        assert_eq!(
+            butees(violence, &plateau, pres_du_bord, pres_du_bord, &[Case::new(6, 0), Case::new(7, 0)]),
+            vec![
+                Butee { poussee: 0, ennemi: 1, contre: Obstacle::Decor, cases: 4 },
+                Butee { poussee: 0, ennemi: 0, contre: Obstacle::Ennemi(1), cases: 4 },
+            ]
+        );
     }
 
     /// Le tableau `[x, y]` du JSON, en case.

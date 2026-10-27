@@ -119,6 +119,20 @@ pub struct Placement {
     pub visee: Case,
     pub ennemis: Vec<Case>,
     pub visees: HashMap<String, Case>,
+    /// Les poussées de chaque sort qui butent depuis sa case visée, par
+    /// identifiant : seules elles font des dommages de poussée. Un sort absent
+    /// ne pousse personne contre rien.
+    pub poussees: HashMap<String, Vec<PousseeSurLaCarte>>,
+}
+
+/// Une poussée d'un sort qui bute, pour un ennemi : laquelle des poussées du
+/// sort (son rang dans `pushes`), les cases que l'obstacle lui retire, et si
+/// l'ennemi les subit en étant percuté, à moitié, plutôt qu'en étant poussé.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PousseeSurLaCarte {
+    pub poussee: usize,
+    pub cases: i32,
+    pub percute: bool,
 }
 
 /// Où se tiennent les ennemis, pour la seule chose qui en dépende : combien de
@@ -830,9 +844,10 @@ struct Spell {
     /// masque pour le Zobal, la Lance en main pour le Forgelance.
     critere: Option<CritereCompile>,
     /// Chaque poussée du sort : sa condition sur l'état du lanceur, ses dommages
-    /// aux Dommages Poussée du build, et ses cases, pour les recalculer quand un
-    /// buff en ajoute. Vide si le joueur ne déclare pas que ses poussées butent.
-    poussees: Vec<(Option<CritereCompile>, Damage, i32)>,
+    /// aux Dommages Poussée du build, ses cases et si l'ennemi est percuté, pour
+    /// les recalculer quand un buff en ajoute. Vide si le joueur ne déclare pas
+    /// que ses poussées butent, ou si aucune ne bute sur la carte.
+    poussees: Vec<(Option<CritereCompile>, Damage, i32, bool)>,
     /// Interdit tant que cette ressource est la, l'inverse de `requires`. Les
     /// huit glyphes elementaires du Feca s'excluent ainsi les uns les autres
     /// dans le tour.
@@ -1373,26 +1388,34 @@ impl Engine {
                     .cast_criterion
                     .as_ref()
                     .map(|c| CritereCompile::de(c, &etats_du_lanceur));
-                // Toute la poussée comptée bloquée, sur la cible visée seule,
-                // sans Résistance Poussée : ce que le joueur déclare.
-                if scenario.poussees_bloquees {
-                    sort.poussees = alt
-                        .pushes
-                        .iter()
-                        .map(|p| {
-                            (
-                                p.caster.as_ref().map(|c| CritereCompile::de(c, &etats_du_lanceur)),
-                                Damage::from_int(i64::from(dofus_damage::degats_de_poussee(
-                                    build.profile.level,
-                                    build.profile.push_damage,
-                                    0,
-                                    i32::from(p.cells),
-                                    false,
-                                ))),
-                                i32::from(p.cells),
-                            )
-                        })
+                // Sur la carte, les poussées que le placement fait buter, ennemi
+                // par ennemi. Sans carte, toute la poussée comptée bloquée, sur la
+                // cible visée seule : ce que le joueur déclare. Sans Résistance
+                // Poussée, dans les deux cas.
+                let poussee = |p: &dofus_ruleset::PushDef, cases: i32, percute: bool| {
+                    (
+                        p.caster.as_ref().map(|c| CritereCompile::de(c, &etats_du_lanceur)),
+                        Damage::from_int(i64::from(dofus_damage::degats_de_poussee(
+                            build.profile.level,
+                            build.profile.push_damage,
+                            0,
+                            cases,
+                            percute,
+                        ))),
+                        cases,
+                        percute,
+                    )
+                };
+                if let Some(placement) = &scenario.placement {
+                    sort.poussees = placement
+                        .poussees
+                        .get(&alt.id)
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|b| alt.pushes.get(b.poussee).map(|p| poussee(p, b.cases, b.percute)))
                         .collect();
+                } else if scenario.poussees_bloquees {
+                    sort.poussees = alt.pushes.iter().map(|p| poussee(p, i32::from(p.cells), false)).collect();
                 }
                 // Un état qui interdit de lancer ferme tout sort dont la
                 // condition ne l'exige pas : le Pandawa qui porte ne fait que
@@ -2565,7 +2588,7 @@ impl Engine {
             let mut pousse = false;
             if !spell.poussees.is_empty() {
                 let bonus = self.dommages_poussee_en_plus(&node.res, spell.crit_rate);
-                for (critere, degats, cases) in &spell.poussees {
+                for (critere, degats, cases, percute) in &spell.poussees {
                     if critere.as_ref().is_none_or(|c| c.tient(&node.res)) {
                         cast_damage += if bonus == 0 {
                             *degats
@@ -2575,7 +2598,7 @@ impl Engine {
                                 self.build.profile.push_damage + bonus,
                                 0,
                                 *cases,
-                                false,
+                                *percute,
                             )))
                         };
                         pousse = true;
@@ -4798,7 +4821,7 @@ fn compteurs_lus(
                 lus[r] = true;
             }
         }
-        for c in s.poussees.iter().filter_map(|(c, _, _)| c.as_ref()) {
+        for c in s.poussees.iter().filter_map(|(c, _, _, _)| c.as_ref()) {
             let mut v = Vec::new();
             c.lus(&mut v);
             for r in v {

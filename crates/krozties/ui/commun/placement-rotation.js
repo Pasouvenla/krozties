@@ -124,16 +124,17 @@ export async function brancher(racine, etat, { appeler, change, maxEnnemis }) {
       : `Tour ${tour + 1}`;
     const ligne = (c, k) => {
       const s = sorts[c.id];
-      const touche = s && s.touches.length
-        ? `touche ${s.touches.map((i) => i + 1).join(', ')}` : 'ne touche personne';
+      const touche = [s && s.touches.length ? `touche ${s.touches.map((i) => i + 1).join(', ')}` : 'ne touche personne',
+        ...((s && s.butees) || []).map((b) => (b.contre === 'ennemi' ? `${b.ennemi + 1} percute ${b.percute + 1}`
+          : b.contre === 'vous' ? `${b.ennemi + 1} bute sur vous` : `${b.ennemi + 1} bute sur un obstacle`)),
+      ].join(' · ');
       const icone = c.icone_objet ? `objets/${c.icone_objet}.webp` : c.dofusdb_id ? `icons/${c.dofusdb_id}.png` : null;
       return `<div class="lancer-place${survol && survol.lancer === k ? ' survole' : ''}">${
         icone ? `<img class="ic" src="${icone}" alt="">` : ''}${echapper(c.name)}<span class="touche">${touche}</span></div>`;
     };
     const loin = resultat.placement.hors_de_portee || [];
-    hote.innerHTML = `<b>${titre}</b>${lancers.map(ligne).join('')}${loin.length ? `<p class="aide">${
-      loin.length > 1 ? `Les ennemis ${loin.map((i) => i + 1).join(', ')} restent` : `L'ennemi ${loin[0] + 1} reste`}
-      hors de portée de toutes les zones.</p>` : ''}`;
+    hote.innerHTML = `<b>${titre}</b>${lancers.map(ligne).join('')}${loin.length ? `<p class="aide">Aucun sort ne touche ${
+      loin.length > 1 ? `les ennemis ${loin.map((i) => i + 1).join(', ')}` : `l'ennemi ${loin[0] + 1}`}.</p>` : ''}`;
   }
 
   const outil = () => (racine.querySelector('input[name=outilPlacement]:checked') || {}).value || 'ennemi';

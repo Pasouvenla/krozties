@@ -26,8 +26,10 @@ use serde_json::{json, Value};
 pub struct Combat {
     pub ennemis: u8,
     /// « Vos poussées butent contre un obstacle » : sans ce réglage, une
-    /// poussée ne fait pas de dégâts.
+    /// poussée ne fait pas de dégâts. Sur la carte, le placement le décide.
     pub poussees_bloquees: bool,
+    /// Le combat est placé sur une carte, et non déclaré.
+    pub sur_la_carte: bool,
     /// Les PM que le joueur déclare dépenser à chaque tour.
     pub pm_depenses: u8,
 }
@@ -461,8 +463,12 @@ const EFFETS: &[Effet] = &[
         greffe: |c| {
             if !c.poussees_bloquees {
                 return Greffe {
-                    remarque: "Bottes du Cul Botté : leurs poussées ne font de dégâts qu'avec « Inclure les dommages de poussée »"
-                        .into(),
+                    remarque: if c.sur_la_carte {
+                        "Bottes du Cul Botté : sur la carte, aucun ennemi à votre contact ne bute contre un obstacle"
+                    } else {
+                        "Bottes du Cul Botté : leurs poussées ne font de dégâts qu'avec « Inclure les dommages de poussée »"
+                    }
+                    .into(),
                     ..Default::default()
                 };
             }
@@ -631,7 +637,7 @@ pub fn greffer(
 pub fn lit_la_donnee(build: &BuildInput) -> bool {
     EFFETS.iter().filter(|e| porte(build, e.objet)).any(|e| {
         matches!(
-            (e.greffe)(&Combat { ennemis: 1, poussees_bloquees: true, pm_depenses: 0 }).declencheur,
+            (e.greffe)(&Combat { ennemis: 1, poussees_bloquees: true, sur_la_carte: false, pm_depenses: 0 }).declencheur,
             Some(Declencheur::Retrait(_) | Declencheur::Deplacement { .. })
         )
     })
@@ -716,7 +722,7 @@ mod tests {
     }
 
     fn combat(ennemis: u8, poussees_bloquees: bool) -> Combat {
-        Combat { ennemis, poussees_bloquees, pm_depenses: 0 }
+        Combat { ennemis, poussees_bloquees, sur_la_carte: false, pm_depenses: 0 }
     }
 
     /// Chaque effet se lit dans les règles, sur les deux nombres d'ennemis

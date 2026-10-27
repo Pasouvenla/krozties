@@ -185,7 +185,7 @@ export async function rendre(cible, etat, { appeler }) {
             <input type="checkbox" id="pousseesBloquees" ${reglages.pousseesBloquees ? 'checked' : ''}>
             <span>Inclure les dommages de poussée</span>
           </label>
-          <p class="aide">Vos poussées butent toutes contre un obstacle.</p>
+          <p class="aide" id="aidePoussees">Vos poussées butent toutes contre un obstacle.</p>
           <details class="plus-loin" id="plusLoin" ${etat.plusLoinOuvert ? 'open' : ''}>
             <summary>Pour aller plus loin <span class="modifies" id="reglagesModifies"></span></summary>
             <div class="reglages">
@@ -383,20 +383,25 @@ export async function rendre(cible, etat, { appeler }) {
     $('reglagesModifies').textContent = n ? `${n} ${pluriel(n, 'modifié')}` : '';
   }
 
-  // Le placement : posé sur un plateau, il décide qui chaque sort touche, et
-  // le nombre d'ennemis déclaré se tait.
-  const majCibles = () => {
+  // Le placement : posé sur un plateau, il décide qui chaque sort touche et
+  // quelles poussées butent, et le nombre d'ennemis comme les poussées déclarés
+  // se taisent.
+  const majSelonLePlacement = () => {
     const on = placementActif(etat);
     $('cibles').disabled = on;
     $('cibles').title = on ? 'Le placement décide : posez les ennemis sur le plateau.' : '';
     $('cibles').value = String(on ? Math.max(1, etat.placement.ennemis.length) : reglages.cibles);
+    $('pousseesBloquees').disabled = on;
+    $('aidePoussees').textContent = on
+      ? 'Le placement décide : une poussée compte quand elle bute sur un obstacle, sur vous ou sur un ennemi.'
+      : 'Vos poussées butent toutes contre un obstacle.';
   };
   const placementUI = await brancherLePlacement(cible, etat, {
     appeler,
     maxEnnemis: MAX_ENNEMIS,
-    change: () => { majCibles(); marquerPerime(); },
+    change: () => { majSelonLePlacement(); marquerPerime(); },
   });
-  majCibles();
+  majSelonLePlacement();
   // Un lancer survolé dans la rotation : sa zone sur le plateau.
   const survolerUnLancer = (e) => {
     const l = e.target.closest && e.target.closest('.lancer[data-tour]');

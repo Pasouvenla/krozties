@@ -872,7 +872,7 @@ impl ResourceIs {
 
 /// Ce qu'une ligne de dégâts atteint au-delà de sa cible, pour le calcul sur X
 /// cibles : sans plafond, un sort mono-cible serait multiplié par X.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AreaDef {
     /// La lettre du jeu : `P` une case, `C` un cercle, `X` une croix.
     pub shape: char,
@@ -1469,13 +1469,16 @@ pub struct Ruleset {
     pub spells: Vec<SpellDef>,
 }
 
-/// Une poussée d'un sort sur l'ennemi : sa distance en cases, et la condition
-/// sur les états du lanceur que porte son masque (`*E3531`, `*e100`).
+/// Une poussée d'un sort sur l'ennemi : sa distance en cases, la condition sur
+/// les états du lanceur que porte son masque (`*E3531`, `*e100`), et sa zone
+/// autour de la case visée, qui dit qui elle pousse ; sans zone, la cible seule.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PushDef {
     pub cells: u8,
     #[serde(default)]
     pub caster: Option<Critere>,
+    #[serde(default)]
+    pub zone: Option<AreaDef>,
 }
 
 /// Un état du jeu présent quand l'un des paliers d'un groupe tient : la Main

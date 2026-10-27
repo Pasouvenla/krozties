@@ -709,6 +709,8 @@ try {
   ennemisPoses.forEach(([x, y]) => poserSurLePlacement('ennemi', x, y));
   const cibles = document.getElementById('cibles');
   const ciblesTues = cibles.disabled && cibles.value === '4';
+  const pousseesTues = document.getElementById('pousseesBloquees').disabled
+    && texte('#aidePoussees').startsWith('Le placement décide');
   document.getElementById('calculer').click();
   await attendre(() => document.querySelector('#lancersPlacement .lancer-place'), 60000);
   const liste = texte('#lancersPlacement');
@@ -747,9 +749,10 @@ try {
   await attendre(() => app.etat.build.class === 20 && document.querySelector('#lancersPlacement .lancer-place'), 60000);
   resultat.placement = {
     cibles: ciblesTues,
+    poussees: pousseesTues,
     tour: liste.startsWith('Tour 1'),
     touche: [...document.querySelectorAll('#lancersPlacement .touche')].some((t) => t.textContent.startsWith('touche')),
-    loin: liste.includes("L'ennemi 4 reste hors de portée de toutes les zones."),
+    loin: liste.includes("Aucun sort ne touche l'ennemi 4."),
     zone: zone > 1,
     survol: survol.includes('survol de'),
     fichier: Boolean(fichierPlace.placement) && fichierPlace.reglages.placement === true
@@ -765,6 +768,7 @@ try {
   sansPlacement.checked = false;
   sansPlacement.dispatchEvent(new Event('change', { bubbles: true }));
   resultat.placement.ennemisSansPlacement = document.getElementById('cibles').value;
+  resultat.placement.pousseesRendues = !document.getElementById('pousseesBloquees').disabled;
   document.getElementById('cibles').value = '1';
   document.getElementById('cibles').dispatchEvent(new Event('input', { bubbles: true }));
 
