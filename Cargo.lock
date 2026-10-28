@@ -872,7 +872,7 @@ dependencies = [
 
 [[package]]
 name = "dofus-app"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-build",
  "dofus-damage",
@@ -885,7 +885,7 @@ dependencies = [
 
 [[package]]
 name = "dofus-build"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-damage",
  "serde",
@@ -894,7 +894,7 @@ dependencies = [
 
 [[package]]
 name = "dofus-cli"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-app",
  "dofus-build",
@@ -908,7 +908,7 @@ dependencies = [
 
 [[package]]
 name = "dofus-damage"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -916,7 +916,7 @@ dependencies = [
 
 [[package]]
 name = "dofus-engine"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-damage",
  "dofus-grid",
@@ -926,11 +926,11 @@ dependencies = [
 
 [[package]]
 name = "dofus-grid"
-version = "0.15.1"
+version = "0.15.2"
 
 [[package]]
 name = "dofus-ruleset"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-damage",
  "serde",
@@ -2137,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "krozties"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "dofus-app",
  "dofus-build",
