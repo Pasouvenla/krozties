@@ -16,7 +16,7 @@ import re
 import sys
 
 README = pathlib.Path(__file__).resolve().parent.parent / 'README.md'
-PAQUETS = r'(x64-setup\.exe|x64\.msi|universal\.dmg|amd64\.AppImage|amd64\.deb|x86_64\.rpm)'
+PAQUETS = r'(x64-setup\.exe|x64\.msi|universal\.dmg)'
 
 
 def reecrire(texte: str, numero: str) -> str:
@@ -26,13 +26,13 @@ def reecrire(texte: str, numero: str) -> str:
 
 AVANT = """[`.dmg`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_universal.dmg)
 [versions](https://github.com/Pasouvenla/krozties/releases/latest).
-- [AppImage](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_amd64.AppImage) : `chmod +x Krozties_amd64.AppImage`,
-  `sudo apt install ./Krozties_amd64.deb`
+[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_x64-setup.exe) (ou le
+[`.msi`](https://github.com/Pasouvenla/krozties/releases/latest/download/Krozties_x64.msi))
 """
 APRES = """[`.dmg`](https://github.com/Pasouvenla/krozties/releases/download/v0.9.0/Krozties_0.9.0_universal.dmg)
 [versions](https://github.com/Pasouvenla/krozties/releases/latest).
-- [AppImage](https://github.com/Pasouvenla/krozties/releases/download/v0.9.0/Krozties_0.9.0_amd64.AppImage) : `chmod +x Krozties_0.9.0_amd64.AppImage`,
-  `sudo apt install ./Krozties_0.9.0_amd64.deb`
+[Télécharger l'installateur](https://github.com/Pasouvenla/krozties/releases/download/v0.9.0/Krozties_0.9.0_x64-setup.exe) (ou le
+[`.msi`](https://github.com/Pasouvenla/krozties/releases/download/v0.9.0/Krozties_0.9.0_x64.msi))
 """
 
 

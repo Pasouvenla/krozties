@@ -23,9 +23,6 @@ PAQUETS = [
     ('_universal.app.tar.gz', ['darwin-aarch64-app', 'darwin-x86_64-app', 'darwin-aarch64', 'darwin-x86_64']),
     ('_x64-setup.exe', ['windows-x86_64-nsis', 'windows-x86_64']),
     ('_x64.msi', ['windows-x86_64-msi']),
-    ('_amd64.AppImage', ['linux-x86_64-appimage', 'linux-x86_64']),
-    ('_amd64.deb', ['linux-x86_64-deb']),
-    ('_x86_64.rpm', ['linux-x86_64-rpm']),
 ]
 
 
@@ -54,21 +51,20 @@ def manifeste(version: dict, signatures: dict[str, str], depot: str, notes: str 
 
 def test() -> int:
     noms = ['Krozties_0.10.0_universal.app.tar.gz', 'Krozties_0.10.0_universal.dmg', 'Krozties_0.10.0_x64-setup.exe',
-            'Krozties_0.10.0_x64.msi', 'Krozties_0.10.0_amd64.AppImage', 'Krozties_0.10.0_amd64.deb',
-            'Krozties_0.10.0_x86_64.rpm']
+            'Krozties_0.10.0_x64.msi']
     version = {'tag_name': 'v0.10.0', 'assets': [{'name': n} for n in noms + [n + '.sig' for n in noms]]}
     signatures = {n: f'sig de {n}\n' for n in noms}
     m = manifeste(version, signatures, 'Pasouvenla/krozties')
     echecs = 0
     cas = [
         ('la version sans le v', m['version'], '0.10.0'),
-        ('onze entrées', sorted(m['platforms']), sorted(c for _, cles in PAQUETS for c in cles)),
+        ('sept entrées', sorted(m['platforms']), sorted(c for _, cles in PAQUETS for c in cles)),
         ('le Mac prend le .app.tar.gz', m['platforms']['darwin-aarch64-app']['url'],
          'https://github.com/Pasouvenla/krozties/releases/download/v0.10.0/Krozties_0.10.0_universal.app.tar.gz'),
         ('Windows par défaut : l’installateur NSIS', m['platforms']['windows-x86_64']['url'].rsplit('/', 1)[1],
          'Krozties_0.10.0_x64-setup.exe'),
-        ('la signature, sans saut de ligne', m['platforms']['linux-x86_64-deb']['signature'],
-         'sig de Krozties_0.10.0_amd64.deb'),
+        ('la signature, sans saut de ligne', m['platforms']['windows-x86_64-msi']['signature'],
+         'sig de Krozties_0.10.0_x64.msi'),
     ]
     for nom, obtenu, attendu in cas:
         if obtenu != attendu:

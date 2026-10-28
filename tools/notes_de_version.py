@@ -36,7 +36,7 @@ RUBRIQUES = {
 }
 ORDRE = list(dict.fromkeys(RUBRIQUES.values()))
 PROCHAINE = 'prochaine'
-PAQUETS = "Paquets pour macOS (Apple Silicon et Intel), Windows et Linux. L'installation est décrite dans le README."
+PAQUETS = "Paquets pour macOS (Apple Silicon et Intel) et Windows. L'installation est décrite dans le README."
 
 
 def git(*args: str) -> str:

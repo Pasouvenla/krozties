@@ -1,7 +1,7 @@
 name: Release
 
-# Une étiquette v* construit Krozties pour macOS (universel), Windows et Linux,
-# puis publie la version quand les trois paquets sont prêts, et met à jour le
+# Une étiquette v* construit Krozties pour macOS (universel) et Windows, puis
+# publie la version quand les deux paquets sont prêts, et met à jour le
 # cask Homebrew. Le workflow `version` la lance après une montée de version ;
 # lancé à la main sans étiquette, il construit sans rien publier et garde les
 # paquets dans les artefacts du run.
@@ -54,7 +54,7 @@ jobs:
           id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$ETIQUETTE\") | .id" | head -1)
           if [ -z "$id" ]; then
             id=$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$ETIQUETTE" -f name="Krozties $ETIQUETTE" \
-              -F draft=true -f body="Paquets pour macOS (Apple Silicon et Intel), Windows et Linux." --jq .id)
+              -F draft=true -f body="Paquets pour macOS (Apple Silicon et Intel) et Windows." --jq .id)
           fi
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
@@ -68,10 +68,6 @@ jobs:
             args: --target universal-apple-darwin
           - os: windows-latest
             args: ''
-          # La plus ancienne glibc encore servie : les paquets Linux tournent
-          # ainsi sur plus de distributions.
-          - os: ubuntu-22.04
-            args: ''
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -80,12 +76,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.ETIQUETTE || github.ref }}
-
-      - name: Bibliothèques système de Tauri
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       # La version de Rust est celle de `rust-toolchain.toml`.
       - name: Rust
@@ -102,7 +92,7 @@ jobs:
         run: npm install -g @tauri-apps/cli@2.11.4
 
       # Les paquets vont dans le brouillon du job `version` ; il ne se publie
-      # qu'une fois les trois déposés, par le job `publier`.
+      # qu'une fois les deux déposés, par le job `publier`.
       # La clé signe les paquets pour la mise à jour de l'application ;
       # `latest.json` s'écrit au job `publier`.
       - id: tauri

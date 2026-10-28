@@ -79,9 +79,9 @@ Chaque version dépose ses paquets sur la page des
 
 Une fois installé, Krozties se met à jour lui-même : quand une version sort, la
 mini fenêtre propose « Mettre à jour », puis de redémarrer. Sur Windows,
-l'installation se fait au redémarrage ou à la fermeture de Krozties ; sur Linux,
-un paquet `.deb` ou `.rpm` demande votre mot de passe. Depuis une version
-antérieure à la 0.10.0, téléchargez la nouvelle une dernière fois à la main.
+l'installation se fait au redémarrage ou à la fermeture de Krozties. Depuis
+une version antérieure à la 0.10.0, téléchargez la nouvelle une dernière fois à
+la main.
 
 ### macOS (Apple Silicon et Intel)
 
@@ -107,12 +107,9 @@ SmartScreen affiche « Windows a protégé votre ordinateur », cliquer sur
 
 ### Linux
 
-- [AppImage](https://github.com/Pasouvenla/krozties/releases/download/v0.15.2/Krozties_0.15.2_amd64.AppImage) : `chmod +x Krozties_0.15.2_amd64.AppImage`,
-  puis la lancer.
-- Debian, Ubuntu ([`.deb`](https://github.com/Pasouvenla/krozties/releases/download/v0.15.2/Krozties_0.15.2_amd64.deb)) :
-  `sudo apt install ./Krozties_0.15.2_amd64.deb`
-- Fedora ([`.rpm`](https://github.com/Pasouvenla/krozties/releases/download/v0.15.2/Krozties_0.15.2_x86_64.rpm)) :
-  `sudo dnf install ./Krozties_0.15.2_x86_64.rpm`
+Krozties ne sort plus pour Linux : la
+[0.15.2](https://github.com/Pasouvenla/krozties/releases/tag/v0.15.2) est la
+dernière version.
 
 ## Licence
 
