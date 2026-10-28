@@ -22,14 +22,22 @@ pub struct Touches {
     pub precedent: String,
 }
 
+/// Les touches multimédia : le module des raccourcis ne les entend sur macOS
+/// qu'en surveillant le clavier, une permission que Krozties ne demande jamais.
+const MULTIMEDIA: [Code; 5] =
+    [Code::MediaPlayPause, Code::MediaTrackNext, Code::MediaTrackPrevious, Code::MediaFastForward, Code::MediaRewind];
+
 impl Touches {
     fn lire(&self) -> Result<Vec<(Shortcut, &'static str)>, String> {
         [(&self.suivant, "suivant"), (&self.tour, "tour"), (&self.precedent, "precedent")]
             .into_iter()
             .map(|(touche, geste)| {
-                Shortcut::from_str(touche)
-                    .map(|raccourci| (raccourci, geste))
-                    .map_err(|_| format!("« {touche} » ne peut pas servir de raccourci."))
+                let raccourci =
+                    Shortcut::from_str(touche).map_err(|_| format!("« {touche} » ne peut pas servir de raccourci."))?;
+                if MULTIMEDIA.contains(&raccourci.key) {
+                    return Err(format!("« {touche} » est une touche multimédia : prenez-en une autre."));
+                }
+                Ok((raccourci, geste))
             })
             .collect()
     }
@@ -251,5 +259,27 @@ mod plein_ecran {
             let _: () = msg_send![fenetre, setCollectionBehavior: COMPORTEMENT];
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Aucune touche multimédia ne passe, même avec un modificateur : macOS
+    /// demanderait de surveiller le clavier. Celles que le module des
+    /// raccourcis lit se refusent comme multimédia, les autres comme illisibles.
+    /// Une touche F, seule ou avec Maj, passe.
+    #[test]
+    fn une_touche_multimedia_se_refuse() {
+        let touches = |suivant: &str| Touches { suivant: suivant.into(), tour: "Shift+F8".into(), precedent: "F7".into() };
+        assert!(touches("F8").lire().is_ok());
+        for touche in ["MediaPlayPause", "Shift+MediaTrackNext", "MediaTrackPrevious", "MediaFastForward", "MediaRewind"] {
+            assert!(touches(touche).lire().is_err(), "{touche}");
+        }
+        for touche in ["MediaPlayPause", "Shift+MediaTrackNext"] {
+            let refus = touches(touche).lire().unwrap_err();
+            assert!(refus.contains("multimédia"), "{touche} : {refus}");
+        }
     }
 }

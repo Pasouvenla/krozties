@@ -9,6 +9,7 @@ members = [
     "crates/app",
     "crates/cli",
     "crates/krozties",
+    "crates/vision",
 ]
 
 [workspace.package]

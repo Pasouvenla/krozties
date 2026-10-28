@@ -5,6 +5,7 @@
 // Sur Windows, ne pas ouvrir de console derrière la fenêtre en release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod combat_reading;
 mod compagnon;
 mod import;
 mod partage;
@@ -353,6 +354,7 @@ fn main() {
         .manage(partage::RotationRecue::default())
         .setup(|app| {
             partage::au_lancement(app.handle());
+            combat_reading::start_debug_recording_from_env();
             Ok(())
         })
         // Le compagnon ne survit pas à la fenêtre principale, et ses touches

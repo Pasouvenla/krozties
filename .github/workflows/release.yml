@@ -109,6 +109,15 @@ jobs:
           releaseAssetNamePattern: '[name]_[version]_[arch][setup][ext]'
           uploadUpdaterJson: false
 
+      # The symbols the shipped macOS binary imports: a failure here leaves
+      # the draft release unpublished.
+      - name: Read-only check of the binary
+        if: runner.os == 'macOS'
+        run: |
+          binary=$(find target -path '*universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*' -type f | head -1)
+          test -n "$binary"
+          python3 tools/read_only_check.py --binary "$binary"
+
       - name: Paquets de l'essai
         if: env.ETIQUETTE == ''
         uses: actions/upload-artifact@v7
