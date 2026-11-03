@@ -1,0 +1,114 @@
+{
+ "id": "2460035",
+ "forum": "Patch notes",
+ "titre": "Patch notes 3.7.13.17 du 03/11/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2460035-patch-notes-3-7-13-17-03-11-2026",
+ "publie": "2026-11-03T14:47:21+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Performances / Crashs"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lors du changement de personnage / serveur, il arrive que le joueur soit bloqué dans les nuages ou que le bouton ne fasse rien au clic."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Combat"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque le joueur se déconnecte / reconnecte durant un choix dans le combat du gladiatrool, alors, ce joueur se retrouve bloqué."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Si un Pandawa meurt lorsqu'il porte une entité, alors, l'entité portée n'est plus correctement placée sur le combat."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans de rares cas, il arrive que le son d'invocation soit joué lors de la prévisualisation d'un sort d'invocation."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Monstres"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Merkator joue anormalement une animation lorsqu'il recoit des dommages à distance."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Succès"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, le succès spécial de Vortex échoue alors qu'il ne devrait pas."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Visuels / Son"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Le visuel de la décoiffe violette est rose."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque le joueur est sur une monture, il n'est pas affiché en transparence lorsque l'option est sélectionnée."
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Les auras avec une partie derrière le personnage sont affichées devant le personnage."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Divers"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Dans certains cas, il arrive que la zone de clic sur un personnage soit trop grande (second correctif suite au premier du 16 octobre)."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
