@@ -9,6 +9,8 @@ members = [
     "crates/app",
     "crates/cli",
     "crates/krozties",
+    "crates/vision",
+    "crates/maps",
 ]
 
 [workspace.package]
@@ -20,6 +22,11 @@ license = "AGPL-3.0-or-later"
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Image measurement is too slow unoptimised for the tests and the app in
+# development.
+[profile.dev.package.dofus-vision]
+opt-level = 2
 
 [profile.release]
 lto = "thin"

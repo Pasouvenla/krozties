@@ -45,3 +45,8 @@ jobs:
 
       - name: Fichier de mise à jour
         run: python3 tools/latest_json.py --test
+
+      # The combat reading only reads pixels: no input synthesis, process
+      # memory, packet capture, accessibility or network under the reader.
+      - name: Read-only check
+        run: python3 tools/read_only_check.py --test && python3 tools/read_only_check.py
