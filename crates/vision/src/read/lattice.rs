@@ -60,6 +60,17 @@ pub fn find(frame: &Frame) -> Option<Lattice> {
     Some(Lattice { cell_width: found.cell_width * f, x0: found.x0 * f, y0: found.y0 * f, ..found })
 }
 
+/// The checkerboard `known` placed, if the frame still shows it there: the
+/// patch alone, without the search, a fraction of its cost. In a fight the
+/// camera does not move, so each frame is checked this way first.
+pub fn confirm(frame: &Frame, known: &Lattice) -> Option<Lattice> {
+    let (gray, factor) = Gray::from_frame(frame, WORK_WIDTH);
+    let f = factor as f32;
+    let plane = Lattice { cell_width: known.cell_width / f, x0: known.x0 / f, y0: known.y0 / f, ..*known };
+    let score = patch(&Integral::of(&gray), &plane).len() as f32;
+    (score >= MIN_SCORE).then_some(Lattice { confidence: (score / SURE_SCORE).min(1.0), ..*known })
+}
+
 /// The two edge profiles, each value the mean edge strength of its line.
 struct Profiles {
     /// Indexed by p = X + 2Y on pixel corners.
@@ -511,6 +522,21 @@ mod tests {
             scene.obstacle_height = rng.range(0.0, 0.5);
             assert_eq!(find(&render(&scene)), None, "seed {seed}");
         }
+    }
+
+    /// A lattice found is confirmed on the next frames of the same scene, and
+    /// refused once the checkerboard is gone or the lattice is half a cell off.
+    #[test]
+    fn a_known_lattice_is_confirmed_or_refused() {
+        let map = boss_maps().swap_remove(9);
+        let scene = Scene::centred(map, (1280, 800), 66.0, 21);
+        let lattice = find(&render(&scene)).expect("a checkerboard");
+        let next = Scene { seed: 22, ..Scene::centred(boss_maps().swap_remove(9), (1280, 800), 66.0, 21) };
+        assert!(confirm(&render(&next), &lattice).is_some());
+        let half_off = Lattice { x0: lattice.x0 + lattice.cell_width / 2.0, ..lattice };
+        assert_eq!(confirm(&render(&next), &half_off), None);
+        let empty = Scene::centred(vec![Cell::Hole; cells::CELLS], (1280, 800), 66.0, 23);
+        assert_eq!(confirm(&render(&empty), &lattice), None);
     }
 
     /// The frame size does not matter: a 2560-wide frame is measured at half

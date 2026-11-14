@@ -2171,6 +2171,7 @@ version = "0.15.2"
 dependencies = [
  "dofus-app",
  "dofus-build",
+ "dofus-maps",
  "dofus-vision",
  "objc2",
  "serde",

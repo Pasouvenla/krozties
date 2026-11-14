@@ -89,28 +89,12 @@ impl Map {
         (support, seen)
     }
 
-    /// Per cell, walkable or not as the readings' confidence has it; not
-    /// walkable, an obstacle or a hole as the readings that told them apart
-    /// have it, if any did. Its confidence is what it received on average
-    /// from the readings that knew the cell, so that a disputed or unsure
-    /// cell stays unsure.
+    /// Per cell, what its readings saw most (see [`vote`]).
     pub fn cells(&self) -> Vec<Seen> {
         (0..CELLS)
             .map(|i| {
                 let (support, seen) = self.support(i);
-                let (walkable, blocked) = (support[0], support[1] + support[2] + support[3]);
-                if seen == 0 || walkable + blocked <= 0.0 {
-                    return Seen::UNKNOWN;
-                }
-                if walkable > blocked {
-                    return Seen::new(Cell::Walkable, walkable / seen as f32);
-                }
-                let kind = match support[1].total_cmp(&support[2]) {
-                    std::cmp::Ordering::Greater => Cell::Obstacle,
-                    std::cmp::Ordering::Less => Cell::Hole,
-                    std::cmp::Ordering::Equal => Cell::NotWalkable,
-                };
-                Seen::new(kind, blocked / seen as f32)
+                vote(support, seen)
             })
             .collect()
     }
@@ -189,6 +173,82 @@ fn align(reading: &[Seen], map: &[Seen], settings: &Settings) -> Option<((i32, i
         }
     }
     best.map(|(shift, agreement, _)| (shift, agreement))
+}
+
+/// A cell from the confidence each kind received and the number of readings
+/// that knew it: walkable or not as the confidence has it; not walkable, an
+/// obstacle or a hole as the readings that told them apart have it, if any
+/// did. Its confidence is what it received on average, so that a disputed or
+/// unsure cell stays unsure.
+fn vote(support: [f32; 4], seen: usize) -> Seen {
+    let (walkable, blocked) = (support[0], support[1] + support[2] + support[3]);
+    if seen == 0 || walkable + blocked <= 0.0 {
+        return Seen::UNKNOWN;
+    }
+    if walkable > blocked {
+        return Seen::new(Cell::Walkable, walkable / seen as f32);
+    }
+    let kind = match support[1].total_cmp(&support[2]) {
+        std::cmp::Ordering::Greater => Cell::Obstacle,
+        std::cmp::Ordering::Less => Cell::Hole,
+        std::cmp::Ordering::Equal => Cell::NotWalkable,
+    };
+    Seen::new(kind, blocked / seen as f32)
+}
+
+/// The frames of one fight gathered into one reading: each cell takes what
+/// most frames saw, so that a frame where a fighter hides a tile does not
+/// undo the others.
+#[derive(Clone, Debug)]
+pub struct Gathering {
+    support: Vec<[f32; 4]>,
+    seen: Vec<usize>,
+    frames: usize,
+}
+
+impl Default for Gathering {
+    fn default() -> Gathering {
+        Gathering { support: vec![[0.0; 4]; CELLS], seen: vec![0; CELLS], frames: 0 }
+    }
+}
+
+impl Gathering {
+    /// Adds a frame's cells, laid over the frames before at the shift that
+    /// fits them best: the board may anchor two frames differently. `None`,
+    /// and nothing added, when no shift agrees as the same map would, or the
+    /// frame does not have the 560 cells. The first frame sets the reference.
+    pub fn add(&mut self, cells: &[Seen], settings: &Settings) -> Option<(i32, i32)> {
+        if cells.len() != CELLS {
+            return None;
+        }
+        let shift = if self.frames == 0 {
+            (0, 0)
+        } else {
+            let (shift, agreement) = align(cells, &self.cells(), settings)?;
+            if agreement.share() < settings.same_map {
+                return None;
+            }
+            shift
+        };
+        for (i, seen) in shifted(cells, shift)?.iter().enumerate() {
+            if let Some(k) = seen.cell.rank() {
+                self.support[i][k] += seen.confidence;
+                self.seen[i] += 1;
+            }
+        }
+        self.frames += 1;
+        Some(shift)
+    }
+
+    /// The frames gathered.
+    pub fn frames(&self) -> usize {
+        self.frames
+    }
+
+    /// Per cell, what most frames saw.
+    pub fn cells(&self) -> Vec<Seen> {
+        (0..CELLS).map(|i| vote(self.support[i], self.seen[i])).collect()
+    }
 }
 
 /// What the store made of a reading.
@@ -283,20 +343,20 @@ impl Store {
         let candidates =
             (0..self.maps.len()).filter(|&m| self.maps[m].coords == reading.coords && normalise(&self.maps[m].subarea) == subarea);
         let settings = self.settings;
-        // Another window of a fight already read joins that fight's map, laid
-        // over it as well as it goes; otherwise the closest map, if close
-        // enough.
-        let same_fight = candidates.clone().find(|&m| self.maps[m].readings.iter().any(|r| r.fight == reading.fight));
-        let target = match same_fight {
-            Some(m) => Some((m, align(&reading.cells, &self.maps[m].cells(), &settings).map_or((0, 0), |a| a.0))),
-            None => candidates
-                .filter_map(|m| {
-                    let (shift, agreement) = align(&reading.cells, &self.maps[m].cells(), &settings)?;
-                    (agreement.share() >= settings.same_map).then_some((m, shift, agreement.share()))
-                })
-                .max_by(|a, b| a.2.total_cmp(&b.2))
-                .map(|(m, shift, _)| (m, shift)),
+        // The closest map, if close enough; another window of a fight already
+        // read joins that fight's map first, when it is the same map: two
+        // windows taken for one fight may be two fights.
+        let fits = |m: usize| {
+            let (shift, agreement) = align(&reading.cells, &self.maps[m].cells(), &settings)?;
+            (agreement.share() >= settings.same_map).then_some((m, shift, agreement.share()))
         };
+        let same_fight = candidates
+            .clone()
+            .filter(|&m| self.maps[m].readings.iter().any(|r| r.fight == reading.fight))
+            .find_map(fits)
+            .map(|(m, shift, _)| (m, shift));
+        let target = same_fight
+            .or_else(|| candidates.filter_map(fits).max_by(|a, b| a.2.total_cmp(&b.2)).map(|(m, shift, _)| (m, shift)));
 
         let Some((m, shift)) = target else {
             let mut map = Map {
@@ -684,6 +744,49 @@ mod tests {
         store.add(reading("a", &vague, &[])).unwrap();
         let second = store.add(reading("b", &truth, &[])).unwrap();
         assert_eq!((second.event, second.verified), (Event::Confirmed, true));
+    }
+
+    /// Frames of a fight anchored differently are laid over each other; a
+    /// frame where most of the floor is read wrong is outvoted by the others;
+    /// a frame of another map is refused.
+    #[test]
+    fn the_frames_of_a_fight_are_gathered_by_vote() {
+        let settings = Settings::default();
+        let bosses = boss_maps();
+        // A boss map whose floor leaves room to move it.
+        let (truth, moved, by) = bosses
+            .iter()
+            .map(|(_, m)| as_read(m))
+            .find_map(|t| [(1, 0), (0, 1), (-1, 0), (0, -1)].iter().find_map(|&by| shifted(&t, by).map(|m| (t.clone(), m, by))))
+            .expect("room to move a floor");
+        let mut gathering = Gathering::default();
+        assert_eq!(gathering.add(&truth, &settings), Some((0, 0)));
+        assert_eq!(gathering.add(&moved, &settings), Some((-by.0, -by.1)));
+        // A frame where a tenth of the floor is hidden, read not walkable but
+        // close enough to be the same map.
+        let mut hidden = truth.clone();
+        let floor: Vec<usize> = (0..CELLS).filter(|&i| truth[i].cell == Cell::Walkable).collect();
+        for &i in floor.iter().step_by(40) {
+            hidden[i] = Seen::new(Cell::NotWalkable, 0.7);
+        }
+        assert!(gathering.add(&hidden, &settings).is_some());
+        assert_eq!(kinds(&gathering.cells()), kinds(&truth));
+        assert_eq!(gathering.frames(), 3);
+        let other = as_read(&bosses[17].1);
+        assert_eq!(gathering.add(&other, &settings), None);
+        assert_eq!(gathering.frames(), 3);
+    }
+
+    /// Two windows taken for one fight that show two maps make two maps.
+    #[test]
+    fn one_fight_on_two_maps_is_two_maps() {
+        let bosses = boss_maps();
+        let mut store = Store::new(Settings::default());
+        let at = |cells: Vec<Seen>| Reading { fight: "same".into(), coords: (1, 1), subarea: "s".into(), cells, at_ms: 0 };
+        let first = store.add(at(as_read(&bosses[2].1))).unwrap();
+        let second = store.add(at(as_read(&bosses[25].1))).unwrap();
+        assert_eq!(second.event, Event::Created);
+        assert_ne!(first.map, second.map);
     }
 
     #[test]

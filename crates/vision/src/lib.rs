@@ -9,6 +9,7 @@
 //! Recording permission only. Other systems are not supported yet.
 
 mod debug;
+pub mod fight;
 mod gray;
 #[cfg(target_os = "macos")]
 mod macos;

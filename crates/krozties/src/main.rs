@@ -355,6 +355,12 @@ fn main() {
         .setup(|app| {
             partage::au_lancement(app.handle());
             combat_reading::start_debug_recording_from_env();
+            {
+                use tauri::Manager;
+                if let Ok(donnees) = app.path().app_data_dir() {
+                    combat_reading::start_reading_from_env(donnees);
+                }
+            }
             Ok(())
         })
         // Le compagnon ne survit pas à la fenêtre principale, et ses touches

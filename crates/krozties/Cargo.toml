@@ -16,6 +16,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 dofus-app = { path = "../app" }
 dofus-build = { path = "../build" }
+dofus-maps = { path = "../maps" }
 dofus-vision = { path = "../vision" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "~2.7"
