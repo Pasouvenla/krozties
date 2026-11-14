@@ -5,6 +5,7 @@
 // Sur Windows, ne pas ouvrir de console derrière la fenêtre en release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod calque;
 mod combat_reading;
 mod compagnon;
 mod import;
@@ -358,7 +359,7 @@ fn main() {
             {
                 use tauri::Manager;
                 if let Ok(donnees) = app.path().app_data_dir() {
-                    combat_reading::start_reading_from_env(donnees);
+                    combat_reading::start_reading_from_env(app.handle().clone(), donnees);
                 }
             }
             Ok(())

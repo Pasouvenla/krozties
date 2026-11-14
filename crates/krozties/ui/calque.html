@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Krozties, calque</title>
+<style>
+  /* Layout B: nothing on the floor, the cells that cannot be walked tinted,
+     the map's state at the bottom right. Never a click: they go to the game. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; pointer-events: none; }
+  svg { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .obstacle { fill: #3c4649; fill-opacity: .78; stroke: #e07a3c; stroke-width: 2.2; }
+  .hole { fill: #2f73a3; fill-opacity: .42; stroke: #ffffff; stroke-width: 1.6; stroke-dasharray: 2 4; }
+  .undecided { fill: #d6d1c2; fill-opacity: .55; }
+  .mark { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 700; fill: #1b1d21;
+          text-anchor: middle; dominant-baseline: central; }
+  .badge rect { fill: #3c4649; opacity: .94; }
+  .badge circle { fill: #ad5c29; }
+  .badge text { font: 600 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #efeadd; }
+</style>
+</head>
+<body>
+<svg id="calque" aria-hidden="true"></svg>
+<script type="module" src="calque.js"></script>
+</body>
+</html>

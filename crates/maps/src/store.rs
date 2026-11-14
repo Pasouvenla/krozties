@@ -251,6 +251,19 @@ impl Gathering {
     }
 }
 
+/// A map the store knows, as a reading finds it.
+#[derive(Clone, Debug)]
+pub struct Known {
+    pub map: String,
+    /// Cell (x, y) of the reading is cell (x + dx, y + dy) of the map.
+    pub shift: (i32, i32),
+    /// The map's cells.
+    pub cells: Vec<Seen>,
+    pub verified: bool,
+    /// The distinct fights the map remembers.
+    pub fights: usize,
+}
+
 /// What the store made of a reading.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -334,18 +347,15 @@ impl Store {
         &self.maps
     }
 
-    /// Adds a fight's reading, and says which cells to use for that fight.
-    pub fn add(&mut self, reading: Reading) -> Result<Outcome, String> {
-        if !reading.is_complete() {
-            return Err(format!("a reading has {} cells instead of {CELLS}", reading.cells.len()));
-        }
+    /// The map a reading is, among those at its place, and the shift that
+    /// lays the reading over it: the closest, if close enough; first, the map
+    /// another window of the same fight joined, when it is the same map: two
+    /// windows taken for one fight may be two fights.
+    fn closest(&self, reading: &Reading) -> Option<(usize, (i32, i32))> {
         let subarea = normalise(&reading.subarea);
         let candidates =
             (0..self.maps.len()).filter(|&m| self.maps[m].coords == reading.coords && normalise(&self.maps[m].subarea) == subarea);
         let settings = self.settings;
-        // The closest map, if close enough; another window of a fight already
-        // read joins that fight's map first, when it is the same map: two
-        // windows taken for one fight may be two fights.
         let fits = |m: usize| {
             let (shift, agreement) = align(&reading.cells, &self.maps[m].cells(), &settings)?;
             (agreement.share() >= settings.same_map).then_some((m, shift, agreement.share()))
@@ -355,8 +365,33 @@ impl Store {
             .filter(|&m| self.maps[m].readings.iter().any(|r| r.fight == reading.fight))
             .find_map(fits)
             .map(|(m, shift, _)| (m, shift));
-        let target = same_fight
-            .or_else(|| candidates.filter_map(fits).max_by(|a, b| a.2.total_cmp(&b.2)).map(|(m, shift, _)| (m, shift)));
+        same_fight.or_else(|| candidates.filter_map(fits).max_by(|a, b| a.2.total_cmp(&b.2)).map(|(m, shift, _)| (m, shift)))
+    }
+
+    /// The known map a reading is, if any, the reading left out of it: what
+    /// a fight going on shows while its own reading is not done.
+    pub fn recognise(&self, reading: &Reading) -> Option<Known> {
+        if !reading.is_complete() {
+            return None;
+        }
+        let (m, shift) = self.closest(reading)?;
+        let map = &self.maps[m];
+        Some(Known {
+            map: map.id.clone(),
+            shift,
+            cells: map.cells(),
+            verified: map.confirmed(&self.settings),
+            fights: map.fights(),
+        })
+    }
+
+    /// Adds a fight's reading, and says which cells to use for that fight.
+    pub fn add(&mut self, reading: Reading) -> Result<Outcome, String> {
+        if !reading.is_complete() {
+            return Err(format!("a reading has {} cells instead of {CELLS}", reading.cells.len()));
+        }
+        let settings = self.settings;
+        let target = self.closest(&reading);
 
         let Some((m, shift)) = target else {
             let mut map = Map {
@@ -775,6 +810,29 @@ mod tests {
         let other = as_read(&bosses[17].1);
         assert_eq!(gathering.add(&other, &settings), None);
         assert_eq!(gathering.frames(), 3);
+    }
+
+    /// A known map is recognised without the reading joining it; an unknown
+    /// one is not.
+    #[test]
+    fn a_map_is_recognised_without_being_changed() {
+        let bosses = boss_maps();
+        let (n, truth, moved, by) = bosses
+            .iter()
+            .enumerate()
+            .find_map(|(n, (_, m))| {
+                let t = as_read(m);
+                [(1, 0), (0, 1), (-1, 0), (0, -1)].iter().find_map(|&by| shifted(&t, by).map(|m| (n, t.clone(), m, by)))
+            })
+            .expect("room to move a floor");
+        let at = |cells: Vec<Seen>, fight: &str| Reading { fight: fight.into(), coords: (2, 2), subarea: "s".into(), cells, at_ms: 0 };
+        let mut store = Store::new(Settings::default());
+        let first = store.add(at(truth, "a")).unwrap();
+        let known = store.recognise(&at(moved, "b")).expect("the map known");
+        assert_eq!((known.map.as_str(), known.shift, known.verified, known.fights), (first.map.as_str(), (-by.0, -by.1), false, 1));
+        assert_eq!(store.maps()[0].fights(), 1, "recognising adds nothing");
+        let other = (0..bosses.len()).find(|&k| k != n && !same_arena(&bosses[k].0, &bosses[n].0)).unwrap();
+        assert!(store.recognise(&at(as_read(&bosses[other].1), "c")).is_none());
     }
 
     /// Two windows taken for one fight that show two maps make two maps.

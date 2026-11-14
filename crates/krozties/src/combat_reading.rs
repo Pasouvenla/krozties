@@ -21,11 +21,15 @@ use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use dofus_maps::{Reading, Settings, Store};
+use dofus_maps::{Known, Reading, Settings, Store};
 use dofus_vision::fight::{Follower, Step};
 use dofus_vision::place::{place, Place};
+use dofus_vision::read::board::Board;
 use dofus_vision::text::{self, Region};
-use dofus_vision::{game_windows, CaptureError, Frame, GameWindow, Recorder, Stream};
+use dofus_vision::{active_game_window, game_windows, CaptureError, Frame, GameWindow, Recorder, Rect, Stream};
+use tauri::{AppHandle, Manager};
+
+use crate::calque;
 
 /// The environment variable that turns the combat reading on.
 const READING_ENV: &str = "KROZTIES_COMBAT_READING";
@@ -49,6 +53,9 @@ const SAME_FIGHT_MS: u64 = 10_000;
 const PLACE_EVERY_MS: u64 = 10_000;
 /// A place read longer before a fight than this is not taken for its place.
 const PLACE_FRESH_MS: u64 = 60_000;
+/// How often a fight whose map is not known tries again to know it, as its
+/// reading grows.
+const RECOGNISE_EVERY_MS: u64 = 5_000;
 
 fn now_ms() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
@@ -56,13 +63,13 @@ fn now_ms() -> u64 {
 
 /// Starts the combat reading on its own thread when the environment asks for
 /// it, the maps kept in `data`.
-pub fn start_reading_from_env(data: PathBuf) {
+pub fn start_reading_from_env(app: AppHandle, data: PathBuf) {
     if std::env::var_os(READING_ENV).is_none() {
         return;
     }
     let _ = std::thread::Builder::new().name("combat-reading".into()).spawn(move || {
         let log_file = data.join(READING_LOG);
-        if let Err(e) = read(&data, &log_file) {
+        if let Err(e) = read(&app, &data, &log_file) {
             log_to(&log_file, &e);
         }
     });
@@ -86,6 +93,14 @@ impl Fights {
     }
 }
 
+/// The latest board of a fight, and how its frame lies over the window:
+/// frame pixels per window point, and the frame's size in pixels.
+struct Latest {
+    board: Board,
+    scale: f32,
+    size: (f32, f32),
+}
+
 /// One game window: followed from fight to fight, and where it was last.
 struct Window {
     follower: Follower,
@@ -94,11 +109,31 @@ struct Window {
     place_read_ms: u64,
     /// The place of the fight going on.
     fight_place: Option<Place>,
+    /// The fight's map, if the store knows it, and when it was last sought.
+    known: Option<Known>,
+    sought_ms: u64,
+    latest: Option<Latest>,
 }
 
 impl Window {
     fn new(id: u32) -> Window {
-        Window { follower: Follower::new(id, Settings::default()), place: None, place_read_ms: 0, fight_place: None }
+        Window {
+            follower: Follower::new(id, Settings::default()),
+            place: None,
+            place_read_ms: 0,
+            fight_place: None,
+            known: None,
+            sought_ms: 0,
+            latest: None,
+        }
+    }
+
+    /// Seeks the fight's map among the known ones.
+    fn seek(&mut self, store: &Store, now_ms: u64) {
+        self.sought_ms = now_ms;
+        let (Some(name), Some(view)) = (self.follower.fight(), self.follower.view()) else { return };
+        let reading = Reading { fight: name.to_string(), coords: (0, 0), subarea: String::new(), cells: view.cells, at_ms: now_ms };
+        self.known = store.recognise(&placed(reading, self.fight_place.as_ref()));
     }
 }
 
@@ -121,8 +156,10 @@ fn placed(mut reading: Reading, place: Option<&Place>) -> Reading {
     reading
 }
 
-/// Follows every game window, and keeps each fight's reading in the store.
-fn read(data: &Path, log_file: &Path) -> Result<(), String> {
+/// Follows every game window, keeps each fight's reading in the store, and
+/// lays the overlay over the game window in front while the companion is
+/// open.
+fn read(app: &AppHandle, data: &Path, log_file: &Path) -> Result<(), String> {
     std::fs::create_dir_all(data).map_err(|e| e.to_string())?;
     let path = data.join(STORE_FILE);
     let mut store = Store::load(&path, Settings::default()).map_err(|e| e.to_string())?;
@@ -130,14 +167,23 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
     // behind, new frames are dropped rather than queued.
     let (tx, rx) = mpsc::sync_channel::<Frame>(2);
     let windows_log = log_file.to_path_buf();
+    // The game windows as last listed: where they are on screen.
+    let listed: Arc<Mutex<Vec<GameWindow>>> = Arc::default();
+    let listing = Arc::clone(&listed);
     std::thread::Builder::new()
         .name("combat-reading-windows".into())
-        .spawn(move || capture_windows(&tx, &windows_log, |_| {}))
+        .spawn(move || {
+            capture_windows(&tx, &windows_log, |found| {
+                *listing.lock().unwrap_or_else(|e| e.into_inner()) = found.to_vec();
+            })
+        })
         .map_err(|e| e.to_string())?;
 
     log_to(log_file, "reading started");
     let mut windows: HashMap<u32, Window> = HashMap::new();
     let mut fights = Fights::default();
+    // Where the overlay lies, while it shows.
+    let mut overlay: Option<Rect> = None;
     loop {
         let received = match rx.recv_timeout(INTERVAL) {
             Ok(frame) => Some(frame),
@@ -149,9 +195,15 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
         // The window of the frame reads it; the others still show what they
         // showed, and time passes for them.
         let mut steps = Vec::new();
+        let list = listed.lock().unwrap_or_else(|e| e.into_inner()).clone();
         if let Some(frame) = &received {
             let state = windows.entry(frame.window).or_insert_with(|| Window::new(frame.window));
             let step = state.follower.feed(frame, now);
+            if let Step::Started(board) | Step::Read(board) = &step {
+                let points = list.iter().find(|w| w.id == frame.window).map_or(0.0, |w| w.frame.width);
+                let scale = if points > 0.0 { (f64::from(frame.width) / points) as f32 } else { 1.0 };
+                state.latest = Some(Latest { board: board.clone(), scale, size: (frame.width as f32, frame.height as f32) });
+            }
             // The place, on the first frame of a fight and now and then out
             // of fights.
             let started = matches!(step, Step::Started(_));
@@ -178,11 +230,17 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
                     let name = fights.name(window, &own, now);
                     state.follower.rename_fight(&name);
                     let place = state.fight_place.as_ref().map_or("unknown place".to_string(), |p| format!("{:?}", p.coords));
-                    log_to(log_file, &format!("fight {name} started in window {window}, {place}"));
+                    state.seek(&store, now);
+                    let map = state.known.as_ref().map_or("a new map".to_string(), |k| format!("map {}", k.map));
+                    log_to(log_file, &format!("fight {name} started in window {window}, {place}, {map}"));
                 }
                 Step::Ended(reading) => {
                     let name = reading.fight.clone();
-                    let place = windows.get_mut(&window).and_then(|w| w.fight_place.take());
+                    let place = windows.get_mut(&window).and_then(|w| {
+                        w.known = None;
+                        w.latest = None;
+                        w.fight_place.take()
+                    });
                     match store.add(placed(reading, place.as_ref())) {
                         Ok(outcome) => {
                             log_to(
@@ -201,6 +259,42 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
                 }
                 Step::Nothing | Step::Read(_) => {}
             }
+        }
+        // A fight whose map is not known yet tries again as its reading grows.
+        for state in windows.values_mut() {
+            if state.known.is_none()
+                && state.follower.fight().is_some()
+                && now.saturating_sub(state.sought_ms) >= RECOGNISE_EVERY_MS
+            {
+                state.seek(&store, now);
+            }
+        }
+        overlay = lay_overlay(app, &list, &windows, overlay);
+    }
+}
+
+/// Lays the overlay over the game window in front, while the companion is
+/// open and that window is in a fight; takes it off otherwise. Returns where
+/// it lies.
+fn lay_overlay(app: &AppHandle, list: &[GameWindow], windows: &HashMap<u32, Window>, at: Option<Rect>) -> Option<Rect> {
+    let companion = app.get_webview_window(crate::compagnon::ETIQUETTE).is_some();
+    let front = if companion { active_game_window(list) } else { None };
+    let wanted = front.and_then(|id| {
+        let state = windows.get(&id)?;
+        let (view, latest) = (state.follower.view()?, state.latest.as_ref()?);
+        let window = list.iter().find(|w| w.id == id)?;
+        Some((window.frame, calque::drawing(&latest.board, &view, state.known.as_ref(), latest.scale, latest.size)))
+    });
+    match wanted {
+        Some((frame, drawing)) => {
+            calque::show(app, &frame, &drawing, at != Some(frame));
+            Some(frame)
+        }
+        None => {
+            if at.is_some() {
+                calque::hide(app);
+            }
+            None
         }
     }
 }

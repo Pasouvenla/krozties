@@ -12,4 +12,4 @@ pub mod sight;
 mod store;
 
 pub use map::{Cell, Reading, Seen};
-pub use store::{Event, Gathering, Map, Outcome, Settings, Status, Store};
+pub use store::{Event, Gathering, Known, Map, Outcome, Settings, Status, Store};

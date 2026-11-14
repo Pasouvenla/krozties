@@ -195,7 +195,7 @@ pub fn ajuster(fenetre: &tauri::Window, largeur: f64, hauteur: f64) -> Result<St
 /// niveau de l'économiseur d'écran, d'une application sans icône dans le Dock :
 /// d'où le passage en accessoire tant que le compagnon est ouvert.
 #[cfg(target_os = "macos")]
-mod plein_ecran {
+pub(crate) mod plein_ecran {
     use objc2::ffi::object_setClass;
     use objc2::rc::Retained;
     use objc2::runtime::{AnyClass, AnyObject, Bool, ClassBuilder, Sel};

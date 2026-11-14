@@ -13,7 +13,7 @@
 //! not move during a fight: each frame is first checked against the lattice
 //! already found, a fraction of the cost of a search.
 
-use dofus_maps::{Gathering, Reading, Settings};
+use dofus_maps::{Gathering, Reading, Seen, Settings};
 
 use crate::read::board::{self, Board};
 use crate::read::lattice::{self, Lattice};
@@ -38,17 +38,28 @@ pub enum Step {
     Ended(Reading),
 }
 
+/// What the fight going on has read so far, and how its latest board lies
+/// over it: cell (x, y) of the board is cell (x + dx, y + dy) of `cells`.
+#[derive(Clone, Debug)]
+pub struct View {
+    pub cells: Vec<Seen>,
+    pub shift: (i32, i32),
+}
+
 /// Before a fight starts: the frames that showed a board since `since`.
 struct Pending {
     since: u64,
     gathering: Gathering,
     board: Board,
+    shift: (i32, i32),
 }
 
 /// The fight going on.
 struct Fight {
     name: String,
     gathering: Gathering,
+    /// How the latest board lies over the gathering.
+    shift: (i32, i32),
     /// Since when the window shows no checkerboard, if it does not.
     without_since: Option<u64>,
     last_ms: u64,
@@ -87,6 +98,11 @@ impl Follower {
         self.searches
     }
 
+    /// What the fight going on has read so far, if a fight goes on.
+    pub fn view(&self) -> Option<View> {
+        self.fight.as_ref().map(|f| View { cells: f.gathering.cells(), shift: f.shift })
+    }
+
     /// Reads a frame taken at `at_ms`.
     pub fn feed(&mut self, frame: &Frame, at_ms: u64) -> Step {
         let board = self.board(frame);
@@ -95,23 +111,27 @@ impl Follower {
                 fight.without_since = None;
                 fight.last_ms = at_ms;
                 // A frame no shift lays over the others is left out.
-                fight.gathering.add(&board.cells, &self.settings);
+                if let Some(shift) = fight.gathering.add(&board.cells, &self.settings) {
+                    fight.shift = shift;
+                }
                 return Step::Read(board);
             }
             (Some(fight), None) => {
                 fight.without_since.get_or_insert(at_ms);
             }
             (None, Some(board)) => {
-                let same_map = self.pending.as_mut().is_some_and(|p| p.gathering.add(&board.cells, &self.settings).is_some());
-                if same_map {
-                    if let Some(pending) = self.pending.as_mut() {
+                let laid = self.pending.as_mut().and_then(|p| p.gathering.add(&board.cells, &self.settings));
+                match (self.pending.as_mut(), laid) {
+                    (Some(pending), Some(shift)) => {
                         pending.board = board;
+                        pending.shift = shift;
                     }
-                } else {
-                    // The first frame, or another map than the frames before.
-                    let mut gathering = Gathering::default();
-                    gathering.add(&board.cells, &self.settings);
-                    self.pending = Some(Pending { since: at_ms, gathering, board });
+                    _ => {
+                        // The first frame, or another map than the frames before.
+                        let mut gathering = Gathering::default();
+                        gathering.add(&board.cells, &self.settings);
+                        self.pending = Some(Pending { since: at_ms, gathering, board, shift: (0, 0) });
+                    }
                 }
             }
             (None, None) => self.pending = None,
@@ -141,7 +161,13 @@ impl Follower {
                 let pending = self.pending.take().expect("frames pending");
                 let name = format!("{}-{}", self.window, pending.since);
                 let board = pending.board.clone();
-                self.fight = Some(Fight { name, gathering: pending.gathering, without_since: None, last_ms: now_ms });
+                self.fight = Some(Fight {
+                    name,
+                    gathering: pending.gathering,
+                    shift: pending.shift,
+                    without_since: None,
+                    last_ms: now_ms,
+                });
                 Step::Started(board)
             }
             _ => Step::Nothing,
@@ -242,6 +268,33 @@ mod tests {
         assert_eq!(kind(&follower.feed(&empty(1), 31_000)), "nothing");
         assert_eq!(kind(&follower.tick(34_000)), "nothing");
         assert_eq!(kind(&follower.tick(35_000)), "ended");
+    }
+
+    /// The view of a fight lays each board over what the fight read: a cell
+    /// of the latest board, shifted, is the same cell of the view.
+    #[test]
+    fn the_view_lays_the_latest_board_over_the_fight() {
+        let map = boss_maps().swap_remove(13);
+        let mut follower = Follower::new(1, Settings::default());
+        assert!(follower.view().is_none());
+        let mut latest = None;
+        for t in 0..5 {
+            if let Step::Started(board) | Step::Read(board) = follower.feed(&frame_of(&map, t), 1000 * t) {
+                latest = Some(board);
+            }
+        }
+        let (board, view) = (latest.expect("a board"), follower.view().expect("a fight"));
+        let mut checked = 0;
+        for id in 0..cells::CELLS as u16 {
+            if board.cells[usize::from(id)].cell != Cell::Walkable {
+                continue;
+            }
+            let (x, y) = cells::coords(id).unwrap();
+            let there = cells::id_at(x + view.shift.0, y + view.shift.1).expect("on the map");
+            assert_eq!(view.cells[usize::from(there)].cell, Cell::Walkable, "cell {id}");
+            checked += 1;
+        }
+        assert!(checked > 100, "{checked} cells checked");
     }
 
     /// Another window seeing the same fight names it alike.

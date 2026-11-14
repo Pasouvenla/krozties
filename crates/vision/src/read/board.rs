@@ -43,6 +43,16 @@ pub struct Board {
     pub anchoring: f32,
 }
 
+impl Board {
+    /// The diamond of cell (x, y) of the board's reading, in frame pixels:
+    /// its top, right, bottom and left corners.
+    pub fn diamond(&self, (x, y): (i32, i32)) -> [(f32, f32); 4] {
+        let (cx, cy) = self.lattice.centre(x - self.translation.0, y - self.translation.1);
+        let (half_width, half_height) = (self.lattice.cell_width / 2.0, self.lattice.cell_width / 4.0);
+        [(cx, cy - half_height), (cx + half_width, cy), (cx, cy + half_height), (cx - half_width, cy)]
+    }
+}
+
 /// The frame shrunk like the luminance plane, one plane per channel.
 fn channels(frame: &Frame) -> [Gray; 3] {
     let (width, height) = (frame.width as usize, frame.height as usize);
@@ -169,51 +179,10 @@ impl Tiles {
     }
 }
 
-/// The convex hull of lattice cells, counter-clockwise.
-fn hull(mut points: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
-    points.sort_unstable();
-    points.dedup();
-    if points.len() < 3 {
-        return points;
-    }
-    let cross = |o: (i32, i32), a: (i32, i32), b: (i32, i32)| {
-        i64::from(a.0 - o.0) * i64::from(b.1 - o.1) - i64::from(a.1 - o.1) * i64::from(b.0 - o.0)
-    };
-    let mut lower: Vec<(i32, i32)> = Vec::new();
-    for &p in &points {
-        while lower.len() >= 2 && cross(lower[lower.len() - 2], lower[lower.len() - 1], p) <= 0 {
-            lower.pop();
-        }
-        lower.push(p);
-    }
-    let mut upper: Vec<(i32, i32)> = Vec::new();
-    for &p in points.iter().rev() {
-        while upper.len() >= 2 && cross(upper[upper.len() - 2], upper[upper.len() - 1], p) <= 0 {
-            upper.pop();
-        }
-        upper.push(p);
-    }
-    lower.pop();
-    upper.pop();
-    lower.extend(upper);
-    lower
-}
-
-/// Whether a cell lies within a counter-clockwise hull, its edges included.
-fn within(hull: &[(i32, i32)], cell: (i32, i32)) -> bool {
-    if hull.len() < 3 {
-        return false;
-    }
-    (0..hull.len()).all(|k| {
-        let (a, b) = (hull[k], hull[(k + 1) % hull.len()]);
-        i64::from(b.0 - a.0) * i64::from(cell.1 - a.1) - i64::from(b.1 - a.1) * i64::from(cell.0 - a.0) >= 0
-    })
-}
-
 /// The cells of a frame read on the lattice, at the plane's scale: by lattice
 /// cell, what it is. Walkable where a tile of its parity shows, or a team
-/// ring; within the floor's hull, the other cells are obstacles or holes, the
-/// only ones a fight's moves and lines of sight cross; beyond it, unknown.
+/// ring beside the floor; not walkable where none shows, less surely beyond
+/// the floor's hull; unknown where the frame cannot tell.
 fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i32, i32), Seen>> {
     let floor = patch(&Integral::of(gray), lattice);
     if floor.len() < 8 {
@@ -310,11 +279,11 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
     let floor_areas = areas(&read.keys().copied().collect());
     let largest = floor_areas.iter().map(Vec::len).max().unwrap_or(0);
     let main =
-        hull(floor_areas.iter().filter(|a| a.len() >= (largest / 10).max(3)).flatten().copied().collect());
+        cells::hull(floor_areas.iter().filter(|a| a.len() >= (largest / 10).max(3)).flatten().copied().collect());
     // An entity stands on the floor: a team ring away from it is something
     // else, a portrait of the timeline for one.
     let on_floor = |i: i32, j: i32| {
-        within(&main, (i, j))
+        cells::within(&main, (i, j))
             || [(1, 0), (-1, 0), (0, 1), (0, -1)].iter().any(|(di, dj)| read.contains_key(&(i + di, j + dj)))
     };
     let (rings, other): (Vec<_>, Vec<_>) =
@@ -328,7 +297,7 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
     // across its own borders, a patch of colour does not.
     let small: Vec<Vec<(i32, i32)>> = areas(&read.keys().copied().collect())
         .into_iter()
-        .filter(|a| a.len() < (largest / 10).max(3) && a.iter().any(|&cell| !within(&main, cell)))
+        .filter(|a| a.len() < (largest / 10).max(3) && a.iter().any(|&cell| !cells::within(&main, cell)))
         .collect();
     let steps = |a: (i32, i32), b: (i32, i32)| {
         let (Some(ta), Some(tb)) = (tiles.reference(a.0, a.1), tiles.reference(b.0, b.1)) else { return false };
@@ -368,9 +337,26 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
             }
         }
     }
-    let shape = hull(read.keys().copied().collect());
+    // A fighter stands in front of the cell behind it, higher on screen, and
+    // its body covers that cell: a tile that does not show may be there, and
+    // what shows the colour of a tile, or of a team, may be the body. That
+    // cell is not read on this frame, even with a fighter seemingly on it;
+    // the frames where the fighter in front has moved read it.
+    let behind: std::collections::HashSet<(i32, i32)> = read
+        .keys()
+        .filter(|&&(i, j)| team_ring(&planes, lattice, i, j))
+        .map(|&(i, j)| (i - 1, j + 1))
+        .collect();
+    for cell in &behind {
+        if read.remove(cell).is_some() {
+            unknown.push(*cell);
+        }
+    }
+    let (hidden, other): (Vec<_>, Vec<_>) = other.into_iter().partition(|cell| behind.contains(cell));
+    unknown.extend(hidden);
+    let shape = cells::hull(read.keys().copied().collect());
     for cell in other {
-        let sure = if within(&shape, cell) { 0.7 } else { 0.5 };
+        let sure = if cells::within(&shape, cell) { 0.7 } else { 0.5 };
         read.insert(cell, Seen::new(Cell::NotWalkable, sure));
     }
     for cell in unknown {
@@ -540,7 +526,11 @@ mod tests {
         alone: (usize, usize),
         /// The other cells beyond the floor's hull, read not walkable.
         beyond: (usize, usize),
-        /// Entities in view whose cell is not read walkable.
+        /// The other cells right behind a fighter, read walkable.
+        behind: (usize, usize),
+        /// Fighters in view, their cell read walkable.
+        fighters: (usize, usize),
+        /// Fighters in view whose cell is read not walkable.
         failures: Vec<String>,
     }
 
@@ -552,6 +542,8 @@ mod tests {
             println!("cells between floor cells read not walkable: {} of {}", self.between.0, self.between.1);
             println!("walkable cells alone read not walkable: {} of {}", self.alone.0, self.alone.1);
             println!("cells beyond the floor's hull read not walkable: {} of {}", self.beyond.0, self.beyond.1);
+            println!("cells behind a fighter read walkable: {} of {}", self.behind.0, self.behind.1);
+            println!("fighters' cells read walkable: {} of {}", self.fighters.0, self.fighters.1);
         }
     }
 
@@ -580,7 +572,7 @@ mod tests {
                 .filter(|&&(x, y)| walkable.iter().any(|&(a, b)| (a - x).abs() + (b - y).abs() == 1))
                 .copied()
                 .collect();
-            let shape = hull(joined.clone());
+            let shape = cells::hull(joined.clone());
             for id in (0..cells::CELLS as u16).filter(|id| in_view(&scene, *id)) {
                 let truly_walkable = scene.cells[usize::from(id)] == Cell::Walkable;
                 let Some(read) = placed(&scene, &board, id).or(truly_walkable.then_some(Seen::UNKNOWN)) else {
@@ -597,13 +589,16 @@ mod tests {
                     } else {
                         add(&mut tally.hidden, walkable);
                     }
+                } else if scene.entities.iter().any(|&e| cells::coords(e).is_some_and(|(ex, ey)| (ex - 1, ey + 1) == (x, y))) {
+                    // What a fighter's body hides is not known.
+                    add(&mut tally.behind, walkable);
                 } else {
                     add(&mut tally.other, walkable);
                     // Strictly inside: on the hull's edge a cell may be left
                     // out by the cells the frame cuts.
-                    if within(&shape, (x, y)) && joined.iter().filter(|c| c.0 == x || c.1 == y).count() >= 2 {
+                    if cells::within(&shape, (x, y)) && joined.iter().filter(|c| c.0 == x || c.1 == y).count() >= 2 {
                         add(&mut tally.between, known);
-                    } else if !within(&shape, (x, y)) {
+                    } else if !cells::within(&shape, (x, y)) {
                         add(&mut tally.beyond, known);
                     }
                 }
@@ -611,10 +606,16 @@ mod tests {
             for &id in &scene.entities {
                 let (x, y) = cells::coords(id).unwrap();
                 let (cx, cy) = scene.centre(x, y);
-                // The timeline's portraits, top right, hide what is under them.
+                // The timeline's portraits, top right, hide what is under them;
+                // a fighter in front hides the one behind.
                 let under_timeline = cy < 80.0 && cx > 900.0;
-                if in_view(&scene, id) && !under_timeline && read_at(&scene, &board, id).cell != Cell::Walkable {
-                    tally.failures.push(format!("map {n}: entity cell {id} at ({cx:.0}, {cy:.0}) not read walkable"));
+                let behind_another = cells::id_at(x + 1, y - 1).is_some_and(|front| scene.entities.contains(&front));
+                let read = read_at(&scene, &board, id).cell;
+                if in_view(&scene, id) && !under_timeline && !behind_another {
+                    add(&mut tally.fighters, read == Cell::Walkable);
+                    if read.walkable() == Some(false) {
+                        tally.failures.push(format!("map {n}: entity cell {id} at ({cx:.0}, {cy:.0}) read not walkable"));
+                    }
                 }
             }
         }
@@ -626,10 +627,10 @@ mod tests {
     }
 
     /// On every boss map: the walkable cells in view are read walkable,
-    /// entities' cells included, unless decor hides most of them; almost no
-    /// other cell is; the cells between floor cells and beyond the floor are
-    /// read not walkable; a walkable cell alone is read walkable or unknown,
-    /// never not walkable.
+    /// unless decor or a fighter hides most of them; almost no other cell is;
+    /// the cells between floor cells and beyond the floor are read not
+    /// walkable; a walkable cell alone, a fighter's cell, the cell behind a
+    /// fighter are read walkable or unknown, never as a wall or a hole.
     #[test]
     fn the_cells_of_every_boss_map_are_read() {
         let tally = measure(17, 500);
@@ -639,6 +640,7 @@ mod tests {
         assert!(share(tally.other) <= 0.01, "{:?} other cells read walkable", tally.other);
         assert!(share(tally.between) >= 0.98, "{:?} cells between read not walkable", tally.between);
         assert_eq!(tally.alone.0, 0, "walkable cells alone read not walkable");
+        assert_eq!(tally.behind.0, 0, "cells behind a fighter read walkable: {:?}", tally.behind);
         assert!(share(tally.beyond) >= 0.95, "{:?} cells beyond read not walkable", tally.beyond);
     }
 
@@ -650,7 +652,7 @@ mod tests {
             println!("draw {draw}:");
             let tally = measure(1000 + draw, 3000 + 100 * draw);
             tally.print();
-            println!("entity cells not read walkable: {}", tally.failures.len());
+            println!("fighters' cells read not walkable: {}", tally.failures.len());
         }
     }
 
@@ -732,7 +734,8 @@ mod tests {
             for &id in &scene.entities {
                 let (x, y) = cells::coords(id).unwrap();
                 let (cx, cy) = scene.centre(x, y);
-                if cy < 80.0 && cx > 900.0 {
+                let behind_another = cells::id_at(x + 1, y - 1).is_some_and(|front| scene.entities.contains(&front));
+                if (cy < 80.0 && cx > 900.0) || behind_another {
                     continue;
                 }
                 total += 1;
@@ -743,6 +746,40 @@ mod tests {
         }
         println!("{} of {total} covered entity cells read walkable", total - failures.len());
         assert!(failures.is_empty(), "{failures:?}");
+    }
+
+    /// The cell behind a fighter, which its body hides, is not read as a
+    /// cell that cannot be walked.
+    #[test]
+    fn the_cell_behind_a_fighter_is_not_taken_for_a_wall() {
+        let mut wrong = Vec::new();
+        let mut checked = 0;
+        for (n, map) in boss_maps().into_iter().enumerate().step_by(5) {
+            let mut scene = Scene::centred(map, (1280, 800), 64.0, 1600 + n as u64);
+            let walkable: Vec<u16> = (0..cells::CELLS as u16)
+                .filter(|id| scene.cells[usize::from(*id)] == Cell::Walkable && in_view(&scene, *id))
+                .collect();
+            scene.entities = walkable.iter().step_by(17).copied().collect();
+            let (frame, _) = render_with_floor(&scene);
+            // A floor broken by walls, holes and fighters may show too small a
+            // checkerboard on a frame: that frame is no fight's, and says
+            // nothing of what fighters hide.
+            let Some(lattice) = find(&frame) else { continue };
+            let board = read(&frame, &lattice).expect("a board");
+            for &id in &scene.entities {
+                let (x, y) = cells::coords(id).unwrap();
+                let Some(behind) = cells::id_at(x - 1, y + 1) else { continue };
+                if scene.cells[usize::from(behind)] != Cell::Walkable || !in_view(&scene, behind) || scene.entities.contains(&behind) {
+                    continue;
+                }
+                checked += 1;
+                if read_at(&scene, &board, behind).cell.walkable() == Some(false) {
+                    wrong.push((n, behind));
+                }
+            }
+        }
+        assert!(checked >= 20, "{checked} cells behind fighters checked");
+        assert!(wrong.is_empty(), "{wrong:?}");
     }
 
     /// Portraits in a team's colour, side by side away from a small floor,
@@ -815,6 +852,83 @@ mod tests {
         }
         println!("{confirmed} of 5 maps confirmed by their second window, {shifted} laid back by a shift");
         assert!(shifted > 0, "no window anchored the map elsewhere: the test proves nothing of the alignment");
+    }
+
+    /// Writes a frame and the diamonds of its cells that cannot be walked,
+    /// told apart as the line of sight would, to look at the overlay over it.
+    #[test]
+    #[ignore = "picture, run on demand with OVERLAY_DIR"]
+    fn picture_of_the_overlay() {
+        let Some(dir) = std::env::var_os("OVERLAY_DIR") else { return };
+        let dir = std::path::PathBuf::from(dir);
+        let map = boss_maps().swap_remove(15);
+        let mut scene = Scene::centred(map, (1280, 800), 62.0, 77);
+        scene.obstacle_height = 0.35;
+        let walkable: Vec<u16> = (0..cells::CELLS as u16).filter(|id| scene.cells[usize::from(*id)] == Cell::Walkable).collect();
+        scene.entities = walkable.iter().step_by(31).take(4).copied().collect();
+        let (frame, _) = render_with_floor(&scene);
+        let board = read(&frame, &find(&frame).unwrap()).unwrap();
+        // As the app draws: only near the floor.
+        let floor: std::collections::HashSet<(i32, i32)> = (0..cells::CELLS as u16)
+            .filter(|&id| board.cells[usize::from(id)].cell == Cell::Walkable)
+            .map(|id| cells::coords(id).unwrap())
+            .collect();
+        let shape = cells::hull(floor.iter().copied().collect());
+        let mut drawn = Vec::new();
+        for id in 0..cells::CELLS as u16 {
+            if board.cells[usize::from(id)].cell != Cell::NotWalkable {
+                continue;
+            }
+            let (x, y) = cells::coords(id).unwrap();
+            let near = cells::within(&shape, (x, y)) || (-1..=1).any(|dx| (-1..=1).any(|dy| floor.contains(&(x + dx, y + dy))));
+            if !near {
+                continue;
+            }
+            let d = board.diamond((x, y));
+            // The scene's own kind, as the line of sight would tell it.
+            let (cx, cy) = ((d[1].0 + d[3].0) / 2.0, (d[0].1 + d[2].1) / 2.0);
+            let (i, j) = board.lattice.locate(cx, cy);
+            let truth = (0..cells::CELLS as u16).find(|&t| {
+                let (tx, ty) = cells::coords(t).unwrap();
+                let (sx, sy) = scene.centre(tx, ty);
+                let (ti, tj) = board.lattice.locate(sx, sy);
+                (ti - i).abs() < 0.5 && (tj - j).abs() < 0.5
+            });
+            let kind = match truth.map(|t| scene.cells[usize::from(t)]) {
+                Some(Cell::Obstacle) if id % 3 != 0 => "obstacle",
+                Some(Cell::Hole) if id % 3 != 0 => "hole",
+                _ => "undecided",
+            };
+            drawn.push(format!(r#"{{"points":[[{},{}],[{},{}],[{},{}],[{},{}]],"kind":"{kind}"}}"#, d[0].0, d[0].1, d[1].0, d[1].1, d[2].0, d[2].1, d[3].0, d[3].1));
+        }
+        std::fs::write(dir.join("cells.json"), format!("[{}]", drawn.join(","))).unwrap();
+        let file = std::fs::File::create(dir.join("frame.png")).unwrap();
+        let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), frame.width, frame.height);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let rgba: Vec<u8> = frame.bgra.chunks(4).flat_map(|p| [p[2], p[1], p[0], 255]).collect();
+        encoder.write_header().unwrap().write_image_data(&rgba).unwrap();
+    }
+
+    /// The diamond of a cell lies where the scene drew the cell.
+    #[test]
+    fn a_cell_s_diamond_lies_where_it_was_drawn() {
+        let map = boss_maps().swap_remove(10);
+        let scene = Scene::centred(map, (1280, 800), 64.0, 41);
+        let (frame, _) = render_with_floor(&scene);
+        let board = read(&frame, &find(&frame).expect("a checkerboard")).expect("a board");
+        let mut worst = 0.0f32;
+        for id in (0..cells::CELLS as u16).filter(|id| scene.cells[usize::from(*id)] == Cell::Walkable && in_view(&scene, *id)) {
+            let (x, y) = cells::coords(id).unwrap();
+            let (cx, cy) = scene.centre(x, y);
+            let (i, j) = board.lattice.locate(cx, cy);
+            let at = (i.round() as i32 + board.translation.0, j.round() as i32 + board.translation.1);
+            let d = board.diamond(at);
+            let centre = ((d[1].0 + d[3].0) / 2.0, (d[0].1 + d[2].1) / 2.0);
+            worst = worst.max((centre.0 - cx).abs()).max((centre.1 - cy).abs());
+            assert!((d[1].0 - d[3].0 - 64.0).abs() < 2.0 && (d[2].1 - d[0].1 - 32.0).abs() < 1.0, "{d:?}");
+        }
+        assert!(worst < 3.0, "a diamond {worst} pixels off its cell");
     }
 
     /// With the whole map in view, the true translation is among those that

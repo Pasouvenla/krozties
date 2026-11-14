@@ -18,7 +18,9 @@ dofus-app = { path = "../app" }
 dofus-build = { path = "../build" }
 dofus-maps = { path = "../maps" }
 dofus-vision = { path = "../vision" }
-tauri = { version = "2", features = [] }
+# The overlay over the game is a transparent window: on macOS, Tauri draws it
+# through an API Apple keeps private.
+tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-dialog = "~2.7"
 tauri-plugin-updater = "~2.12"
 tauri-plugin-window-state = "~2.4"
