@@ -9,6 +9,11 @@
 //! dungeon share their coordinates, and mistaking one for another would draw
 //! the wrong walls.
 //!
+//! A frame shows where the map's cells are, not always which ones they are:
+//! when the map does not fill the window, the reader may anchor its cells a
+//! few cells off. A reading is compared with a map at every shift within
+//! reach, and joins it at the one that lays it over the map best.
+//!
 //! Each map keeps the readings of its last few fights, and each cell takes
 //! the kind most of them saw. A misread fight is outvoted; a game update that
 //! moves a few cells wins once more fights see it than remember the old map.
@@ -19,7 +24,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::cells::CELLS;
-use crate::map::{similarity, Cell, Reading, Seen};
+use crate::map::{shifted, Agreement, Cell, Reading, Seen};
 
 /// The thresholds of recognition and confirmation.
 #[derive(Clone, Copy, Debug)]
@@ -72,8 +77,8 @@ pub enum Status {
 impl Map {
     /// For one cell, the confidence each kind received from the readings, and
     /// how many readings knew the cell.
-    fn support(&self, i: usize) -> ([f32; 3], usize) {
-        let mut support = [0.0f32; 3];
+    fn support(&self, i: usize) -> ([f32; 4], usize) {
+        let mut support = [0.0f32; 4];
         let mut seen = 0;
         for r in &self.readings {
             if let Some(k) = r.cells[i].cell.rank() {
@@ -84,25 +89,34 @@ impl Map {
         (support, seen)
     }
 
-    /// Per cell, the kind that received the most confidence. Its confidence is
-    /// what it received on average from the readings that knew the cell, so
-    /// that a disputed or unsure cell stays unsure.
+    /// Per cell, walkable or not as the readings' confidence has it; not
+    /// walkable, an obstacle or a hole as the readings that told them apart
+    /// have it, if any did. Its confidence is what it received on average
+    /// from the readings that knew the cell, so that a disputed or unsure
+    /// cell stays unsure.
     pub fn cells(&self) -> Vec<Seen> {
         (0..CELLS)
             .map(|i| {
                 let (support, seen) = self.support(i);
-                let (k, best) = support.iter().enumerate().fold((0, 0.0f32), |b, (k, s)| if *s > b.1 { (k, *s) } else { b });
-                if seen == 0 || best <= 0.0 {
-                    Seen::UNKNOWN
-                } else {
-                    Seen::new(Cell::KNOWN[k], best / seen as f32)
+                let (walkable, blocked) = (support[0], support[1] + support[2] + support[3]);
+                if seen == 0 || walkable + blocked <= 0.0 {
+                    return Seen::UNKNOWN;
                 }
+                if walkable > blocked {
+                    return Seen::new(Cell::Walkable, walkable / seen as f32);
+                }
+                let kind = match support[1].total_cmp(&support[2]) {
+                    std::cmp::Ordering::Greater => Cell::Obstacle,
+                    std::cmp::Ordering::Less => Cell::Hole,
+                    std::cmp::Ordering::Equal => Cell::NotWalkable,
+                };
+                Seen::new(kind, blocked / seen as f32)
             })
             .collect()
     }
 
     /// Whether enough fights read the map, and enough of its known cells have
-    /// a kind most of their support agrees on.
+    /// most of their support agree on whether they are walkable.
     fn confirmed(&self, settings: &Settings) -> bool {
         if self.readings.len() < settings.fights_to_confirm {
             return false;
@@ -110,12 +124,12 @@ impl Map {
         let (mut known, mut agreed) = (0usize, 0usize);
         for i in 0..CELLS {
             let (support, _) = self.support(i);
-            let total: f32 = support.iter().sum();
-            if total <= 0.0 {
+            let (walkable, blocked) = (support[0], support[1] + support[2] + support[3]);
+            if walkable + blocked <= 0.0 {
                 continue;
             }
             known += 1;
-            if support.iter().copied().fold(0.0f32, f32::max) / total >= settings.cell_agreement {
+            if walkable.max(blocked) / (walkable + blocked) >= settings.cell_agreement {
                 agreed += 1;
             }
         }
@@ -147,6 +161,36 @@ impl Map {
     }
 }
 
+/// How far the store looks for the shift between a reading and a map, in
+/// cells along each of the game's axes.
+const REACH: i32 = 8;
+
+/// The shift that best lays a reading over a map's cells, and how far they
+/// then agree; `None` when no shift overlaps enough to compare. Best is the
+/// most agreeing weight, each disagreement counting against it as much as
+/// the agreements the same-map threshold allows for one: a large overlap
+/// that agrees wins over a small one that agrees a little more. Among equals,
+/// the smallest shift.
+fn align(reading: &[Seen], map: &[Seen], settings: &Settings) -> Option<((i32, i32), Agreement)> {
+    let cost = settings.same_map / (1.0 - settings.same_map).max(1e-3);
+    let mut best: Option<((i32, i32), Agreement, f32)> = None;
+    for dx in -REACH..=REACH {
+        for dy in -REACH..=REACH {
+            let Some(moved) = shifted(reading, (dx, dy)) else { continue };
+            let agreement = Agreement::of(&moved, map);
+            if agreement.overlap < settings.min_overlap {
+                continue;
+            }
+            let score = agreement.same - cost * (agreement.total - agreement.same);
+            let nearer = |b: (i32, i32)| dx.abs() + dy.abs() < b.0.abs() + b.1.abs();
+            if best.is_none_or(|(b, _, s)| score > s || (score == s && nearer(b))) {
+                best = Some(((dx, dy), agreement, score));
+            }
+        }
+    }
+    best.map(|(shift, agreement, _)| (shift, agreement))
+}
+
 /// What the store made of a reading.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -168,6 +212,8 @@ pub struct Outcome {
     pub cells: Vec<Seen>,
     /// Whether the map is confirmed.
     pub verified: bool,
+    /// Cell (x, y) of the reading is cell (x + dx, y + dy) of the map.
+    pub shift: (i32, i32),
 }
 
 /// The maps of one player, on their machine.
@@ -236,21 +282,23 @@ impl Store {
         let subarea = normalise(&reading.subarea);
         let candidates =
             (0..self.maps.len()).filter(|&m| self.maps[m].coords == reading.coords && normalise(&self.maps[m].subarea) == subarea);
-        // Another window of a fight already read joins that fight's map;
-        // otherwise the closest map, if close enough.
-        let same_fight = candidates.clone().find(|&m| self.maps[m].readings.iter().any(|r| r.fight == reading.fight));
-        let target = same_fight.or_else(|| {
-            candidates
-                .filter_map(|m| {
-                    let (share, overlap) = similarity(&reading.cells, &self.maps[m].cells());
-                    (overlap >= self.settings.min_overlap && share >= self.settings.same_map).then_some((m, share))
-                })
-                .max_by(|a, b| a.1.total_cmp(&b.1))
-                .map(|(m, _)| m)
-        });
-
         let settings = self.settings;
-        let Some(m) = target else {
+        // Another window of a fight already read joins that fight's map, laid
+        // over it as well as it goes; otherwise the closest map, if close
+        // enough.
+        let same_fight = candidates.clone().find(|&m| self.maps[m].readings.iter().any(|r| r.fight == reading.fight));
+        let target = match same_fight {
+            Some(m) => Some((m, align(&reading.cells, &self.maps[m].cells(), &settings).map_or((0, 0), |a| a.0))),
+            None => candidates
+                .filter_map(|m| {
+                    let (shift, agreement) = align(&reading.cells, &self.maps[m].cells(), &settings)?;
+                    (agreement.share() >= settings.same_map).then_some((m, shift, agreement.share()))
+                })
+                .max_by(|a, b| a.2.total_cmp(&b.2))
+                .map(|(m, shift, _)| (m, shift)),
+        };
+
+        let Some((m, shift)) = target else {
             let mut map = Map {
                 id: uuid::Uuid::new_v4().to_string(),
                 coords: reading.coords,
@@ -258,16 +306,19 @@ impl Store {
                 readings: Vec::new(),
             };
             map.absorb(reading, &settings);
-            let outcome = Outcome { map: map.id.clone(), event: Event::Created, cells: map.cells(), verified: false };
+            let outcome =
+                Outcome { map: map.id.clone(), event: Event::Created, cells: map.cells(), verified: false, shift: (0, 0) };
             self.maps.push(map);
             return Ok(outcome);
         };
+        let mut reading = reading;
+        reading.cells = shifted(&reading.cells, shift).unwrap_or(reading.cells);
         let map = &mut self.maps[m];
         let was_confirmed = map.confirmed(&settings);
         map.absorb(reading, &settings);
         let verified = map.confirmed(&settings);
         let event = if verified && !was_confirmed { Event::Confirmed } else { Event::Joined };
-        Ok(Outcome { map: map.id.clone(), event, cells: map.cells(), verified })
+        Ok(Outcome { map: map.id.clone(), event, cells: map.cells(), verified, shift })
     }
 }
 
@@ -295,6 +346,7 @@ fn normalise(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cells::coords;
 
     /// A map of the 560 cells, mostly walkable, with obstacles and holes laid
     /// out by `seed`.
@@ -447,26 +499,27 @@ mod tests {
         let _ = std::fs::remove_file(&path);
     }
 
-    /// The 35 boss maps of the KrozTools, by game cell: floor walkable, walls
-    /// obstacles, the rest of the map a hole.
-    fn boss_maps() -> Vec<Vec<Cell>> {
+    /// The 35 boss maps of the KrozTools, by name and game cell: floor
+    /// walkable, walls obstacles, the rest of the map a hole.
+    fn boss_maps() -> Vec<(String, Vec<Cell>)> {
         #[derive(Deserialize)]
         struct Survey {
             cartes: Vec<BossMap>,
         }
         #[derive(Deserialize)]
         struct BossMap {
+            nom: String,
             lignes: Vec<String>,
         }
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/cartes/insightroom.json");
         let survey: Survey = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         survey
             .cartes
-            .iter()
+            .into_iter()
             .map(|map| {
-                (0..CELLS)
+                let cells = (0..CELLS)
                     .map(|id| {
-                        let (x, y) = crate::cells::coords(id as u16).unwrap();
+                        let (x, y) = coords(id as u16).unwrap();
                         let row: Vec<char> = map.lignes[(13 - y) as usize].chars().collect();
                         match row[x as usize] {
                             '.' => Cell::Walkable,
@@ -474,31 +527,163 @@ mod tests {
                             _ => Cell::Hole,
                         }
                     })
-                    .collect()
+                    .collect();
+                (map.nom, cells)
             })
             .collect()
     }
 
-    fn sure(cells: &[Cell]) -> Vec<Seen> {
-        cells.iter().map(|c| Seen::new(*c, 0.9)).collect()
+    /// Versions of one boss fought in the same arena: one map, as far as the
+    /// floor goes.
+    const SAME_ARENA: [&[&str]; 2] = [&["Balladone", "Belladona", "Belladone 3.0"], &["Kralamoure Géant", "Kralamour 2.0"]];
+
+    fn same_arena(a: &str, b: &str) -> bool {
+        SAME_ARENA.iter().any(|group| group.contains(&a) && group.contains(&b))
     }
 
-    /// The threshold that tells maps apart, against real maps: no two boss
-    /// maps reach it, and each boss map read with one cell in fifty wrong, as
-    /// surely as the rest, still does.
+    /// A boss map as the board reads it with the whole map in view: the
+    /// floor surely, the other cells not walkable, less surely beyond the
+    /// floor.
+    fn as_read(map: &[Cell]) -> Vec<Seen> {
+        let floor: Vec<(i32, i32)> =
+            (0..CELLS).filter(|&i| map[i] == Cell::Walkable).map(|i| coords(i as u16).unwrap()).collect();
+        (0..CELLS)
+            .map(|i| {
+                let (x, y) = coords(i as u16).unwrap();
+                let row = floor.iter().any(|f| f.1 == y && f.0 < x) && floor.iter().any(|f| f.1 == y && f.0 > x);
+                let column = floor.iter().any(|f| f.0 == x && f.1 < y) && floor.iter().any(|f| f.0 == x && f.1 > y);
+                match map[i] {
+                    Cell::Walkable => Seen::new(Cell::Walkable, 0.9),
+                    _ if row && column => Seen::new(Cell::NotWalkable, 0.7),
+                    _ => Seen::new(Cell::NotWalkable, 0.5),
+                }
+            })
+            .collect()
+    }
+
+    /// `cells` with one cell in fifty of the floor and around it misread.
+    fn misread(cells: &[Seen]) -> Vec<Seen> {
+        cells
+            .iter()
+            .enumerate()
+            .map(|(k, s)| match s.cell {
+                Cell::Walkable if k % 50 == 0 => Seen::new(Cell::NotWalkable, s.confidence),
+                Cell::NotWalkable if k % 50 == 0 && s.confidence > 0.5 => Seen::new(Cell::Walkable, s.confidence),
+                _ => *s,
+            })
+            .collect()
+    }
+
+    /// The threshold against real maps read as the board reads them, and
+    /// anchored a few cells off: no boss map reaches the map of another arena
+    /// at any shift; each boss map read again with one cell in fifty of the
+    /// floor and around it wrong, and moved, is laid back where it was and
+    /// reaches it.
     #[test]
-    fn the_same_map_threshold_holds_on_the_boss_maps() {
+    fn the_same_map_threshold_holds_at_any_shift() {
         let settings = Settings::default();
-        let maps = boss_maps();
-        assert_eq!(maps.len(), 35);
+        let bosses = boss_maps();
+        assert_eq!(bosses.len(), 35);
+        let maps: Vec<Vec<Seen>> = bosses.iter().map(|(_, m)| as_read(m)).collect();
+        let (mut closest, mut farthest, mut fixed) = (0.0f32, 1.0f32, 0);
         for (i, a) in maps.iter().enumerate() {
-            for b in &maps[i + 1..] {
-                assert!(similarity(&sure(a), &sure(b)).0 < settings.same_map);
+            for (j, b) in maps.iter().enumerate() {
+                if i == j || same_arena(&bosses[i].0, &bosses[j].0) {
+                    continue;
+                }
+                if let Some((_, agreement)) = align(a, b, &settings) {
+                    closest = closest.max(agreement.share());
+                }
             }
-            let misread: Vec<Cell> =
-                a.iter().enumerate().map(|(k, c)| if k % 50 == 0 { if *c == Cell::Walkable { Cell::Hole } else { Cell::Walkable } } else { *c }).collect();
-            assert!(similarity(&sure(a), &sure(&misread)).0 >= settings.same_map);
+            // A floor that spans the map cannot be anchored elsewhere.
+            let moves = [(2, -1), (-3, 2), (1, 3), (-1, -2), (4, 0), (0, -4), (1, 0), (0, 1), (-1, 0), (0, -1)];
+            let Some((moved, by)) = moves.iter().find_map(|&by| shifted(&misread(a), by).map(|m| (m, by))) else {
+                fixed += 1;
+                continue;
+            };
+            let (back, agreement) = align(&moved, a, &settings).expect("an overlap");
+            assert_eq!(back, (-by.0, -by.1), "map {i} laid back elsewhere");
+            farthest = farthest.min(agreement.share());
         }
+        println!("closest other arena {closest:.3}, farthest same map {farthest:.3}, {fixed} floors span the map");
+        assert!(closest < settings.same_map, "another map reaches {closest}");
+        assert!(farthest >= settings.same_map, "the same map falls to {farthest}");
+    }
+
+    /// The same map read again, anchored elsewhere: it joins and confirms the
+    /// map at the shift that lays it back, and says that shift.
+    #[test]
+    fn a_reading_anchored_elsewhere_joins_its_map() {
+        let (truth, by) = boss_maps()
+            .iter()
+            .map(|(_, m)| as_read(m))
+            .find_map(|t| shifted(&t, (-2, 3)).map(|_| (t, (-2, 3))))
+            .expect("a floor with room to move");
+        let first = Reading { fight: "a".into(), coords: (4, -12), subarea: "Ruche".into(), cells: truth.clone(), at_ms: 0 };
+        let second = Reading { fight: "b".into(), cells: shifted(&truth, by).unwrap(), ..first.clone() };
+        let mut store = Store::new(Settings::default());
+        store.add(first).unwrap();
+        let outcome = store.add(second).unwrap();
+        assert_eq!((outcome.event, outcome.shift), (Event::Confirmed, (-by.0, -by.1)));
+        assert_eq!(kinds(&outcome.cells), kinds(&truth));
+        assert_eq!(store.maps().len(), 1);
+    }
+
+    /// A large overlap that agrees but for two cells wins over a small one
+    /// that agrees entirely: elsewhere on the map, a stretch of open floor
+    /// matches any stretch of open floor.
+    #[test]
+    fn a_large_overlap_wins_over_a_small_perfect_one() {
+        let at = |(x, y): (i32, i32)| usize::from(crate::cells::id_at(x, y).unwrap());
+        let band = |low: i32, high: i32, wide: bool| {
+            (0..CELLS as u16).map(|id| coords(id).unwrap()).filter(move |&(x, y)| {
+                (low..=high).contains(&(x - y)) && (wide || (2..=25).contains(&(x + y)))
+            })
+        };
+        // The reading sees the lower rows: a stretch of floor and its edges.
+        let mut reading = vec![Seen::UNKNOWN; CELLS];
+        for cell in band(0, 13, true) {
+            reading[at(cell)] = Seen::new(Cell::NotWalkable, 0.7);
+        }
+        for cell in band(2, 11, false) {
+            reading[at(cell)] = Seen::new(Cell::Walkable, 0.9);
+        }
+        // The map knows the same, and open floor sixteen half-rows further.
+        let mut map = reading.clone();
+        for cell in band(18, 23, false) {
+            map[at(cell)] = Seen::new(Cell::Walkable, 0.9);
+        }
+        // Two misreadings, that a shift onto the far floor leaves out.
+        for cell in band(8, 11, false).step_by(20).take(2) {
+            reading[at(cell)] = Seen::new(Cell::NotWalkable, 0.9);
+        }
+        let (shift, agreement) = align(&reading, &map, &Settings::default()).unwrap();
+        assert_eq!(shift, (0, 0), "laid over the far floor: {agreement:?}");
+    }
+
+    /// A cell most readings see as not walkable is not walkable, though they
+    /// do not agree on what blocks it.
+    #[test]
+    fn a_cell_is_walkable_or_not_by_all_its_readings() {
+        let first = Reading { fight: "a".into(), coords: (0, 0), subarea: "s".into(), cells: vec![Seen::new(Cell::Walkable, 0.9); CELLS], at_ms: 0 };
+        let mut map = Map { id: "m".into(), coords: (0, 0), subarea: "s".into(), readings: vec![first.clone()] };
+        let blocked = |kind: Cell| Reading { cells: vec![Seen::new(kind, 0.6); CELLS], ..first.clone() };
+        map.readings.push(Reading { fight: "b".into(), ..blocked(Cell::Obstacle) });
+        map.readings.push(Reading { fight: "c".into(), ..blocked(Cell::NotWalkable) });
+        assert!(map.cells().iter().all(|s| s.cell == Cell::Obstacle), "{:?}", map.cells()[0]);
+    }
+
+    /// Two fights that agree on the floor confirm the map, though one tells
+    /// the walls from the holes and the other does not.
+    #[test]
+    fn walls_named_by_one_fight_only_do_not_stop_confirmation() {
+        let truth = grid(12);
+        let mut store = Store::new(Settings::default());
+        let vague: Vec<Cell> =
+            truth.iter().map(|c| if *c == Cell::Walkable { Cell::Walkable } else { Cell::NotWalkable }).collect();
+        store.add(reading("a", &vague, &[])).unwrap();
+        let second = store.add(reading("b", &truth, &[])).unwrap();
+        assert_eq!((second.event, second.verified), (Event::Confirmed, true));
     }
 
     #[test]

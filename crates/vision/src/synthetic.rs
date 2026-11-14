@@ -193,7 +193,7 @@ pub fn render_with_floor(scene: &Scene) -> (Frame, Vec<Option<u16>>) {
                 }
                 canvas.diamond(cx, cy - rise, l, shade(decor, rng.range(0.9, 1.1)), Some(shade(decor, 0.5)));
             }
-            Cell::Hole | Cell::Unknown => {}
+            Cell::Hole | Cell::NotWalkable | Cell::Unknown => {}
         }
         if scene.entities.contains(&id) {
             let team = if rng.chance(0.5) { [200.0, 40.0, 40.0] } else { [40.0, 70.0, 210.0] };

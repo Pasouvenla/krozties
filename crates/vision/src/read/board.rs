@@ -10,11 +10,11 @@
 //!
 //! The floor is one or a few large areas. A small area beyond their hull is
 //! kept only when it shows whole tiles and the checkerboard across its own
-//! borders: an island does, decor or interface the colour of a tile does not.
-//! Within the hull, the other cells are holes when they look like the frame's
-//! margins and obstacles otherwise, with a low confidence that the lines of
-//! sight of the fight will settle; beyond it nothing is known, and nothing a
-//! fight's moves or lines of sight cross.
+//! borders: an island does, decor or interface the colour of a tile does not,
+//! and what it hides stays unknown. The other cells in view are not walkable;
+//! whether one blocks the line of sight, a wall, or not, a hole, the frame
+//! does not show, the lines of sight of a fight will. Beyond the floor's hull
+//! they are less sure: the interface may hide floor there.
 //!
 //! The lattice knows the cells up to a whole translation. The map's 560 cells
 //! form a fixed shape: the translation holds every walkable cell inside it
@@ -111,24 +111,6 @@ fn team_ring(planes: &[Gray; 3], lattice: &Lattice, i: i32, j: i32) -> bool {
         }
     }
     all > 0 && team as f32 >= 0.06 * all as f32
-}
-
-/// The colour of the frame's top, left and right margins, outside the map;
-/// the bottom is left out, where the interface sits.
-fn margins(planes: &[Gray; 3]) -> [f32; 3] {
-    let (w, h) = (planes[0].width, planes[0].height);
-    let band = (w.min(h) / 33).max(1);
-    let mut channels = [Vec::new(), Vec::new(), Vec::new()];
-    for y in 0..h * 3 / 4 {
-        for x in 0..w {
-            if y < band || x < band || x >= w - band {
-                for c in 0..3 {
-                    channels[c].push(planes[c].at(x, y));
-                }
-            }
-        }
-    }
-    channels.map(|mut v| median(&mut v))
 }
 
 /// The points of a cell its colour is read at, in lattice offsets from its
@@ -269,7 +251,6 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
         .collect();
     strays.sort_by(f32::total_cmp);
     let tolerance = (1.5 * strays.get(strays.len() * 95 / 100).copied().unwrap_or(0.0)).clamp(8.0, 32.0);
-    let void = margins(&planes);
 
     let (w, h) = (gray.width as f32, gray.height as f32);
     let corners = [(0.0, 0.0), (w, 0.0), (0.0, h), (w, h)].map(|(x, y)| lattice.locate(x, y));
@@ -296,13 +277,11 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
         other.clear();
         for &(i, j) in &in_view {
             let Some(tile) = tiles.reference(i, j) else { continue };
-            let matches = POINTS
-                .iter()
-                .filter(|(di, dj)| {
-                    colour_at(i as f32 + di, j as f32 + dj).is_some_and(|c| distance(c, tile) <= tolerance)
-                })
-                .count();
+            let colours: Vec<[f32; 3]> =
+                POINTS.iter().filter_map(|(di, dj)| colour_at(i as f32 + di, j as f32 + dj)).collect();
+            let matches = colours.iter().filter(|c| distance(**c, tile) <= tolerance).count();
             let seen = match matches {
+                0 if colours.is_empty() => continue,
                 0 => {
                     other.push((i, j));
                     continue;
@@ -368,7 +347,7 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
             .count();
         clear >= 2
     };
-    let mut other = other;
+    let mut unknown = Vec::new();
     for area in small {
         let whole = 3 * area.iter().filter(|cell| read.get(cell).is_some_and(|s| s.confidence >= 0.9)).count()
             >= 2 * area.len();
@@ -385,22 +364,17 @@ fn classify(frame: &Frame, lattice: &Lattice, gray: &Gray) -> Option<HashMap<(i3
         if !whole || borders == 0 || 3 * stepping < 2 * borders {
             for cell in area {
                 read.remove(&cell);
-                other.push(cell);
+                unknown.push(cell);
             }
         }
     }
     let shape = hull(read.keys().copied().collect());
-    for (i, j) in other {
-        let seen = if !within(&shape, (i, j)) {
-            Seen::UNKNOWN
-        } else {
-            match colour_at(i as f32, j as f32) {
-                Some(c) if distance(c, void) <= tolerance => Seen::new(Cell::Hole, 0.3),
-                Some(_) => Seen::new(Cell::Obstacle, 0.3),
-                None => Seen::UNKNOWN,
-            }
-        };
-        read.insert((i, j), seen);
+    for cell in other {
+        let sure = if within(&shape, cell) { 0.7 } else { 0.5 };
+        read.insert(cell, Seen::new(Cell::NotWalkable, sure));
+    }
+    for cell in unknown {
+        read.insert(cell, Seen::UNKNOWN);
     }
     Some(read)
 }
@@ -519,11 +493,18 @@ mod tests {
 
     /// What the board read at the place the scene drew game cell `id`.
     fn read_at(scene: &Scene, board: &Board, id: u16) -> Seen {
+        placed(scene, board, id).unwrap_or(Seen::UNKNOWN)
+    }
+
+    /// The same, `None` when the board's translation puts the cell off the
+    /// map: a board anchored a few cells off leaves some cells of the map's
+    /// edge out, and the store lays its readings back over each other.
+    fn placed(scene: &Scene, board: &Board, id: u16) -> Option<Seen> {
         let (x, y) = cells::coords(id).unwrap();
         let (cx, cy) = scene.centre(x, y);
         let (i, j) = board.lattice.locate(cx, cy);
         cells::id_at(i.round() as i32 + board.translation.0, j.round() as i32 + board.translation.1)
-            .map_or(Seen::UNKNOWN, |k| board.cells[usize::from(k)])
+            .map(|k| board.cells[usize::from(k)])
     }
 
     /// Whether the scene drew game cell `id` above the interface bar.
@@ -553,11 +534,11 @@ mod tests {
         hidden: (usize, usize),
         /// The other cells, read walkable.
         other: (usize, usize),
-        /// The other cells between floor cells, read obstacle or hole.
+        /// The other cells between floor cells, read not walkable.
         between: (usize, usize),
-        /// Walkable cells beside no other floor, read obstacle or hole.
+        /// Walkable cells beside no other floor, read not walkable.
         alone: (usize, usize),
-        /// The other cells beyond the floor's hull, read obstacle or hole.
+        /// The other cells beyond the floor's hull, read not walkable.
         beyond: (usize, usize),
         /// Entities in view whose cell is not read walkable.
         failures: Vec<String>,
@@ -570,7 +551,7 @@ mod tests {
             println!("other cells read walkable: {} of {}", self.other.0, self.other.1);
             println!("cells between floor cells read not walkable: {} of {}", self.between.0, self.between.1);
             println!("walkable cells alone read not walkable: {} of {}", self.alone.0, self.alone.1);
-            println!("cells beyond the floor's hull read obstacle or hole: {} of {}", self.beyond.0, self.beyond.1);
+            println!("cells beyond the floor's hull read not walkable: {} of {}", self.beyond.0, self.beyond.1);
         }
     }
 
@@ -601,11 +582,14 @@ mod tests {
                 .collect();
             let shape = hull(joined.clone());
             for id in (0..cells::CELLS as u16).filter(|id| in_view(&scene, *id)) {
-                let read = read_at(&scene, &board, id);
+                let truly_walkable = scene.cells[usize::from(id)] == Cell::Walkable;
+                let Some(read) = placed(&scene, &board, id).or(truly_walkable.then_some(Seen::UNKNOWN)) else {
+                    continue;
+                };
                 let (x, y) = cells::coords(id).unwrap();
                 let walkable = read.cell == Cell::Walkable;
-                let known = matches!(read.cell, Cell::Obstacle | Cell::Hole);
-                if scene.cells[usize::from(id)] == Cell::Walkable {
+                let known = read.cell.walkable() == Some(false);
+                if truly_walkable {
                     if !joined.contains(&(x, y)) {
                         add(&mut tally.alone, known);
                     } else if shown(&scene, &floor, id) >= 0.5 {
@@ -643,9 +627,9 @@ mod tests {
 
     /// On every boss map: the walkable cells in view are read walkable,
     /// entities' cells included, unless decor hides most of them; almost no
-    /// other cell is; the cells between floor cells are read not walkable;
-    /// beyond the floor's hull nothing is said; a walkable cell alone is read
-    /// walkable or unknown, never not walkable.
+    /// other cell is; the cells between floor cells and beyond the floor are
+    /// read not walkable; a walkable cell alone is read walkable or unknown,
+    /// never not walkable.
     #[test]
     fn the_cells_of_every_boss_map_are_read() {
         let tally = measure(17, 500);
@@ -655,7 +639,7 @@ mod tests {
         assert!(share(tally.other) <= 0.01, "{:?} other cells read walkable", tally.other);
         assert!(share(tally.between) >= 0.98, "{:?} cells between read not walkable", tally.between);
         assert_eq!(tally.alone.0, 0, "walkable cells alone read not walkable");
-        assert!(share(tally.beyond) <= 0.02, "{:?} cells beyond read", tally.beyond);
+        assert!(share(tally.beyond) >= 0.95, "{:?} cells beyond read not walkable", tally.beyond);
     }
 
     /// The reader on draws it was never adjusted on.
@@ -721,7 +705,7 @@ mod tests {
                 if scene.cells[usize::from(id)] == Cell::Walkable {
                     add(&mut floor, read == Cell::Walkable);
                 } else if (4..=35).contains(&(x - y)) && (3..=24).contains(&(x + y)) {
-                    add(&mut pillars, matches!(read, Cell::Obstacle | Cell::Hole));
+                    add(&mut pillars, read.walkable() == Some(false));
                 }
             }
         }
@@ -800,6 +784,37 @@ mod tests {
             let board = read(&frame, &lattice).unwrap();
             println!("{size:?}: lattice {:?}, board {:?}, {} cells", found, start.elapsed() - found, board.cells.len());
         }
+    }
+
+    /// The reading of a boss map's frame, at a window size and cell width.
+    fn reading_of(map: Vec<Cell>, size: (u32, u32), width: f32, seed: u64, fight: &str) -> dofus_maps::Reading {
+        let scene = Scene::centred(map, size, width, seed);
+        let frame = render_with_floor(&scene).0;
+        let board = read(&frame, &find(&frame).expect("a checkerboard")).expect("a board");
+        dofus_maps::Reading { fight: fight.into(), coords: (0, 0), subarea: "Salle".into(), cells: board.cells, at_ms: 0 }
+    }
+
+    /// A boss map read through windows of two sizes, the cells anchored
+    /// differently, is one map of the store; another arena at the same
+    /// place is another map.
+    #[test]
+    fn two_windows_of_a_map_make_one_map_of_the_store() {
+        use dofus_maps::{Event, Settings, Store};
+        let maps = boss_maps();
+        let (mut confirmed, mut shifted) = (0, 0);
+        for n in [0usize, 7, 12, 21, 30] {
+            let mut store = Store::new(Settings::default());
+            let first = store.add(reading_of(maps[n].clone(), (1280, 800), 58.0, 40 + n as u64, "a")).unwrap();
+            let second = store.add(reading_of(maps[n].clone(), (1600, 1000), 84.0, 60 + n as u64, "b")).unwrap();
+            assert_eq!(first.map, second.map, "map {n} read twice made two maps");
+            assert_ne!(second.event, Event::Created);
+            confirmed += usize::from(second.verified);
+            shifted += usize::from(second.shift != (0, 0));
+            let other = store.add(reading_of(maps[n + 1].clone(), (1280, 800), 58.0, 80 + n as u64, "c")).unwrap();
+            assert_eq!(other.event, Event::Created, "map {} taken for map {n}", n + 1);
+        }
+        println!("{confirmed} of 5 maps confirmed by their second window, {shifted} laid back by a shift");
+        assert!(shifted > 0, "no window anchored the map elsewhere: the test proves nothing of the alignment");
     }
 
     /// With the whole map in view, the true translation is among those that
