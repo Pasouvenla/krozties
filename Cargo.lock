@@ -967,6 +967,7 @@ dependencies = [
  "png 0.17.16",
  "serde",
  "serde_json",
+ "windows",
 ]
 
 [[package]]

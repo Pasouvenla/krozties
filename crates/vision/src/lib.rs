@@ -6,7 +6,9 @@
 //! the player turns on the local debug recording ([`Recorder`]).
 //!
 //! On macOS the capture goes through ScreenCaptureKit and needs the Screen
-//! Recording permission only. Other systems are not supported yet.
+//! Recording permission only; on Windows it goes through
+//! Windows.Graphics.Capture and needs no permission. Other systems are not
+//! supported.
 
 mod debug;
 pub mod fight;
@@ -20,6 +22,8 @@ pub mod read;
 #[cfg(test)]
 mod synthetic;
 pub mod text;
+#[cfg(target_os = "windows")]
+mod win;
 
 use std::fmt;
 use std::time::Duration;
@@ -94,7 +98,9 @@ impl std::error::Error for CaptureError {}
 pub fn game_windows() -> Result<Vec<GameWindow>, CaptureError> {
     #[cfg(target_os = "macos")]
     return macos::game_windows();
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    return win::game_windows();
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     Err(CaptureError::Unsupported)
 }
 
@@ -103,7 +109,9 @@ pub fn game_windows() -> Result<Vec<GameWindow>, CaptureError> {
 pub fn active_game_window(windows: &[GameWindow]) -> Option<u32> {
     #[cfg(target_os = "macos")]
     return macos::active_game_window(windows);
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    return win::active_game_window(windows);
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = windows;
         None
@@ -114,6 +122,8 @@ pub fn active_game_window(windows: &[GameWindow]) -> Option<u32> {
 pub struct Stream {
     #[cfg(target_os = "macos")]
     _inner: macos::Stream,
+    #[cfg(target_os = "windows")]
+    _inner: win::Stream,
 }
 
 impl Stream {
@@ -122,7 +132,9 @@ impl Stream {
     pub fn start(window: u32, interval: Duration, sink: Sink) -> Result<Stream, CaptureError> {
         #[cfg(target_os = "macos")]
         return Ok(Stream { _inner: macos::Stream::start(window, interval, sink)? });
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "windows")]
+        return Ok(Stream { _inner: win::Stream::start(window, interval, sink)? });
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         {
             let _ = (window, interval, sink);
             Err(CaptureError::Unsupported)
