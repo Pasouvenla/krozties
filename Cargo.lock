@@ -929,6 +929,16 @@ name = "dofus-grid"
 version = "0.15.2"
 
 [[package]]
+name = "dofus-maps"
+version = "0.15.2"
+dependencies = [
+ "dofus-grid",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "dofus-ruleset"
 version = "0.15.2"
 dependencies = [
