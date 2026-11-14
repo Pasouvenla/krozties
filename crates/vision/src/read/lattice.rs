@@ -62,13 +62,16 @@ pub fn find(frame: &Frame) -> Option<Lattice> {
 
 /// The checkerboard `known` placed, if the frame still shows it there: the
 /// patch alone, without the search, a fraction of its cost. In a fight the
-/// camera does not move, so each frame is checked this way first.
-pub fn confirm(frame: &Frame, known: &Lattice) -> Option<Lattice> {
+/// camera does not move, so each frame is checked this way first; `held`, the
+/// checkerboard of a fight going on, is kept on a smaller patch than a search
+/// needs (see [`HELD_SCORE`]).
+pub fn confirm(frame: &Frame, known: &Lattice, held: bool) -> Option<Lattice> {
     let (gray, factor) = Gray::from_frame(frame, WORK_WIDTH);
     let f = factor as f32;
     let plane = Lattice { cell_width: known.cell_width / f, x0: known.x0 / f, y0: known.y0 / f, ..*known };
     let score = patch(&Integral::of(&gray), &plane).len() as f32;
-    (score >= MIN_SCORE).then_some(Lattice { confidence: (score / SURE_SCORE).min(1.0), ..*known })
+    let needed = if held { HELD_SCORE } else { MIN_SCORE };
+    (score >= needed).then_some(Lattice { confidence: (score / SURE_SCORE).min(1.0), ..*known })
 }
 
 /// The two edge profiles, each value the mean edge strength of its line.
@@ -366,10 +369,20 @@ fn solve3(mut a: [[f64; 3]; 3], mut b: [f64; 3]) -> Option<[f64; 3]> {
 const MIN_SCORE: f32 = 30.0;
 /// The patch at which the checkerboard is beyond doubt.
 const SURE_SCORE: f32 = 80.0;
+/// The patch that keeps the checkerboard of a fight going on, at the place it
+/// was found. Walls, holes and fighters may break a floor below what a
+/// search needs: 22 cells on the most broken boss map with thirteen fighters.
+/// Decor alone, read at its own cells, made 2 to 10 cells on forty frames
+/// without a checkerboard, once 19: the end of a fight may come a few seconds
+/// late.
+const HELD_SCORE: f32 = 15.0;
 /// Phases tried per period, along each family of borders.
 const PHASES: usize = 16;
-/// Spectrum peaks tried as cell widths.
-const PEAKS: usize = 5;
+/// Spectrum peaks tried as cell widths. Decor around a floor of low contrast
+/// may raise peaks of its own above the floor's: with twelve, the lattice of
+/// 209 of 210 boss map frames with fighters is found, against 205 with five,
+/// for twice the cost; none is found on forty frames without one.
+const PEAKS: usize = 12;
 
 fn find_on(gray: &Gray) -> Option<Lattice> {
     search(gray, MIN_SCORE)
@@ -513,6 +526,56 @@ mod tests {
 
     /// Twenty frames without a checkerboard, mottled void and walls scattered
     /// at random, some raised, find none.
+    /// A boss map with four fighters, in the colours `draw` picks.
+    fn fight_scene(n: usize, map: &[Cell], draw: u64) -> Scene {
+        let mut scene = Scene::centred(map.to_vec(), (1280, 800), 64.0, 5000 + 10 * n as u64 + draw);
+        let floor: Vec<u16> = (0..cells::CELLS as u16).filter(|&c| map[usize::from(c)] == Cell::Walkable).collect();
+        scene.entities = (0..4).map(|k| floor[(k * 53 + draw as usize * 7) % floor.len()]).collect();
+        scene.obstacle_height = 0.3;
+        scene
+    }
+
+    /// Where the decor's own peaks outshine the floor's: its lattice is found
+    /// among enough peaks of the spectrum.
+    #[test]
+    fn the_checkerboard_is_found_where_decor_outshines_it() {
+        let maps = boss_maps();
+        for (n, draw) in [(7usize, 0u64), (34, 2), (34, 4), (34, 5)] {
+            let found = find(&render(&fight_scene(n, &maps[n], draw)));
+            assert!(found.is_some_and(|l| (l.cell_width - 64.0).abs() < 1.0), "map {n}, draw {draw}: {found:?}");
+        }
+    }
+
+    #[test]
+    #[ignore = "measurement, run on demand"]
+    fn measure_search_with_and_without_a_checkerboard() {
+        let start = std::time::Instant::now();
+        let maps = boss_maps();
+        let (mut found, mut total) = (0, 0);
+        let mut failing = Vec::new();
+        for (n, map) in maps.iter().enumerate() {
+            for t in 0..6u64 {
+                total += 1;
+                match find(&render(&fight_scene(n, map, t))) {
+                    Some(l) if (l.cell_width - 64.0).abs() < 1.0 => found += 1,
+                    other => failing.push((n, t, other.map(|l| l.cell_width))),
+                }
+            }
+        }
+        println!("found {found} of {total} in {:?}; failing {failing:?}", start.elapsed());
+        let mut rng = Rng::new(99);
+        let mut false_found = Vec::new();
+        for seed in 0..40u64 {
+            let map: Vec<Cell> = (0..cells::CELLS).map(|_| if rng.chance(0.15) { Cell::Obstacle } else { Cell::Hole }).collect();
+            let mut scene = Scene::centred(map, (1280, 800), rng.range(55.0, 95.0), 1000 + seed);
+            scene.obstacle_height = rng.range(0.0, 0.5);
+            if let Some(l) = find(&render(&scene)) {
+                false_found.push((seed, l.confidence * SURE_SCORE));
+            }
+        }
+        println!("frames without a checkerboard where one is found: {false_found:?}");
+    }
+
     #[test]
     fn no_checkerboard_no_lattice() {
         let mut rng = Rng::new(99);
@@ -532,11 +595,37 @@ mod tests {
         let scene = Scene::centred(map, (1280, 800), 66.0, 21);
         let lattice = find(&render(&scene)).expect("a checkerboard");
         let next = Scene { seed: 22, ..Scene::centred(boss_maps().swap_remove(9), (1280, 800), 66.0, 21) };
-        assert!(confirm(&render(&next), &lattice).is_some());
+        assert!(confirm(&render(&next), &lattice, false).is_some());
         let half_off = Lattice { x0: lattice.x0 + lattice.cell_width / 2.0, ..lattice };
-        assert_eq!(confirm(&render(&next), &half_off), None);
+        assert_eq!(confirm(&render(&next), &half_off, true), None);
         let empty = Scene::centred(vec![Cell::Hole; cells::CELLS], (1280, 800), 66.0, 23);
-        assert_eq!(confirm(&render(&empty), &lattice), None);
+        assert_eq!(confirm(&render(&empty), &lattice, true), None);
+    }
+
+    /// The checkerboard of a fight is kept on the most broken boss map with
+    /// thirteen fighters, though a search would not find it; frames without
+    /// a checkerboard, read at their own decor's cells, do not keep it, but
+    /// once in forty.
+    #[test]
+    fn a_fight_s_checkerboard_is_kept_on_a_broken_floor() {
+        let at = |scene: &Scene| Lattice { cell_width: scene.cell_width, x0: scene.origin.0, y0: scene.origin.1, confidence: 1.0 };
+        let mut scene = Scene::centred(boss_maps().swap_remove(15), (1280, 800), 64.0, 1615);
+        let walkable: Vec<u16> =
+            (0..cells::CELLS as u16).filter(|id| scene.cells[usize::from(*id)] == Cell::Walkable).collect();
+        scene.entities = walkable.iter().step_by(12).copied().collect();
+        let crowded = render(&scene);
+        assert_eq!(find(&crowded), None, "a search finds this floor: the test proves nothing");
+        assert!(confirm(&crowded, &at(&scene), true).is_some());
+        assert_eq!(confirm(&crowded, &at(&scene), false), None);
+        let mut rng = Rng::new(99);
+        let mut kept = 0;
+        for seed in 0..40u64 {
+            let map: Vec<Cell> = (0..cells::CELLS).map(|_| if rng.chance(0.15) { Cell::Obstacle } else { Cell::Hole }).collect();
+            let mut scene = Scene::centred(map, (1280, 800), rng.range(55.0, 95.0), 1000 + seed);
+            scene.obstacle_height = rng.range(0.0, 0.5);
+            kept += usize::from(confirm(&render(&scene), &at(&scene), true).is_some());
+        }
+        assert!(kept <= 1, "{kept} frames without a checkerboard kept one");
     }
 
     /// The frame size does not matter: a 2560-wide frame is measured at half

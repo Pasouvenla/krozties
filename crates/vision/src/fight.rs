@@ -23,6 +23,10 @@ use crate::Frame;
 const START_MS: u64 = 2_000;
 /// How long it does not before the fight is said to end.
 const END_MS: u64 = 4_000;
+/// Out of fights, how often a frame is searched for a checkerboard: a search
+/// costs a few hundred milliseconds, and a fight's placement lasts longer
+/// than this.
+const IDLE_SEARCH_MS: u64 = 3_000;
 
 /// What a frame, or the time passing, changed.
 #[derive(Debug)]
@@ -72,13 +76,14 @@ pub struct Follower {
     lattice: Option<Lattice>,
     pending: Option<Pending>,
     fight: Option<Fight>,
-    /// Full searches of the checkerboard made so far.
+    /// Full searches of the checkerboard made so far, and when the last was.
     searches: usize,
+    searched_ms: Option<u64>,
 }
 
 impl Follower {
     pub fn new(window: u32, settings: Settings) -> Follower {
-        Follower { window, settings, lattice: None, pending: None, fight: None, searches: 0 }
+        Follower { window, settings, lattice: None, pending: None, fight: None, searches: 0, searched_ms: None }
     }
 
     /// The name of the fight going on, if any.
@@ -105,7 +110,12 @@ impl Follower {
 
     /// Reads a frame taken at `at_ms`.
     pub fn feed(&mut self, frame: &Frame, at_ms: u64) -> Step {
-        let board = self.board(frame);
+        // Out of fights, with nothing in view, a frame is searched now and then.
+        let idle = self.fight.is_none() && self.pending.is_none();
+        if idle && self.searched_ms.is_some_and(|at| at_ms.saturating_sub(at) < IDLE_SEARCH_MS) {
+            return Step::Nothing;
+        }
+        let board = self.board(frame, at_ms);
         match (self.fight.as_mut(), board) {
             (Some(fight), Some(board)) => {
                 fight.without_since = None;
@@ -175,14 +185,18 @@ impl Follower {
     }
 
     /// The board of a frame: on the lattice already found if the frame still
-    /// shows it, else on a new search.
-    fn board(&mut self, frame: &Frame) -> Option<Board> {
-        let confirmed = self.lattice.and_then(|known| lattice::confirm(frame, &known));
+    /// shows it, more loosely in a fight, else on a new search.
+    fn board(&mut self, frame: &Frame, at_ms: u64) -> Option<Board> {
+        let held = self.fight.is_some();
+        let confirmed = self.lattice.and_then(|known| lattice::confirm(frame, &known, held));
         let found = confirmed.or_else(|| {
             self.searches += 1;
+            self.searched_ms = Some(at_ms);
             lattice::find(frame)
         });
-        self.lattice = found;
+        // A fight keeps its checkerboard while a frame hides it: the next
+        // frame is checked at the same place.
+        self.lattice = if held { found.or(self.lattice) } else { found };
         board::read(frame, &found?)
     }
 }
@@ -193,9 +207,10 @@ mod tests {
     use crate::synthetic::{boss_maps, render, Scene};
     use dofus_maps::{cells, Cell, Seen};
 
-    /// A frame of `map` with fighters on the walkable cells `turn` picks.
+    /// A frame of `map` with fighters on the walkable cells `turn` picks; the
+    /// map's colours do not change from frame to frame, as in a fight.
     fn frame_of(map: &[Cell], turn: u64) -> Frame {
-        let mut scene = Scene::centred(map.to_vec(), (1280, 800), 64.0, 300 + turn);
+        let mut scene = Scene::centred(map.to_vec(), (1280, 800), 64.0, 300);
         let floor: Vec<u16> = (0..cells::CELLS as u16).filter(|&c| map[usize::from(c)] == Cell::Walkable).collect();
         scene.entities = (0..4).map(|k| floor[(k * 53 + turn as usize * 7) % floor.len()]).collect();
         scene.obstacle_height = 0.3;
@@ -245,11 +260,13 @@ mod tests {
                 ended = Some(reading);
             }
         }
-        let expected = ["nothing", "nothing", "nothing", "nothing", "started", "read", "read", "read", "read", "read"];
+        // Out of fights a frame is searched every three seconds: the board is
+        // first seen at 3 s, the fight starts 2 s later.
+        let expected = ["nothing", "nothing", "nothing", "nothing", "nothing", "started", "read", "read", "read", "read"];
         assert_eq!(steps[..10], expected);
         assert_eq!(steps[10..], ["nothing", "nothing", "nothing", "nothing", "ended"]);
         let reading = ended.expect("the fight's reading");
-        assert_eq!((reading.fight.as_str(), reading.at_ms), ("7-2000", 9000));
+        assert_eq!((reading.fight.as_str(), reading.at_ms), ("7-3000", 9000));
         assert!(is_map(&reading, &map), "the reading is not the map");
         assert!(follower.searches() <= 2 + 1 + 5, "{} searches", follower.searches());
         assert_eq!(follower.fight(), None);
@@ -314,24 +331,24 @@ mod tests {
         assert_eq!(ended.expect("the fight's reading").fight, "4-0");
     }
 
-    /// A frame where the floor does not show, in the middle of a fight, does
-    /// not end it; one frame that shows a checkerboard does not start one.
+    /// One frame that shows a checkerboard does not start a fight; a frame
+    /// where the floor does not show, in the middle of a fight, does not end
+    /// it.
     #[test]
     fn a_single_frame_neither_starts_nor_ends_a_fight() {
         let map = boss_maps().swap_remove(11);
         let mut follower = Follower::new(1, Settings::default());
-        let frames = [frame_of(&map, 0), empty(1), empty(2)]
+        let frames = [frame_of(&map, 0)]
             .into_iter()
-            .chain((3..6).map(|t| frame_of(&map, t)))
-            .chain([empty(6)])
-            .chain((7..13).map(|t| frame_of(&map, t)))
-            .chain([empty(13)]);
+            .chain((1..5).map(empty))
+            .chain((5..11).map(|t| frame_of(&map, t)))
+            .chain([empty(11)])
+            .chain((12..18).map(|t| frame_of(&map, t)));
         let steps: Vec<&str> = frames.enumerate().map(|(t, f)| kind(&follower.feed(&f, 1000 * t as u64))).collect();
-        let mut expected = vec!["nothing", "nothing", "nothing", "nothing", "nothing", "started", "nothing"];
-        expected.extend(["read"; 6]);
-        // The floor gone again: the time without it counts from now.
-        expected.push("nothing");
-        assert_eq!(steps, expected);
+        assert!(steps[..5].iter().all(|s| *s == "nothing"), "{steps:?}");
+        assert_eq!(steps.iter().filter(|s| **s == "started").count(), 1, "{steps:?}");
+        assert!(!steps.contains(&"ended"), "{steps:?}");
+        assert!(steps[12..].iter().all(|s| *s == "read"), "{steps:?}");
         assert!(follower.fight().is_some());
     }
 
@@ -355,6 +372,51 @@ mod tests {
         assert!(is_map(&ended.expect("the fight's reading"), b));
     }
 
+    /// A fight on the most broken boss map goes on as fighters crowd it,
+    /// though a search would not find its checkerboard any more, and after a
+    /// frame where the floor does not show.
+    #[test]
+    fn a_crowded_fight_goes_on() {
+        let map = boss_maps().swap_remove(15);
+        let floor: Vec<u16> = (0..cells::CELLS as u16).filter(|&c| map[usize::from(c)] == Cell::Walkable).collect();
+        // One palette for the whole fight, fighters coming in.
+        let frame = |turn: u64, every: Option<usize>| {
+            let mut scene = Scene::centred(map.clone(), (1280, 800), 64.0, 1615);
+            if let Some(every) = every {
+                scene.entities = floor.iter().skip(turn as usize % 3).step_by(every).copied().collect();
+            }
+            render(&scene)
+        };
+        let mut follower = Follower::new(1, Settings::default());
+        let mut steps = Vec::new();
+        for t in 0..4 {
+            steps.push(kind(&follower.feed(&frame(t, None), 1000 * t)));
+        }
+        assert_eq!(steps.last(), Some(&"read"), "{steps:?}");
+        let crowded = frame(9, Some(12));
+        assert_eq!(lattice::find(&crowded), None, "a search finds this floor: the test proves nothing");
+        for t in 4..14 {
+            // A frame where the floor does not show at all, then the crowd
+            // again: the checkerboard is kept at its place.
+            if t == 8 {
+                assert_eq!(kind(&follower.feed(&empty(t), 1000 * t)), "nothing");
+                continue;
+            }
+            let step = follower.feed(&frame(t, Some(12)), 1000 * t);
+            assert!(matches!(step, Step::Read(_)), "frame {t}: {}", kind(&step));
+        }
+    }
+
+    /// Out of fights, a frame is searched every few seconds only.
+    #[test]
+    fn out_of_fights_a_frame_is_searched_now_and_then() {
+        let mut follower = Follower::new(1, Settings::default());
+        for t in 0..10 {
+            follower.feed(&empty(t), 1000 * t);
+        }
+        assert_eq!(follower.searches(), 4, "searched at 0, 3, 6 and 9 seconds");
+    }
+
     /// Two fights in a row on two maps are two readings, each its map.
     #[test]
     fn two_fights_in_a_row_are_two_readings() {
@@ -364,8 +426,8 @@ mod tests {
         let frames = (0..4)
             .map(|t| frame_of(a, t))
             .chain((4..9).map(empty))
-            .chain((9..13).map(|t| frame_of(b, t)))
-            .chain((13..18).map(empty));
+            .chain((9..17).map(|t| frame_of(b, t)))
+            .chain((17..22).map(empty));
         let readings: Vec<Reading> = frames
             .enumerate()
             .filter_map(|(t, f)| match follower.feed(&f, 1000 * t as u64) {
