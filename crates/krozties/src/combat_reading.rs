@@ -21,8 +21,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use dofus_maps::{Settings, Store};
+use dofus_maps::{Reading, Settings, Store};
 use dofus_vision::fight::{Follower, Step};
+use dofus_vision::place::{place, Place};
+use dofus_vision::text::{self, Region};
 use dofus_vision::{game_windows, CaptureError, Frame, GameWindow, Recorder, Stream};
 
 /// The environment variable that turns the combat reading on.
@@ -42,6 +44,11 @@ const INTERVAL: Duration = Duration::from_secs(1);
 /// Two windows whose fights start this close together see one fight: two
 /// accounts of the player in the same fight.
 const SAME_FIGHT_MS: u64 = 10_000;
+/// How often the place is read on a window out of fights: the last one read
+/// before a fight is its place, if the fight hides it.
+const PLACE_EVERY_MS: u64 = 10_000;
+/// A place read longer before a fight than this is not taken for its place.
+const PLACE_FRESH_MS: u64 = 60_000;
 
 fn now_ms() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
@@ -79,6 +86,41 @@ impl Fights {
     }
 }
 
+/// One game window: followed from fight to fight, and where it was last.
+struct Window {
+    follower: Follower,
+    /// The latest place read, and when.
+    place: Option<(Place, u64)>,
+    place_read_ms: u64,
+    /// The place of the fight going on.
+    fight_place: Option<Place>,
+}
+
+impl Window {
+    fn new(id: u32) -> Window {
+        Window { follower: Follower::new(id, Settings::default()), place: None, place_read_ms: 0, fight_place: None }
+    }
+}
+
+/// The place written on a frame, if the text recognition finds one.
+fn place_on(frame: &Frame) -> Option<Place> {
+    text::lines(frame, Region::TOP_LEFT).ok().and_then(|lines| place(&lines))
+}
+
+/// A fight's place: the latest read, if read lately enough.
+fn fight_place(latest: Option<&(Place, u64)>, now_ms: u64) -> Option<Place> {
+    latest.filter(|(_, at)| now_ms.saturating_sub(*at) <= PLACE_FRESH_MS).map(|(p, _)| p.clone())
+}
+
+/// The reading with its place written in.
+fn placed(mut reading: Reading, place: Option<&Place>) -> Reading {
+    if let Some(place) = place {
+        reading.coords = place.coords;
+        reading.subarea = place.subarea.clone().unwrap_or_default();
+    }
+    reading
+}
+
 /// Follows every game window, and keeps each fight's reading in the store.
 fn read(data: &Path, log_file: &Path) -> Result<(), String> {
     std::fs::create_dir_all(data).map_err(|e| e.to_string())?;
@@ -94,7 +136,7 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     log_to(log_file, "reading started");
-    let mut followers: HashMap<u32, Follower> = HashMap::new();
+    let mut windows: HashMap<u32, Window> = HashMap::new();
     let mut fights = Fights::default();
     loop {
         let received = match rx.recv_timeout(INTERVAL) {
@@ -108,24 +150,40 @@ fn read(data: &Path, log_file: &Path) -> Result<(), String> {
         // showed, and time passes for them.
         let mut steps = Vec::new();
         if let Some(frame) = &received {
-            let follower = followers.entry(frame.window).or_insert_with(|| Follower::new(frame.window, Settings::default()));
-            steps.push((frame.window, follower.feed(frame, now)));
+            let state = windows.entry(frame.window).or_insert_with(|| Window::new(frame.window));
+            let step = state.follower.feed(frame, now);
+            // The place, on the first frame of a fight and now and then out
+            // of fights.
+            let started = matches!(step, Step::Started(_));
+            let out_of_fights = state.follower.fight().is_none();
+            if started || (out_of_fights && now.saturating_sub(state.place_read_ms) >= PLACE_EVERY_MS) {
+                state.place_read_ms = now;
+                if let Some(found) = place_on(frame) {
+                    state.place = Some((found, now));
+                }
+            }
+            if started {
+                state.fight_place = fight_place(state.place.as_ref(), now);
+            }
+            steps.push((frame.window, step));
         }
-        for (window, follower) in followers.iter_mut().filter(|(w, _)| Some(**w) != fed) {
-            steps.push((*window, follower.tick(now)));
+        for (id, state) in windows.iter_mut().filter(|(w, _)| Some(**w) != fed) {
+            steps.push((*id, state.follower.tick(now)));
         }
         for (window, step) in steps {
             match step {
                 Step::Started(_) => {
-                    let Some(follower) = followers.get_mut(&window) else { continue };
-                    let own = follower.fight().unwrap_or_default().to_string();
+                    let Some(state) = windows.get_mut(&window) else { continue };
+                    let own = state.follower.fight().unwrap_or_default().to_string();
                     let name = fights.name(window, &own, now);
-                    follower.rename_fight(&name);
-                    log_to(log_file, &format!("fight {name} started in window {window}"));
+                    state.follower.rename_fight(&name);
+                    let place = state.fight_place.as_ref().map_or("unknown place".to_string(), |p| format!("{:?}", p.coords));
+                    log_to(log_file, &format!("fight {name} started in window {window}, {place}"));
                 }
                 Step::Ended(reading) => {
                     let name = reading.fight.clone();
-                    match store.add(reading) {
+                    let place = windows.get_mut(&window).and_then(|w| w.fight_place.take());
+                    match store.add(placed(reading, place.as_ref())) {
                         Ok(outcome) => {
                             log_to(
                                 log_file,
@@ -239,6 +297,20 @@ fn record(dir: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A fight takes the place read last, if read lately; its reading
+    /// carries it.
+    #[test]
+    fn a_fight_takes_the_place_read_lately() {
+        let here = Place { coords: (4, -12), subarea: Some("Plaine des Scarafeuilles".into()) };
+        let latest = (here.clone(), 100_000);
+        assert_eq!(fight_place(Some(&latest), 130_000), Some(here.clone()));
+        assert_eq!(fight_place(Some(&latest), 100_000 + PLACE_FRESH_MS + 1), None);
+        assert_eq!(fight_place(None, 100_000), None);
+        let reading = Reading { fight: "f".into(), coords: (0, 0), subarea: String::new(), cells: Vec::new(), at_ms: 0 };
+        let reading = placed(reading, Some(&here));
+        assert_eq!((reading.coords, reading.subarea.as_str()), ((4, -12), "Plaine des Scarafeuilles"));
+    }
 
     /// Two windows whose fights start together see one fight; later, or in
     /// one window, two.

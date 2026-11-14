@@ -13,9 +13,13 @@ pub mod fight;
 mod gray;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "macos")]
+mod macos_text;
+pub mod place;
 pub mod read;
 #[cfg(test)]
 mod synthetic;
+pub mod text;
 
 use std::fmt;
 use std::time::Duration;

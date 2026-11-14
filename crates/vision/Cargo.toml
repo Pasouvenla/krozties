@@ -22,3 +22,7 @@ objc2-core-graphics = "0.3"
 objc2-core-media = "0.3"
 objc2-core-video = "0.3"
 objc2-screen-capture-kit = "0.3"
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+# Writes the text the recognition is tested on.
+objc2-core-text = "0.3"
