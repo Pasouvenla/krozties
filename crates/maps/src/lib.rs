@@ -8,6 +8,7 @@
 
 pub mod cells;
 mod map;
+pub mod sight;
 mod store;
 
 pub use map::{Cell, Reading, Seen};
