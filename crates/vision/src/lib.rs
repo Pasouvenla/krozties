@@ -9,8 +9,12 @@
 //! Recording permission only. Other systems are not supported yet.
 
 mod debug;
+mod gray;
 #[cfg(target_os = "macos")]
 mod macos;
+pub mod read;
+#[cfg(test)]
+mod synthetic;
 
 use std::fmt;
 use std::time::Duration;

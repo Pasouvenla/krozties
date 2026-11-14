@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+dofus-maps = { path = "../maps" }
 png = "0.17"
 serde = { workspace = true }
 serde_json = { workspace = true }
