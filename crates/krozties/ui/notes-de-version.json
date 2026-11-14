@@ -1,6 +1,10 @@
 {
   "versions": [
     {
+      "version": "prochaine",
+      "rubriques": []
+    },
+    {
       "version": "0.15.2",
       "date": "2026-10-28",
       "rubriques": [
