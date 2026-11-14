@@ -50,7 +50,7 @@ impl Lattice {
 const MIN_SHARE: f32 = 1.0 / 40.0;
 const MAX_SHARE: f32 = 1.0 / 6.0;
 /// Frames are measured at most this wide.
-const WORK_WIDTH: usize = 1280;
+pub(crate) const WORK_WIDTH: usize = 1280;
 
 /// The checkerboard of a frame, if it shows one.
 pub fn find(frame: &Frame) -> Option<Lattice> {
@@ -131,14 +131,14 @@ fn mean_of(profile: &[f32]) -> f32 {
 }
 
 /// Box sums of the luminance, for the mean of any rectangle in four reads.
-struct Integral {
+pub(crate) struct Integral {
     width: usize,
     height: usize,
     sums: Vec<f64>,
 }
 
 impl Integral {
-    fn of(gray: &Gray) -> Integral {
+    pub(crate) fn of(gray: &Gray) -> Integral {
         let (w, h) = (gray.width, gray.height);
         let mut sums = vec![0.0f64; (w + 1) * (h + 1)];
         for y in 0..h {
@@ -153,7 +153,7 @@ impl Integral {
 
     /// The mean of the pixels within `r` of (cx, cy) across and `r / 2` down,
     /// or `None` off the plane.
-    fn mean(&self, cx: f32, cy: f32, r: f32) -> Option<f32> {
+    pub(crate) fn mean(&self, cx: f32, cy: f32, r: f32) -> Option<f32> {
         let (x0, x1) = ((cx - r).round() as i64, (cx + r).round() as i64);
         let (y0, y1) = ((cy - r / 2.0).round() as i64, (cy + r / 2.0).round() as i64);
         if x0 < 0 || y0 < 0 || x1 > self.width as i64 || y1 > self.height as i64 || x1 <= x0 || y1 <= y0 {
@@ -177,7 +177,7 @@ impl Integral {
 /// more than the step taken, both points of a border fall in the same cell;
 /// on a lattice of the wrong size, three times too wide included, borders
 /// cross the middle of the cells: no patch either way.
-fn patch(integral: &Integral, lattice: &Lattice) -> Vec<(i32, i32)> {
+pub(crate) fn patch(integral: &Integral, lattice: &Lattice) -> Vec<(i32, i32)> {
     const STEP: f32 = 0.15;
     let r = lattice.cell_width / 16.0;
     let (w, h) = (integral.width as f32, integral.height as f32);
@@ -334,8 +334,9 @@ fn solve3(mut a: [[f64; 3]; 3], mut b: [f64; 3]) -> Option<[f64; 3]> {
         b.swap(col, pivot);
         for row in col + 1..3 {
             let f = a[row][col] / a[col][col];
-            for k in col..3 {
-                a[row][k] -= f * a[col][k];
+            let pivot_row = a[col];
+            for (k, value) in a[row].iter_mut().enumerate().skip(col) {
+                *value -= f * pivot_row[k];
             }
             b[row] -= f * b[col];
         }

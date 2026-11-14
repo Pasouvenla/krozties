@@ -51,6 +51,12 @@ pub struct Scene {
     pub obstacle_height: f32,
     /// The interface bar at the bottom, as a share of the height.
     pub bar: f32,
+    /// Whether entities hide their whole cell but their team ring.
+    pub covering: bool,
+    /// How much the light may change across the frame, as a share of it.
+    pub lighting: f32,
+    /// The colour of every portrait of the timeline, if not drawn at random.
+    pub portraits: Option<[f32; 3]>,
 }
 
 impl Scene {
@@ -66,7 +72,19 @@ impl Scene {
         // The 560 cells span 13.5 cell widths across and 9.75 down.
         let usable = size.1 as f32 * 0.9;
         let origin = (size.0 as f32 / 2.0 - 6.75 * cell_width, usable / 2.0 - 4.875 * cell_width);
-        Scene { cells: map, cell_width, origin, size, seed, entities: Vec::new(), obstacle_height: 0.0, bar: 0.1 }
+        Scene {
+            cells: map,
+            cell_width,
+            origin,
+            size,
+            seed,
+            entities: Vec::new(),
+            obstacle_height: 0.0,
+            bar: 0.1,
+            covering: false,
+            lighting: 0.15,
+            portraits: None,
+        }
     }
 }
 
@@ -74,12 +92,18 @@ struct Canvas {
     width: usize,
     height: usize,
     rgb: Vec<[f32; 3]>,
+    /// By pixel, the walkable cell whose tile shows there, if any.
+    floor: Vec<Option<u16>>,
+    /// The walkable cell being drawn, if any.
+    drawing: Option<u16>,
 }
 
 impl Canvas {
     fn put(&mut self, x: i64, y: i64, colour: [f32; 3]) {
         if x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height {
-            self.rgb[y as usize * self.width + x as usize] = colour;
+            let at = y as usize * self.width + x as usize;
+            self.rgb[at] = colour;
+            self.floor[at] = self.drawing;
         }
     }
 
@@ -115,10 +139,16 @@ fn shade(c: [f32; 3], k: f32) -> [f32; 3] {
 
 /// Draws the scene.
 pub fn render(scene: &Scene) -> Frame {
+    render_with_floor(scene).0
+}
+
+/// Draws the scene, and tells by pixel which walkable cell's tile shows there.
+pub fn render_with_floor(scene: &Scene) -> (Frame, Vec<Option<u16>>) {
     let (width, height) = (scene.size.0 as usize, scene.size.1 as usize);
     let mut rng = Rng::new(scene.seed);
     let void = [rng.range(10.0, 45.0), rng.range(10.0, 45.0), rng.range(15.0, 55.0)];
-    let mut canvas = Canvas { width, height, rgb: vec![void; width * height] };
+    let mut canvas =
+        Canvas { width, height, rgb: vec![void; width * height], floor: vec![None; width * height], drawing: None };
     // The void is mottled in blocks, as decor far below would be.
     let block = 6;
     for by in 0..height.div_ceil(block) {
@@ -149,7 +179,9 @@ pub fn render(scene: &Scene) -> Frame {
         match scene.cells[usize::from(id)] {
             Cell::Walkable => {
                 let tile = if (x + y).rem_euclid(2) == 0 { light } else { dark };
+                canvas.drawing = Some(id);
                 canvas.diamond(cx, cy, l, shade(tile, rng.range(0.97, 1.03)), outline);
+                canvas.drawing = None;
             }
             Cell::Obstacle => {
                 let rise = scene.obstacle_height * l * rng.range(0.5, 1.0);
@@ -165,9 +197,14 @@ pub fn render(scene: &Scene) -> Frame {
         }
         if scene.entities.contains(&id) {
             let team = if rng.chance(0.5) { [200.0, 40.0, 40.0] } else { [40.0, 70.0, 210.0] };
-            canvas.ellipse(cx, cy, 0.38 * l, 0.19 * l, team, true);
             let body = [rng.range(40.0, 220.0), rng.range(40.0, 220.0), rng.range(40.0, 220.0)];
-            canvas.ellipse(cx, cy - 0.45 * l, 0.22 * l, 0.42 * l, body, false);
+            if scene.covering {
+                canvas.ellipse(cx, cy, 0.5 * l, 0.25 * l, body, false);
+                canvas.ellipse(cx, cy, 0.38 * l, 0.19 * l, team, true);
+            } else {
+                canvas.ellipse(cx, cy, 0.38 * l, 0.19 * l, team, true);
+                canvas.ellipse(cx, cy - 0.45 * l, 0.22 * l, 0.42 * l, body, false);
+            }
         }
     }
 
@@ -177,15 +214,17 @@ pub fn render(scene: &Scene) -> Frame {
     for y in bar_top..height {
         for x in 0..width {
             canvas.rgb[y * width + x] = panel;
+            canvas.floor[y * width + x] = None;
         }
     }
     for k in 0..6 {
         let x0 = width - 60 - k * 50;
-        canvas.ellipse(x0 as f32, 40.0, 20.0, 20.0, [rng.range(80.0, 230.0), rng.range(80.0, 230.0), 90.0], false);
+        let drawn = [rng.range(80.0, 230.0), rng.range(80.0, 230.0), 90.0];
+        canvas.ellipse(x0 as f32, 40.0, 20.0, 20.0, scene.portraits.unwrap_or(drawn), false);
     }
 
     // Uneven lighting, then sensor-like noise.
-    let (gx, gy) = (rng.range(-0.15, 0.15), rng.range(-0.15, 0.15));
+    let (gx, gy) = (rng.range(-scene.lighting, scene.lighting), rng.range(-scene.lighting, scene.lighting));
     let noise = rng.range(2.0, 6.0);
     let mut bgra = Vec::with_capacity(width * height * 4);
     for y in 0..height {
@@ -197,7 +236,7 @@ pub fn render(scene: &Scene) -> Frame {
             bgra.extend_from_slice(&[px(c[2]), px(c[1]), px(c[0]), 255]);
         }
     }
-    Frame { window: 1, width: scene.size.0, height: scene.size.1, bgra }
+    (Frame { window: 1, width: scene.size.0, height: scene.size.1, bgra }, canvas.floor)
 }
 
 /// The 35 boss maps of the KrozTools, by game cell: floor walkable, walls
