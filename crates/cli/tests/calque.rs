@@ -124,8 +124,10 @@ fn the_overlay_draws_what_it_is_sent() {
     assert_eq!(r["kinds"], serde_json::json!(["obstacle", "hole", "undecided"]), "{r}");
     assert_eq!(r["marks"], serde_json::json!(["?"]), "{r}");
     assert_eq!(r["badge"], "Carte non vérifiée · 1 combat sur 2", "{r}");
-    let width = r["badgeWidth"].as_f64().unwrap();
-    assert!((150.0..320.0).contains(&width), "the badge as wide as its text: {r}");
+    // As wide as its text, whatever the font the system draws it in.
+    let (width, text) = (r["badgeWidth"].as_f64().unwrap(), r["textLength"].as_f64().unwrap());
+    assert!(text > 100.0, "the badge's text has a width: {r}");
+    assert_eq!(width, text.ceil() + 44.0, "the badge as wide as its text: {r}");
     let (w, h) = (r["area"][0].as_f64().unwrap(), r["area"][1].as_f64().unwrap());
     assert_eq!(r["badgeAt"], format!("translate({}, {})", w - width - 14.0, h - 44.0), "bottom right: {r}");
     assert_eq!(r["cleared"], 0, "{r}");

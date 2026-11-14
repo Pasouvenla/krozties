@@ -23,6 +23,7 @@ const result = {
   marks: [...svg.querySelectorAll('.mark')].map((t) => t.textContent),
   badge: badge ? badge.textContent : null,
   badgeWidth: badge ? Number(badge.querySelector('rect').getAttribute('width')) : 0,
+  textLength: badge ? badge.querySelector('text').getComputedTextLength() : 0,
   badgeAt: badge ? badge.getAttribute('transform') : null,
   area: [area.width, area.height],
 };
