@@ -1,0 +1,54 @@
+{
+ "id": "2460439",
+ "forum": "Patch notes",
+ "titre": "Patch notes 3.7.14.18 du 17/11/2026",
+ "url": "https://www.dofus.com/fr/forum/2177-3-7-mise-jour-3-7/2460439-patch-notes-3-7-14-18-17-11-2026",
+ "publie": "2026-11-17T09:47:21+00:00",
+ "noeuds": [
+  {
+   "balise": "h2",
+   "profondeur": 0,
+   "texte": "Corrections de bugs"
+  },
+  {
+   "balise": "p",
+   "profondeur": 0,
+   "texte": "Les bugs suivants sont corrigés"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Quêtes"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Le gain de kamas des 2 quêtes du Prologue n'est pas évolutif en fonction du niveau du personnage."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Visuels / Son"
+  },
+  {
+   "balise": "li",
+   "profondeur": 2,
+   "texte": "Lorsque l'option \"Entités au premier plan\" est activée et que le joueur sur un monture change de carte, alors le personnage apparaît anormalement derrière la monture."
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Imprimer"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Facebook"
+  },
+  {
+   "balise": "li",
+   "profondeur": 1,
+   "texte": "Partager sur Twitter"
+  }
+ ]
+}
