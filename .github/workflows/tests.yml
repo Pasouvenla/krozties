@@ -35,7 +35,9 @@ jobs:
         run: cargo test --workspace --no-fail-fast
 
       - name: Outils Python
-        run: python3 tools/test_import_items.py
+        run: |
+          python3 tools/test_import_items.py
+          python3 tools/test_import_jeu.py
 
       - name: Notes de version
         run: python3 tools/test_notes_de_version.py
