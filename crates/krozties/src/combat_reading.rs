@@ -1,13 +1,18 @@
 //! Combat reading in the companion.
 //!
-//! Two things for now, each turned on by an environment variable until the
-//! companion offers them, since reading the game asks for the Screen
-//! Recording permission, which no player should meet unannounced:
+//! The player turns it on from the companion, which first says what it
+//! reads: reading the game asks for the Screen Recording permission, which
+//! no player should meet unannounced. It stops when the companion closes.
+//! While it reads, every game window is followed from fight to fight, and
+//! each fight's reading of its map goes to the local store of maps,
+//! `maps.json` in the app's data folder. Only the reading is kept: no frame,
+//! no name, no chat. The companion hears where the reading stands: a fight
+//! followed or not, or what stopped it.
 //!
-//! - `KROZTIES_COMBAT_READING`: every game window is followed from fight to
-//!   fight, and each fight's reading of its map goes to the local store of
-//!   maps, `maps.json` in the app's data folder. Only the reading is kept:
-//!   no frame, no name, no chat.
+//! Two environment variables serve to check the reading, not to play:
+//!
+//! - `KROZTIES_CHECK_READING`: while the reading is on, the map as read is
+//!   drawn over the game window in front during a fight.
 //! - `KROZTIES_DEBUG_CAPTURE`, naming a folder: the local debug recording
 //!   that builds the ground-truth captures. Every game window is recorded at
 //!   most once per second, and only frames that changed are written.
@@ -18,7 +23,9 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use dofus_maps::{Known, Reading, Settings, Store};
@@ -27,12 +34,13 @@ use dofus_vision::place::{place, Place};
 use dofus_vision::read::board::Board;
 use dofus_vision::text::{self, Region};
 use dofus_vision::{active_game_window, game_windows, CaptureError, Frame, GameWindow, Recorder, Rect, Stream};
+use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use crate::calque;
 
-/// The environment variable that turns the combat reading on.
-const READING_ENV: &str = "KROZTIES_COMBAT_READING";
+/// The environment variable that draws the map as read over the game.
+const CHECK_ENV: &str = "KROZTIES_CHECK_READING";
 /// The environment variable that turns the recording on.
 const ENV: &str = "KROZTIES_DEBUG_CAPTURE";
 /// The maps read, in the app's data folder.
@@ -61,18 +69,155 @@ fn now_ms() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
 }
 
-/// Starts the combat reading on its own thread when the environment asks for
-/// it, the maps kept in `data`.
-pub fn start_reading_from_env(app: AppHandle, data: PathBuf) {
-    if std::env::var_os(READING_ENV).is_none() {
-        return;
-    }
-    let _ = std::thread::Builder::new().name("combat-reading".into()).spawn(move || {
-        let log_file = data.join(READING_LOG);
-        if let Err(e) = read(&app, &data, &log_file) {
-            log_to(&log_file, &e);
+/// Where the reading stands, as the companion shows it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum State {
+    /// Not reading.
+    #[default]
+    Off,
+    /// Reading, and no fight followed.
+    Waiting,
+    /// A fight followed in a game window.
+    Following,
+    /// The Screen Recording permission is missing.
+    Denied,
+    /// Stopped by another error.
+    Failed,
+}
+
+/// Where the reading stands, whether a game window is open, and what stopped
+/// the reading, in the player's words.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Status {
+    pub state: State,
+    pub game: bool,
+    pub error: Option<String>,
+}
+
+/// The reading going on: the flag that stops it, and its thread, or the last
+/// one's, which the next reading waits for.
+#[derive(Default)]
+struct Running {
+    stop: Option<Arc<AtomicBool>>,
+    thread: Option<JoinHandle<()>>,
+}
+
+/// The app's combat reading: one at most, and where it stands. What it tells
+/// the companion is told under its lock, so the companion hears every change
+/// in the order it happened.
+#[derive(Default)]
+pub struct Reader {
+    running: Mutex<Running>,
+    status: Mutex<Status>,
+}
+
+impl Reader {
+    /// Starts a reading with `start`, given its stop flag and the last
+    /// reading's thread; if one is on already, tells where it stands.
+    fn start(
+        &self,
+        start: impl FnOnce(Arc<AtomicBool>, Option<JoinHandle<()>>) -> Result<JoinHandle<()>, String>,
+        tell: impl FnOnce(&Status),
+    ) -> Result<(), String> {
+        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+        if running.stop.is_some() {
+            tell(&self.status.lock().unwrap_or_else(|e| e.into_inner()));
+            return Ok(());
         }
-    });
+        let stop = Arc::new(AtomicBool::new(false));
+        let thread = start(Arc::clone(&stop), running.thread.take())?;
+        running.stop = Some(stop);
+        running.thread = Some(thread);
+        Ok(())
+    }
+
+    /// Stops the reading going on, if any, and tells that it is off.
+    fn stop(&self, tell: impl FnOnce(&Status)) {
+        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(stop) = running.stop.take() {
+            stop.store(true, Ordering::Relaxed);
+        }
+        let mut status = self.status.lock().unwrap_or_else(|e| e.into_inner());
+        *status = Status::default();
+        tell(&status);
+    }
+
+    /// What the reading of `stop` found, kept and told if it changed, and if
+    /// that reading is still the one going on: a reading turned off says
+    /// nothing more.
+    fn found(&self, stop: &Arc<AtomicBool>, found: Status, tell: impl FnOnce(&Status)) {
+        let running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+        if !running.stop.as_ref().is_some_and(|s| Arc::ptr_eq(s, stop)) {
+            return;
+        }
+        let mut status = self.status.lock().unwrap_or_else(|e| e.into_inner());
+        if *status != found {
+            *status = found;
+            tell(&status);
+        }
+    }
+}
+
+/// Turns the reading on or off. Where it stands reaches the companion at
+/// once when it goes off or is on already, else once the game windows are
+/// listed.
+pub fn turn(app: &AppHandle, on: bool) -> Result<String, String> {
+    let reader = app.state::<Reader>();
+    let tell_companion = |status: &Status| tell(app, status);
+    if !on {
+        reader.stop(tell_companion);
+        return Ok("null".into());
+    }
+    let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let check = std::env::var_os(CHECK_ENV).is_some();
+    reader.start(
+        |stop, previous| {
+            let app = app.clone();
+            std::thread::Builder::new()
+                .name("combat-reading".into())
+                .spawn(move || {
+                    // The last reading stops within a second: one store at a
+                    // time.
+                    if let Some(previous) = previous {
+                        let _ = previous.join();
+                    }
+                    run(&app, &data, &stop, check);
+                })
+                .map_err(|e| e.to_string())
+        },
+        tell_companion,
+    )?;
+    Ok("null".into())
+}
+
+/// Tells the companion where the reading stands, if it is open.
+fn tell(app: &AppHandle, status: &Status) {
+    if let Some(window) = app.get_webview_window(crate::compagnon::ETIQUETTE) {
+        let _ = window.eval(script(status));
+    }
+}
+
+/// The script that hands `status` to the companion's page: the app grants
+/// its pages no event permission.
+fn script(status: &Status) -> String {
+    let json = serde_json::to_string(status).unwrap_or_else(|_| "null".into());
+    format!("window.compagnonLecture && window.compagnonLecture({json})")
+}
+
+/// What the reading of `stop` found, for the companion.
+fn report(app: &AppHandle, stop: &Arc<AtomicBool>, status: Status) {
+    app.state::<Reader>().found(stop, status, |status| tell(app, status));
+}
+
+/// The reading of `stop`, until it is turned off or fails.
+fn run(app: &AppHandle, data: &Path, stop: &Arc<AtomicBool>, check: bool) {
+    let log_file = data.join(READING_LOG);
+    if let Err(e) = read(app, data, &log_file, stop, check) {
+        log_to(&log_file, &e.to_string());
+        let state = if matches!(e, CaptureError::Denied) { State::Denied } else { State::Failed };
+        report(app, stop, Status { state, game: false, error: Some(e.to_string()) });
+    }
 }
 
 /// The fights that started lately, by window, to name alike the fights of
@@ -157,45 +302,54 @@ fn placed(mut reading: Reading, place: Option<&Place>) -> Reading {
 }
 
 /// Follows every game window, keeps each fight's reading in the store, and
-/// lays the overlay over the game window in front while the companion is
-/// open.
-fn read(app: &AppHandle, data: &Path, log_file: &Path) -> Result<(), String> {
-    std::fs::create_dir_all(data).map_err(|e| e.to_string())?;
+/// tells the companion whether a fight is followed, until `stop`. With
+/// `check`, lays the map as read over the game window in front while the
+/// companion is open.
+fn read(app: &AppHandle, data: &Path, log_file: &Path, stop: &Arc<AtomicBool>, check: bool) -> Result<(), CaptureError> {
+    let failed = |e: String| CaptureError::Failed(e);
+    std::fs::create_dir_all(data).map_err(|e| failed(e.to_string()))?;
     let path = data.join(STORE_FILE);
-    let mut store = Store::load(&path, Settings::default()).map_err(|e| e.to_string())?;
+    let mut store = Store::load(&path, Settings::default()).map_err(|e| failed(e.to_string()))?;
     // Frames are read on this thread at the pace reading allows: when it falls
     // behind, new frames are dropped rather than queued.
     let (tx, rx) = mpsc::sync_channel::<Frame>(2);
     let windows_log = log_file.to_path_buf();
-    // The game windows as last listed: where they are on screen.
-    let listed: Arc<Mutex<Vec<GameWindow>>> = Arc::default();
+    // The game windows as last listed, where they are on screen: none before
+    // the first listing.
+    let listed: Arc<Mutex<Option<Vec<GameWindow>>>> = Arc::default();
     let listing = Arc::clone(&listed);
-    std::thread::Builder::new()
+    let capture_stop = Arc::clone(stop);
+    let capture = std::thread::Builder::new()
         .name("combat-reading-windows".into())
         .spawn(move || {
-            capture_windows(&tx, &windows_log, |found| {
-                *listing.lock().unwrap_or_else(|e| e.into_inner()) = found.to_vec();
+            capture_windows(&tx, &windows_log, &capture_stop, |found| {
+                *listing.lock().unwrap_or_else(|e| e.into_inner()) = Some(found.to_vec());
             })
         })
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| failed(e.to_string()))?;
 
     log_to(log_file, "reading started");
     let mut windows: HashMap<u32, Window> = HashMap::new();
     let mut fights = Fights::default();
     // Where the overlay lies, while it shows.
     let mut overlay: Option<Rect> = None;
-    loop {
+    // Until the reading is turned off, or the capture ends: its senders may
+    // outlive it in the streams it started, hence the look at its thread.
+    while !stop.load(Ordering::Relaxed) && !capture.is_finished() {
         let received = match rx.recv_timeout(INTERVAL) {
             Ok(frame) => Some(frame),
             Err(mpsc::RecvTimeoutError::Timeout) => None,
-            Err(mpsc::RecvTimeoutError::Disconnected) => return Err("the capture stopped".into()),
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
         let now = now_ms();
         let fed = received.as_ref().map(|frame| frame.window);
         // The window of the frame reads it; the others still show what they
         // showed, and time passes for them.
         let mut steps = Vec::new();
-        let list = listed.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let (listed_once, list) = {
+            let listed = listed.lock().unwrap_or_else(|e| e.into_inner());
+            (listed.is_some(), listed.clone().unwrap_or_default())
+        };
         if let Some(frame) = &received {
             let state = windows.entry(frame.window).or_insert_with(|| Window::new(frame.window));
             let step = state.follower.feed(frame, now);
@@ -269,8 +423,21 @@ fn read(app: &AppHandle, data: &Path, log_file: &Path) -> Result<(), String> {
                 state.seek(&store, now);
             }
         }
-        overlay = lay_overlay(app, &list, &windows, overlay);
+        if check {
+            overlay = lay_overlay(app, &list, &windows, overlay);
+        }
+        if listed_once {
+            let following = windows.values().any(|w| w.follower.fight().is_some());
+            let state = if following { State::Following } else { State::Waiting };
+            report(app, stop, Status { state, game: !list.is_empty(), error: None });
+        }
     }
+    if overlay.is_some() {
+        calque::hide(app);
+    }
+    let ended = capture.join().unwrap_or_else(|_| Err(failed("the capture stopped".into())));
+    log_to(log_file, "reading stopped");
+    ended
 }
 
 /// Lays the overlay over the game window in front, while the companion is
@@ -300,11 +467,17 @@ fn lay_overlay(app: &AppHandle, list: &[GameWindow], windows: &HashMap<u32, Wind
 }
 
 /// Lists the game windows again and again, and captures each into `tx` until
-/// it closes; `known` hears of every listing. Returns when the permission is
-/// refused.
-fn capture_windows(tx: &mpsc::SyncSender<Frame>, log_file: &Path, known: impl Fn(&[GameWindow])) {
+/// it closes; `known` hears of every listing. Returns when `stop` is set, or
+/// when capturing cannot work here: the permission refused, or no capture on
+/// this system.
+fn capture_windows(
+    tx: &mpsc::SyncSender<Frame>,
+    log_file: &Path,
+    stop: &AtomicBool,
+    known: impl Fn(&[GameWindow]),
+) -> Result<(), CaptureError> {
     let mut streams: HashMap<u32, Stream> = HashMap::new();
-    loop {
+    while !stop.load(Ordering::Relaxed) {
         match game_windows() {
             Ok(listed) => {
                 streams.retain(|id, _| listed.iter().any(|w| w.id == *id));
@@ -326,13 +499,24 @@ fn capture_windows(tx: &mpsc::SyncSender<Frame>, log_file: &Path, known: impl Fn
                     }
                 }
             }
-            Err(CaptureError::Denied) => {
-                log_to(log_file, &CaptureError::Denied.to_string());
-                return;
+            Err(e @ (CaptureError::Denied | CaptureError::Unsupported)) => {
+                log_to(log_file, &e.to_string());
+                return Err(e);
             }
             Err(e) => log_to(log_file, &e.to_string()),
         }
-        std::thread::sleep(RESCAN);
+        pause(stop, RESCAN);
+    }
+    Ok(())
+}
+
+/// Waits `delay`, or less if `stop` is set meanwhile.
+fn pause(stop: &AtomicBool, delay: Duration) {
+    let step = Duration::from_millis(100);
+    let mut waited = Duration::ZERO;
+    while waited < delay && !stop.load(Ordering::Relaxed) {
+        std::thread::sleep(step);
+        waited += step;
     }
 }
 
@@ -380,12 +564,13 @@ fn record(dir: &Path) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     log_to(&log_file, "recording started");
-    capture_windows(&tx, &log_file, |listed| {
+    let never = AtomicBool::new(false);
+    capture_windows(&tx, &log_file, &never, |listed| {
         let mut known = windows.lock().unwrap_or_else(|e| e.into_inner());
         known.clear();
         known.extend(listed.iter().map(|w| (w.id, w.clone())));
-    });
-    Err(CaptureError::Denied.to_string())
+    })
+    .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
@@ -404,6 +589,79 @@ mod tests {
         let reading = Reading { fight: "f".into(), coords: (0, 0), subarea: String::new(), cells: Vec::new(), at_ms: 0 };
         let reading = placed(reading, Some(&here));
         assert_eq!((reading.coords, reading.subarea.as_str()), ((4, -12), "Plaine des Scarafeuilles"));
+    }
+
+    /// The companion's page hears where the reading stands through the hook
+    /// it sets.
+    #[test]
+    fn the_companion_hears_the_status_through_its_hook() {
+        let status = Status { state: State::Following, game: true, error: None };
+        assert_eq!(
+            script(&status),
+            r#"window.compagnonLecture && window.compagnonLecture({"state":"following","game":true,"error":null})"#
+        );
+        let denied = Status { state: State::Denied, game: false, error: Some("Autorisez l'écran".into()) };
+        assert!(script(&denied).contains(r#"{"state":"denied","game":false,"error":"Autorisez l'écran"}"#));
+        assert!(include_str!("../ui/compagnon.js").contains("window.compagnonLecture = "));
+    }
+
+    /// Each change is told once, in order; a reading on already tells where
+    /// it stands and starts no other; once off, it says nothing more, and the
+    /// next one is handed its thread to wait for.
+    #[test]
+    fn a_reading_turned_off_says_nothing_more() {
+        let reader = Reader::default();
+        let mut heard: Vec<State> = Vec::new();
+        let mut flags: Vec<Arc<AtomicBool>> = Vec::new();
+        let thread = || Ok(std::thread::spawn(|| {}));
+        reader
+            .start(
+                |stop, previous| {
+                    assert!(previous.is_none());
+                    flags.push(stop);
+                    thread()
+                },
+                |s| heard.push(s.state),
+            )
+            .unwrap();
+        let first = Arc::clone(&flags[0]);
+        let waiting = Status { state: State::Waiting, game: true, error: None };
+        reader.found(&first, waiting.clone(), |s| heard.push(s.state));
+        reader.found(&first, waiting, |s| heard.push(s.state));
+        reader.start(|_, _| panic!("a second reading"), |s| heard.push(s.state)).unwrap();
+        reader.stop(|s| heard.push(s.state));
+        assert!(first.load(Ordering::Relaxed), "the reading turned off is told to stop");
+        reader
+            .start(
+                |stop, previous| {
+                    assert!(previous.is_some(), "the next reading waits for the last one");
+                    flags.push(stop);
+                    thread()
+                },
+                |s| heard.push(s.state),
+            )
+            .unwrap();
+        // The last reading, winding down while the next one runs.
+        reader.found(&first, Status { state: State::Following, game: true, error: None }, |s| heard.push(s.state));
+        let next = Arc::clone(&flags[1]);
+        reader.found(&next, Status { state: State::Denied, game: false, error: None }, |s| heard.push(s.state));
+        assert!(!next.load(Ordering::Relaxed));
+        assert_eq!(heard, [State::Waiting, State::Waiting, State::Off, State::Denied]);
+    }
+
+    /// A capture turned off lists nothing and ends at once, and so does a
+    /// wait.
+    #[test]
+    fn a_capture_turned_off_ends_at_once() {
+        let stop = AtomicBool::new(true);
+        let (tx, _rx) = mpsc::sync_channel::<Frame>(1);
+        let listings = std::cell::Cell::new(0);
+        let log = std::env::temp_dir().join(format!("krozties-reading-{}.log", std::process::id()));
+        assert!(capture_windows(&tx, &log, &stop, |_| listings.set(listings.get() + 1)).is_ok());
+        assert_eq!(listings.get(), 0);
+        let start = std::time::Instant::now();
+        pause(&stop, Duration::from_secs(10));
+        assert!(start.elapsed() < Duration::from_millis(500));
     }
 
     /// Two windows whose fights start together see one fight; later, or in

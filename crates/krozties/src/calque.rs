@@ -1,13 +1,17 @@
-//! The overlay laid over the game window during a fight: what Krozties read
-//! of the map, drawn where the game draws it. Nothing on the floor, which the
-//! game already shows; the cells that cannot be walked tinted: slate with a
-//! copper edge for an obstacle, blue with a dotted edge for a hole, a light
-//! veil and a question mark for a cell not yet told apart; the map's state at
-//! the bottom right while it is not verified. Layout B, chosen by the player
-//! from three mockups.
+//! The overlay laid over the game window during a fight. The player sees the
+//! map and needs no copy of it: the overlay is for the rotation's
+//! indications, to come. For now it draws, on demand only, to check the
+//! reading (`KROZTIES_CHECK_READING`), what Krozties read of the map, where
+//! the game draws it. Nothing on the floor, which the game already shows; the
+//! cells that cannot be walked tinted: slate with a copper edge for an
+//! obstacle, blue with a dotted edge for a hole, a light veil and a question
+//! mark for a cell not yet told apart; the map's state at the bottom right
+//! while it is not verified. Layout B, chosen from three mockups.
 //!
 //! It never takes a click: clicks go through to the game. It shows only while
-//! the companion is open, during a fight, over the game window in front.
+//! the companion is open, during a fight, over the game window in front. Its
+//! page hears what to draw through a script, `window.drawOverlay`: the app
+//! grants its pages no event permission.
 
 use std::collections::HashSet;
 
@@ -16,12 +20,10 @@ use dofus_vision::fight::View;
 use dofus_vision::read::board::Board;
 use dofus_vision::Rect;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 /// The overlay window's label.
 pub const LABEL: &str = "calque";
-/// The event the page draws from.
-const EVENT: &str = "calque";
 
 /// What the page draws.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
@@ -101,10 +103,16 @@ pub fn show(app: &AppHandle, at: &Rect, drawing: &Drawing, moved: bool) {
         let _ = window.set_position(LogicalPosition::new(at.x, at.y));
         let _ = window.set_size(LogicalSize::new(at.width, at.height));
     }
-    let _ = app.emit_to(LABEL, EVENT, drawing);
+    let _ = window.eval(script(drawing));
     if !window.is_visible().unwrap_or(false) {
         let _ = window.show();
     }
+}
+
+/// The script that hands `drawing` to the overlay's page.
+fn script(drawing: &Drawing) -> String {
+    let json = serde_json::to_string(drawing).unwrap_or_else(|_| "null".into());
+    format!("window.drawOverlay && window.drawOverlay({json})")
 }
 
 /// Takes the overlay off the game.
@@ -214,6 +222,17 @@ mod tests {
         // Board cell (11, -4) is lattice cell (1, 1): centre (164, 200).
         assert_eq!(drawing.cells[0].points, [[82.0, 92.0], [98.0, 100.0], [82.0, 108.0], [66.0, 100.0]]);
         assert_eq!(drawing.badge.as_deref(), Some("Carte non vérifiée · 1 combat sur 2"));
+    }
+
+    /// The page draws what the script hands it, through the hook it sets.
+    #[test]
+    fn the_page_draws_what_the_script_hands_it() {
+        let drawing = Drawing { cells: Vec::new(), badge: Some("Carte non vérifiée".into()) };
+        assert_eq!(
+            script(&drawing),
+            r#"window.drawOverlay && window.drawOverlay({"cells":[],"badge":"Carte non vérifiée"})"#
+        );
+        assert!(include_str!("../ui/calque.js").contains("window.drawOverlay = "));
     }
 
     /// A known map is drawn instead, through both shifts; verified, without

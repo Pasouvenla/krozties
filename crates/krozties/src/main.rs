@@ -319,6 +319,13 @@ fn ajuster_le_compagnon(window: tauri::Window, largeur: f64, hauteur: f64) -> So
     compagnon::ajuster(&window, largeur, hauteur)
 }
 
+/// La lecture du combat, allumée ou coupée depuis le compagnon, qui apprend
+/// ensuite où elle en est. Voir `combat_reading.rs`.
+#[tauri::command]
+fn lire_le_combat(app: tauri::AppHandle, actif: bool) -> Sortie {
+    combat_reading::turn(&app, actif)
+}
+
 /// Une rotation partagée, dans le fichier que le joueur choisit. Voir
 /// `partage.rs`.
 #[tauri::command]
@@ -353,26 +360,23 @@ fn main() {
         .manage(MiseAJour::default())
         .manage(compagnon::Raccourcis::default())
         .manage(partage::RotationRecue::default())
+        .manage(combat_reading::Reader::default())
         .setup(|app| {
             partage::au_lancement(app.handle());
             combat_reading::start_debug_recording_from_env();
-            {
-                use tauri::Manager;
-                if let Ok(donnees) = app.path().app_data_dir() {
-                    combat_reading::start_reading_from_env(app.handle().clone(), donnees);
-                }
-            }
             Ok(())
         })
-        // Le compagnon ne survit pas à la fenêtre principale, et ses touches
-        // reviennent aux autres applications dès qu'il se ferme. Un fichier
-        // `.krozties` déposé sur la fenêtre est une rotation reçue.
+        // Le compagnon ne survit pas à la fenêtre principale ; ses touches
+        // reviennent aux autres applications dès qu'il se ferme, et la lecture
+        // du combat s'arrête avec lui. Un fichier `.krozties` déposé sur la
+        // fenêtre est une rotation reçue.
         .on_window_event(|fenetre, evenement| {
             use tauri::Manager;
             match evenement {
                 tauri::WindowEvent::Destroyed => {
                     if fenetre.label() == compagnon::ETIQUETTE {
                         compagnon::liberer(fenetre.app_handle());
+                        let _ = combat_reading::turn(fenetre.app_handle(), false);
                     } else if fenetre.label() == "main" {
                         compagnon::fermer(fenetre.app_handle());
                     }
@@ -416,6 +420,7 @@ fn main() {
             fermer_le_compagnon,
             deplacer_le_compagnon,
             ajuster_le_compagnon,
+            lire_le_combat,
             regler_les_touches_du_compagnon,
             enregistrer_une_rotation,
             rotation_recue
@@ -574,6 +579,29 @@ mod tests {
             .and_then(|v| v.iter().find(|e| e["version"] != "prochaine"))
             .and_then(|e| e["version"].as_str());
         assert_eq!(derniere, conf["version"].as_str(), "la version publiée doit avoir ses notes");
+    }
+
+    /// L'application n'accorde à ses pages aucune permission : un événement
+    /// écouté depuis une page serait refusé sans bruit. Elles reçoivent ce
+    /// qu'on leur envoie par un script (`eval`).
+    #[test]
+    fn aucune_page_n_ecoute_d_evenement() {
+        let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+        let mut pages = vec![ui.clone()];
+        let mut lues = 0;
+        while let Some(dossier) = pages.pop() {
+            for entree in std::fs::read_dir(&dossier).expect("le dossier des pages").flatten() {
+                let chemin = entree.path();
+                if chemin.is_dir() {
+                    pages.push(chemin);
+                } else if chemin.extension().is_some_and(|e| e == "js" || e == "html") {
+                    let source = std::fs::read_to_string(&chemin).expect("une page lisible");
+                    lues += 1;
+                    assert!(!source.contains(".event."), "{} écoute un événement", chemin.display());
+                }
+            }
+        }
+        assert!(lues > 10, "les pages lues : {lues}");
     }
 
     #[test]
