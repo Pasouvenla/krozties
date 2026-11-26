@@ -174,6 +174,20 @@ resources:
       de façon à ce que la zone touche la cible. Porter son Tonneau rend 1 PA et le
       jeter rend Saoul : ni l'un ni l'autre n'est compté.
 
+  - id: varappe
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effets 290 et 291, durée 1 : le tour du lancer.
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      La Varappe donne à Karcham, ou à Chamrak, deux lancers de plus dans le
+      tour et un de plus par cible : de quoi porter deux fois la même cible,
+      donc jeter deux fois. Leurs masques exigent du lanceur l'état Karcham
+      (3583) ou Chamrak (3584), que le jeu masque et qui disent la variante
+      tenue.
+
   - id: prohibition
     # Prohibition (3536), que Picole et Bombance exigent absente.
     game_states: [3536]
@@ -448,6 +462,7 @@ spells:
     ap_cost: { base: 1 }
     casts_per_turn: 4
     casts_per_target: 1
+    extra_casts: { resource: varappe, per_stack: 2, cap: 2, per_target: 1 }
     crit: { base_rate: 0, can_crit: false }
     note: |
       Porte ou jette la cible.
@@ -868,6 +883,7 @@ spells:
     ap_cost: { base: 1 }
     casts_per_turn: 4
     casts_per_target: 1
+    extra_casts: { resource: varappe, per_stack: 2, cap: 2, per_target: 1 }
     crit: { base_rate: 0, can_crit: false }
     note: |
       Porte ou jette la cible.
@@ -927,11 +943,11 @@ spells:
       Rend également l'allié ciblé Intaclable.
     assumptions:
       - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effets 290 et 291 : +2 lancers par tour et +1 par cible pour Karcham ou Chamrak, le tour du lancer (état `varappe`). Leurs masques exigent du lanceur l'état Karcham (3583) ou Chamrak (3584), masqués en jeu : ils disent la variante tenue, et chaque sort ne gagne que pour lui."
     lines: []
-    open_questions:
-      - "Effet 290 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 291 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-    effects: []
+    effects:
+      - effect: gain
+        resource: varappe
 
   - id: nausee
     dofusdb_id: 12814

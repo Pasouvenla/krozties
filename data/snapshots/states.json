@@ -205,6 +205,16 @@
     "drapeaux": [],
     "nom": "Prohibition"
   },
+  "3583": {
+    "drapeaux": [],
+    "masque": true,
+    "nom": "Karcham"
+  },
+  "3584": {
+    "drapeaux": [],
+    "masque": true,
+    "nom": "Chamrak"
+  },
   "3622": {
     "drapeaux": [],
     "nom": "{{spell,24510,1::Téléfrag}}"
@@ -232,6 +242,11 @@
   "3691": {
     "drapeaux": [],
     "nom": "Croisement / Piège Magnétique"
+  },
+  "3737": {
+    "drapeaux": [],
+    "masque": true,
+    "nom": "Portail"
   },
   "3743": {
     "drapeaux": [],
@@ -460,6 +475,22 @@
   "5261": {
     "drapeaux": [],
     "nom": "{{spell,29073,1::Étoile du Berger}}"
+  },
+  "5262": {
+    "drapeaux": [],
+    "nom": "Armure Terrestre"
+  },
+  "5263": {
+    "drapeaux": [],
+    "nom": "Armure Incandescente"
+  },
+  "5264": {
+    "drapeaux": [],
+    "nom": "Armure Aqueuse"
+  },
+  "5265": {
+    "drapeaux": [],
+    "nom": "Armure Venteuse"
   },
   "5294": {
     "drapeaux": [],

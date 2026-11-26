@@ -258,10 +258,10 @@ spells:
       Rend le lanceur Intaclable et augmente le nombre de lancers par tour du sort Portail ou la Portée maximale du sort Errance.
     assumptions:
       - "Effets 950/951 : ce sort applique « Intaclable » (96). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
+      - "Effet 290 : +1 lancer par tour de Portail, le tour du lancer, sous l'état Portail (3737), masqué en jeu, qui dit la variante tenue. Les portails se déclarent (`portails_traverses`, `cases_entre_portails`) et Portail n'inflige rien : un lancer de plus ne change aucun chiffre ici."
     lines: []
     open_questions:
       - "Effet 281 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 290 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
     effects: []
 
   - id: therapie

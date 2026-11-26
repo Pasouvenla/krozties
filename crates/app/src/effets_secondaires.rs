@@ -122,6 +122,7 @@ fn caracteristique(id: u32) -> Option<(Sens, &'static str)> {
         119 => (Donne, "Agilité"),
         123 => (Donne, "Chance"),
         126 => (Donne, "Intelligence"),
+        2844 => (Donne, "% de Vitalité"),
         752 => (Donne, "Fuite"),
         753 => (Donne, "Tacle"),
         160 => (Donne, "Esquive PA"),
@@ -218,7 +219,12 @@ const MECANIQUE: &[u32] = &[
 
 /// Les effets qui lancent un sous-sort : la donnée ne porte que la liste de
 /// ses effets, sans leurs valeurs.
-const SOUS_SORTS: &[u32] = &[792, 1019, 1160, 1406, 2160, 2794, 2795, 2960, 3792, 3793];
+const SOUS_SORTS: &[u32] = &[792, 1019, 1160, 1406, 2160, 2794, 2795, 2960];
+
+/// Les effets qui ne jouent qu'une animation, tout de suite (3792) ou au tour
+/// suivant (3793) : leur valeur désigne un script d'affichage du sort
+/// lui-même. Ce que le sort fait au tour suivant, ses autres effets le portent.
+pub(crate) const VISUELS: &[u32] = &[3792, 3793];
 
 /// Ce qu'un sous-sort porte sans que la frise ait à l'écrire : ses dégâts et
 /// vols (lignes déjà comptées), ses soins, ses états, l'effet vide (666) et
@@ -226,6 +232,7 @@ const SOUS_SORTS: &[u32] = &[792, 1019, 1160, 1406, 2160, 2794, 2795, 2960, 3792
 fn muet_dans_un_sous_sort(id: u32) -> bool {
     matches!(id, 81 | 82 | 85..=100 | 108 | 149 | 202 | 666 | 765 | 950..=952 | 1020 | 1061 | 1078 | 1109 | 2998..=3002)
         || MECANIQUE.contains(&id)
+        || VISUELS.contains(&id)
 }
 
 /// Les états qui ne servent qu'au calcul du jeu, que le joueur ne lit pas.
@@ -241,10 +248,10 @@ const ETATS_INTERNES: &[&str] = &[
     "Blocage Rémission",
 ];
 
-/// Le nom de chaque état, et s'il renvoie à son explication en jeu
-/// (« {{spell,24278,1::Infecté}} »).
-fn etats() -> &'static BTreeMap<u32, (String, bool)> {
-    static ETATS: OnceLock<BTreeMap<u32, (String, bool)>> = OnceLock::new();
+/// Le nom de chaque état, s'il renvoie à son explication en jeu
+/// (« {{spell,24278,1::Infecté}} »), et si le jeu le masque.
+fn etats() -> &'static BTreeMap<u32, (String, bool, bool)> {
+    static ETATS: OnceLock<BTreeMap<u32, (String, bool, bool)>> = OnceLock::new();
     ETATS.get_or_init(|| {
         let brut: BTreeMap<String, serde_json::Value> =
             serde_json::from_str(crate::donnees::ETATS).unwrap_or_default();
@@ -256,7 +263,7 @@ fn etats() -> &'static BTreeMap<u32, (String, bool)> {
                     Some((_, reste)) if lie => reste.trim_end_matches("}}"),
                     _ => nom,
                 };
-                Some((id.parse().ok()?, (nom.to_string(), lie)))
+                Some((id.parse().ok()?, (nom.to_string(), lie, v["masque"].as_bool().unwrap_or(false))))
             })
             .collect()
     })
@@ -327,9 +334,9 @@ fn lire_masque(masque: Option<&str>, en_zone: bool, sort: &str) -> Masque {
     let mut conditions = Vec::new();
     let mut etat_sans_nom = None;
     let mut etat = |id: u32, sans: bool| match etats().get(&id) {
-        Some((nom, lie)) if etat_interne(nom, *lie, sort) => None,
-        Some((nom, _)) if sans && IMMUNITES.contains(&nom.as_str()) => None,
-        Some((nom, _)) => Some(nom.as_str()),
+        Some((nom, lie, masque)) if *masque || etat_interne(nom, *lie, sort) => None,
+        Some((nom, ..)) if sans && IMMUNITES.contains(&nom.as_str()) => None,
+        Some((nom, ..)) => Some(nom.as_str()),
         None => {
             etat_sans_nom = Some(id);
             None
@@ -419,7 +426,7 @@ fn lire(e: &PlacedEffect, qui: Qui, sort: &str) -> Lecture {
     if let Some(nom) = modificateur(e.id) {
         return Lecture::Modificateur(nom);
     }
-    if MECANIQUE.contains(&e.id) {
+    if MECANIQUE.contains(&e.id) || VISUELS.contains(&e.id) {
         return Lecture::Muet;
     }
     if SOUS_SORTS.contains(&e.id) {
@@ -443,10 +450,10 @@ fn lire(e: &PlacedEffect, qui: Qui, sort: &str) -> Lecture {
         50 => "porte la cible".to_string(),
         51 => "jette la cible".to_string(),
         950..=952 => {
-            let Some((nom, lie)) = u32::try_from(e.value.unwrap_or(0)).ok().and_then(|v| etats().get(&v)) else {
+            let Some((nom, lie, masque)) = u32::try_from(e.value.unwrap_or(0)).ok().and_then(|v| etats().get(&v)) else {
                 return Lecture::EtatSansNom;
             };
-            if etat_interne(nom, *lie, sort) {
+            if *masque || etat_interne(nom, *lie, sort) {
                 return Lecture::Muet;
             }
             match e.id {
@@ -771,7 +778,9 @@ pub(crate) fn lire_un_effet(
 /// Le nom d'un état, et s'il ne sert qu'au calcul du jeu, qui ne l'affiche
 /// pas. `None` pour un état que la liste ne nomme pas.
 pub(crate) fn etat(id: u32) -> Option<(String, bool)> {
-    etats().get(&id).map(|(nom, _)| (nom.clone(), nom.contains('(') || ETATS_INTERNES.contains(&nom.as_str())))
+    etats()
+        .get(&id)
+        .map(|(nom, _, masque)| (nom.clone(), *masque || nom.contains('(') || ETATS_INTERNES.contains(&nom.as_str())))
 }
 
 /// Un modificateur du sort sur lui-même : « +5 dégâts de base pour ce sort ».
