@@ -993,6 +993,12 @@ pub struct ExtraCasts {
     /// Ceiling on what this can add, whatever the stack.
     #[serde(default = "one_u8_plain")]
     pub cap: u8,
+    /// Casts per target granted along with `per_stack` more per turn: Varappe
+    /// gives Karcham two more casts per turn and one more per target. The
+    /// spell's ceiling is then worked out again from both limits for the
+    /// scenario's targets, for one point held.
+    #[serde(default)]
+    pub per_target: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -1337,3 +1337,16 @@ body.compagnon { margin: 0; background: #1b1f24; color: #f2efe6; overflow: hidde
 .cp-second { color: #d9d4c6; border: 1px solid rgba(255, 255, 255, .3); }
 .cp-jeton:focus-visible, .cp-pas button:focus-visible, .cp-bascule button:focus-visible,
 .cp-principal:focus-visible, .cp-second:focus-visible { outline: 2px solid #fff; }
+
+/* La lecture du combat : son bouton, allumé quand elle tourne, la pastille qui
+   dit si elle suit le combat, et le texte de sa fiche. */
+.cp-outils button.actif { color: #7fb069; }
+.cp-pastille { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px;
+               background: rgba(255, 255, 255, .08); color: #d9d4c6; font-size: .75rem; white-space: nowrap; }
+.cp-pastille i { width: 8px; height: 8px; border-radius: 50%; background: #8a8f99; }
+.cp-pastille.suivi i { background: #7fb069; }
+.cp-pastille.erreur i { background: #e07a5f; }
+button.cp-pastille:hover { background: rgba(255, 255, 255, .16); color: #f2efe6; }
+.cp-pastille:focus-visible { outline: 2px solid #fff; }
+.cp-lecture { padding: 0 8px 4px; }
+.cp-texte { margin: 0; font-size: .75rem; line-height: 1.4; color: #d9d4c6; }

@@ -3,7 +3,8 @@
 // liste. Trois touches, réglées dans la Rotation, avancent d'un sort, d'un tour,
 // ou reculent ; un clic sur un sort le désigne comme le prochain. Quand le
 // combat dévie, la fiche de l'écart dit ce qui a changé, et le compagnon
-// recalcule la suite depuis là.
+// recalcule la suite depuis là. Dans l'application de bureau, le bouton ◉
+// allume la lecture du combat, et une pastille dit si elle suit le combat.
 
 import { appeler, hote } from './pont.js';
 import { echapper, nb } from './commun/format.js';
@@ -12,6 +13,7 @@ import { CLE_TOUCHES, GESTES, gesteDe, libelle, lireLesTouches } from './commun/
 
 const CLE_POSITION = 'krozties.compagnon.position';
 const CLE_DISPOSITION = 'krozties.compagnon.disposition';
+const CLE_LECTURE = 'krozties.compagnon.lecture';
 
 const lire = (cle) => {
   try {
@@ -39,6 +41,14 @@ let disposition = (() => {
 let derniereTaille = '';
 /// La fiche de l'écart, quand elle est ouverte.
 let fiche = null;
+/// La lecture du combat : allumée (vrai), coupée (faux), jamais allumée (null).
+let lecture = typeof lire(CLE_LECTURE) === 'boolean' ? lire(CLE_LECTURE) : null;
+/// Où en est la lecture, comme l'application le dit.
+let etatLecture = null;
+/// La fiche « Lire le combat », quand elle est ouverte : l'activation qui
+/// attend de savoir où en est la lecture, et l'erreur qui l'a arrêtée (null
+/// sans erreur).
+let ficheLecture = null;
 
 /// La place dans la rotation : le tour, et le prochain sort à lancer, la
 /// longueur du tour quand il est fini. Un nouveau calcul repart du tour 1.
@@ -49,7 +59,7 @@ function positionDe(s) {
 }
 
 function avancer(geste) {
-  if (!suivi || !suivi.tours.length || fiche) return;
+  if (!suivi || !suivi.tours.length || fiche || ficheLecture) return;
   const tours = suivi.tours;
   let { tour, lancer } = position;
   if (geste === 'suivant') {
@@ -81,8 +91,50 @@ const etat = (i) => (i < position.lancer ? ' fait' : i === position.lancer ? ' p
 const recale = () => (suivi.recale !== undefined && position.tour >= suivi.recale
   ? '<span class="cp-recale">recalé</span>' : '');
 
+/// Le bouton de la lecture du combat, allumé quand elle tourne.
+const boutonLecture = () => {
+  if (hote !== 'bureau') return '';
+  const titre = lecture ? 'Couper la lecture du combat' : 'Lire le combat';
+  return `<button type="button" data-action="lecture" class="${lecture ? 'actif' : ''}" aria-pressed="${lecture === true}"
+    title="${titre}" aria-label="${titre}">◉</button>`;
+};
+
+/// Ce que dit la pastille, selon où en est la lecture.
+const PASTILLES = {
+  following: { texte: 'Combat suivi', classe: 'suivi' },
+  waiting: { texte: 'Combat non reconnu', classe: '' },
+  denied: { texte: 'Autorisation refusée', classe: 'erreur' },
+  failed: { texte: 'Lecture coupée', classe: 'erreur' },
+  off: { texte: 'Lecture coupée', classe: '' },
+};
+/// Les états où la lecture s'est arrêtée sur une erreur.
+const ARRETS = ['denied', 'failed'];
+
+function titreDeLaPastille(s) {
+  if (s.state === 'following') return 'Krozties suit ce combat.';
+  if (s.state === 'waiting') {
+    return s.game ? "Le combat est suivi dès que son damier s'affiche." : "Aucune fenêtre de Dofus n'est ouverte.";
+  }
+  if (ARRETS.includes(s.state)) return s.error || '';
+  return 'Le bouton ◉ la rallume.';
+}
+
+/// La pastille de la lecture : où elle en est. Arrêtée par une erreur, elle
+/// ouvre la fiche qui dit quoi faire.
+function pastille() {
+  if (hote !== 'bureau' || lecture === null) return '';
+  const s = lecture ? etatLecture : { state: 'off' };
+  const p = s && PASTILLES[s.state];
+  if (!p) return '';
+  const titre = echapper(titreDeLaPastille(s));
+  return ARRETS.includes(s.state)
+    ? `<button type="button" class="cp-pastille ${p.classe}" data-action="lecture-arret" title="${titre}"><i></i>${p.texte}</button>`
+    : `<span class="cp-pastille ${p.classe}" title="${titre}"><i></i>${p.texte}</span>`;
+}
+
 const outils = () => `
   <span class="cp-outils">
+    ${boutonLecture()}
     ${suivi && suivi.requete && suivi.tours && suivi.tours.length
       ? '<button type="button" data-action="recaler" title="Le combat a dévié ?" aria-label="Recaler">⟲</button>' : ''}
     <button type="button" data-action="disposition" title="${disposition === 'barre' ? 'Afficher en liste' : 'Afficher en barre'}"
@@ -99,18 +151,20 @@ function barre() {
     ${t.lancers.map((l, i) => `<button type="button" class="cp-case${etat(i)}" data-lancer="${i}"
       title="${echapper(l.nom)}, ${l.pa} PA${l.indications.length ? `, ${echapper(l.indications.join(', '))}` : ''}">${icone(l)}<i>${i + 1}</i></button>`).join('')}
     ${suite ? `<span class="cp-sep"></span><span class="cp-suite" data-poignee title="Tour ${position.tour + 2}">${suite.lancers.map(icone).join('')}</span>` : ''}
-    ${outils()}
+    ${pastille()}${outils()}
   </div>`;
 }
 
 function liste() {
   const t = suivi.tours[position.tour];
+  const lue = pastille();
   return `<div class="cp cp-liste">
     <div class="cp-tete" data-poignee><b>Tour ${position.tour + 1}</b>${recale()}<span>${t.pa} PA · ${nb(t.degats)}</span>${outils()}</div>
     <ol>${t.lancers.map((l, i) => `
       <li class="${etat(i).trim()}" data-lancer="${i}">${icone(l)}<span class="nom">${echapper(l.nom)}</span>${
         l.indications.map((x) => `<span class="cp-etiquette">${echapper(x)}</span>`).join('')}<span class="pa">${l.pa}</span></li>`).join('')}
     </ol>
+    ${lue ? `<div class="cp-lecture">${lue}</div>` : ''}
     <div class="cp-pied">${GESTES.map((g) => `<span><kbd>${echapper(libelle(touches[g.id]))}</kbd> ${g.court}</span>`).join('')}</div>
   </div>`;
 }
@@ -147,16 +201,74 @@ function ficheDeLEcart() {
   </div>`;
 }
 
+/// La fiche de la première activation : ce que lit Krozties, avant que macOS
+/// demande l'autorisation d'enregistrer l'écran. Elle revient, avec l'erreur,
+/// quand la lecture s'arrête.
+function ficheDeLaLecture() {
+  const f = ficheLecture;
+  const macos = /Mac/.test(navigator.platform || navigator.userAgent || '');
+  const principal = f.attente ? 'Activation…' : (f.erreur === null ? 'Activer' : 'Réessayer');
+  return `<div class="cp cp-fiche">
+    <div class="cp-tete" data-poignee><b>Lire le combat</b></div>
+    <p class="cp-texte">Krozties lit l'image de la fenêtre du jeu, et rien d'autre : ni le clavier, ni la mémoire du jeu,
+      ni le réseau. Les cartes lues restent sur cette machine.</p>
+    ${macos && f.erreur === null
+    ? "<p class=\"cp-texte\">Si Krozties ne l'a pas encore, macOS demandera l'autorisation d'enregistrer l'écran.</p>" : ''}
+    ${f.erreur ? `<p class="cp-erreur">${echapper(f.erreur)}</p>` : ''}
+    <div class="cp-boutons"><button type="button" class="cp-second" data-action="lecture-fermer">${
+      f.erreur === null ? 'Plus tard' : 'Fermer'}</button><button type="button" class="cp-principal"
+      data-action="lecture-activer"${f.attente ? ' disabled' : ''}>${principal}</button></div>
+  </div>`;
+}
+
 function dessiner() {
   const corps = document.getElementById('compagnon');
-  if (fiche) corps.innerHTML = ficheDeLEcart();
+  if (ficheLecture) corps.innerHTML = ficheDeLaLecture();
+  else if (fiche) corps.innerHTML = ficheDeLEcart();
   else {
     corps.innerHTML = suivi && suivi.tours && suivi.tours.length
       ? (disposition === 'liste' ? liste() : barre())
-      : `<div class="cp cp-vide" data-poignee>Calculez une rotation dans Krozties : elle s'affiche ici.${outils()}</div>`;
+      : `<div class="cp cp-vide" data-poignee>Calculez une rotation dans Krozties : elle s'affiche ici.${pastille()}${outils()}</div>`;
   }
   ajusterLaFenetre();
 }
+
+/// Une lecture que l'application n'a pas pu allumer ou couper.
+function lectureEnEchec(e) {
+  etatLecture = { state: 'failed', game: false, error: e.message };
+  if (ficheLecture) ficheLecture = { attente: false, erreur: e.message };
+  dessiner();
+}
+
+/// Allume ou coupe la lecture d'un clic sur ◉, une fois la fiche lue.
+function basculerLaLecture(actif) {
+  lecture = actif;
+  ecrire(CLE_LECTURE, actif);
+  dessiner();
+  appeler('lecture', { actif }).catch(lectureEnEchec);
+}
+
+/// Allume la lecture depuis la fiche, ou la relance après une erreur : la
+/// fiche attend de savoir où elle en est.
+function activerLaLecture() {
+  const relancer = ficheLecture.erreur !== null;
+  ficheLecture = { ...ficheLecture, attente: true };
+  lecture = true;
+  ecrire(CLE_LECTURE, true);
+  dessiner();
+  const allumer = () => appeler('lecture', { actif: true });
+  (relancer ? appeler('lecture', { actif: false }).then(allumer) : allumer()).catch(lectureEnEchec);
+}
+
+// Où en est la lecture, dit par l'application. La fiche qui attend
+// l'activation se ferme si la lecture tourne, et dit l'erreur sinon.
+window.compagnonLecture = (s) => {
+  etatLecture = s;
+  if (ficheLecture && ficheLecture.attente && s && s.state !== 'off') {
+    ficheLecture = ARRETS.includes(s.state) ? { attente: false, erreur: s.error || '' } : null;
+  }
+  dessiner();
+};
 
 /// Les tours déjà joués, et les lancers faits ce tour, comme le moteur les lit :
 /// par leur nom dans la rotation, ou par l'identifiant d'un sort hors plan.
@@ -297,6 +409,25 @@ function ajusterLaFenetre() {
 document.addEventListener('click', (e) => {
   const action = e.target.closest('[data-action]');
   const geste = action && action.dataset.action;
+  if (ficheLecture) {
+    if (geste === 'lecture-fermer') {
+      ficheLecture = null;
+      dessiner();
+    } else if (geste === 'lecture-activer' && !ficheLecture.attente) activerLaLecture();
+    return;
+  }
+  if (geste === 'lecture') {
+    if (lecture === null) {
+      ficheLecture = { attente: false, erreur: null };
+      dessiner();
+    } else basculerLaLecture(!lecture);
+    return;
+  }
+  if (geste === 'lecture-arret') {
+    ficheLecture = { attente: false, erreur: (etatLecture && etatLecture.error) || '' };
+    dessiner();
+    return;
+  }
   if (geste === 'recaler') {
     ouvrirLaFiche();
     return;
@@ -362,3 +493,5 @@ window.addEventListener('storage', (e) => {
 });
 
 dessiner();
+// La lecture allumée la dernière fois reprend avec le compagnon.
+if (hote === 'bureau' && lecture) appeler('lecture', { actif: true }).catch(lectureEnEchec);

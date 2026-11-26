@@ -1,4 +1,5 @@
-// The overlay over the game window: draws what Rust sends, layout B.
+// The overlay over the game window: draws what the app hands it through
+// `window.drawOverlay`, layout B.
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -40,8 +41,5 @@ export function draw(svg, drawing) {
   }
 }
 
-const tauri = window.__TAURI__;
-if (tauri) {
-  const svg = document.getElementById('calque');
-  tauri.event.listen('calque', (event) => draw(svg, event.payload));
-}
+const svg = document.getElementById('calque');
+if (svg) window.drawOverlay = (drawing) => draw(svg, drawing);

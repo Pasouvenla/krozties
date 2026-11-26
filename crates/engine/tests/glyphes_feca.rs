@@ -386,3 +386,66 @@ fn une_aura_ne_se_declenche_que_dans_son_tour_de_pose() {
         sol.total.as_f64()
     );
 }
+
+/// Les coups d'un sort, par tour : (tour, place dans le tour, dégâts).
+fn coups(sol: &Solution, sort: &str) -> Vec<(usize, usize, f64)> {
+    sol.turns
+        .iter()
+        .enumerate()
+        .flat_map(|(t, tour)| {
+            tour.casts
+                .iter()
+                .enumerate()
+                .filter(|(_, c)| c.id == sort)
+                .map(move |(i, c)| (t, i, c.damage.as_f64()))
+        })
+        .collect()
+}
+
+/// Où part la Mise en Garde, et ce que vaut un coup du sort témoin sans elle.
+fn garde_et_temoin(avec: &Solution, sans: &Solution, temoin: &str) -> (usize, usize, f64) {
+    let (t, i, _) = *coups(avec, "mise_en_garde").first().expect("la Mise en Garde part");
+    let base = coups(sans, temoin).first().expect("le témoin part sans elle").2;
+    (t, i, base)
+}
+
+/// La Mise en Garde donne 200 de la caractéristique de l'armure portée, deux
+/// tours. L'armure du Refuge ne se porte qu'en se tenant sur son glyphe-aura :
+/// la Force monte alors les coups Terre du Retour du Bâton, et rien sans le
+/// réglage.
+#[test]
+fn la_mise_en_garde_donne_la_force_de_l_armure_du_refuge() {
+    let rs = regles();
+    let sans = solve(&rs, &["refuge", "retour_du_baton"], 1, 4);
+    let avec = solve(&rs, &["refuge", "mise_en_garde", "retour_du_baton"], 1, 4);
+    assert!(avec.total.as_f64() > sans.total.as_f64(), "{} contre {}", avec.total.as_f64(), sans.total.as_f64());
+    let (t, i, base) = garde_et_temoin(&avec, &sans, "retour_du_baton");
+    let refuge = coups(&avec, "refuge");
+    assert!(refuge.iter().any(|&(tr, ir, _)| tr == t && ir < i), "le Refuge pose l'armure avant elle : {refuge:?}");
+    for (tr, ir, d) in coups(&avec, "retour_du_baton") {
+        let porte = (tr == t && ir > i) || tr == t + 1;
+        if porte {
+            assert!(d > base * 1.15, "tour {tr}, sous la Force : {d:.1} contre {base:.1}");
+        } else {
+            assert!((d - base).abs() < 0.01, "tour {tr}, sans la Force : {d:.1} contre {base:.1}");
+        }
+    }
+    // Sans se tenir sur le glyphe-aura, pas d'armure : la Mise en Garde ne rend rien.
+    let a_terre = solve(&rs, &["refuge", "mise_en_garde", "retour_du_baton"], 0, 4);
+    assert!(coups(&a_terre, "retour_du_baton").iter().all(|&(_, _, d)| (d - base).abs() < 0.01));
+}
+
+/// La Vigie pose son glyphe-aura sous le lanceur contre un ennemi : son armure
+/// se porte sans réglage, et l'Intelligence monte les coups Feu de la Langueur.
+#[test]
+fn la_mise_en_garde_donne_l_intelligence_de_l_armure_de_la_vigie() {
+    let rs = regles();
+    let sans = solve(&rs, &["vigie", "langueur"], 0, 4);
+    let avec = solve(&rs, &["vigie", "mise_en_garde", "langueur"], 0, 4);
+    assert!(avec.total.as_f64() > sans.total.as_f64(), "{} contre {}", avec.total.as_f64(), sans.total.as_f64());
+    let (t, i, base) = garde_et_temoin(&avec, &sans, "langueur");
+    assert!(coups(&avec, "vigie").iter().any(|&(tv, iv, _)| tv == t && iv < i), "la Vigie avant elle");
+    let suivants: Vec<f64> =
+        coups(&avec, "langueur").into_iter().filter(|&(tl, il, _)| (tl == t && il > i) || tl == t + 1).map(|c| c.2).collect();
+    assert!(!suivants.is_empty() && suivants.iter().all(|d| *d > base * 1.15), "{suivants:?} contre {base:.1}");
+}

@@ -40,7 +40,9 @@ resources:
     note: |
       Le glyphe-aura du Pâturage donne 10 % de dommages finaux aux alliés, et vous
       en faites partie si vous vous tenez dessus : sa portée minimale est de zéro,
-      vous pouvez le poser sous vos pieds. Cochez si vous jouez ainsi.
+      vous pouvez le poser sous vos pieds. Chaque glyphe-aura vous donne aussi
+      l'armure de son élément, que Mise en Garde change en caractéristique.
+      Cochez si vous jouez ainsi.
 
   - id: aura_paturage
     scope: caster
@@ -63,6 +65,100 @@ resources:
       Le glyphe-aura du Pâturage, et lui seul des trois : le Refuge porte l'effet
       1163 à 85, « Dommages subis x85% », qui protège ; le Verglas l'effet 752 à
       50, « + 50 Fuite ». Aucun des deux ne touche aux dégâts.
+
+  # Les armures élémentaires : l'état que chaque glyphe-aura donne aux alliés
+  # qui s'y tiennent, lanceur compris (effet 950 de son sous-sort). Mise en
+  # Garde les lit. Comme le glyphe-aura, elles ne vivent que le tour de la pose.
+  - id: armure_terrestre
+    game_states: [5262]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'armure du glyphe-aura du Refuge (sous-sort 13032, état 5262).
+
+  - id: armure_incandescente
+    game_states: [5263]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'armure du glyphe-aura de la Vigie (sous-sort 13037, état 5263).
+
+  - id: armure_aqueuse
+    game_states: [5264]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'armure du glyphe-aura du Verglas (sous-sort 13034, état 5264).
+
+  - id: armure_venteuse
+    game_states: [5265]
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    duration: { turns: 0, refresh: on_apply, on_expire: reset_to_default }
+    note: |
+      L'armure du glyphe-aura du Pâturage (sous-sort 13028, état 5265).
+
+  # Ce que Mise en Garde donne sous chaque armure : deux cents points de la
+  # caractéristique de son élément pendant deux tours (effets 118, 126, 123 et
+  # 119, masques `C,E5262` à `C,E5265`). La Force porte aussi le Neutre.
+  - id: garde_force
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 118, durée 2 : ce tour et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: earth
+
+  - id: garde_intelligence
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 126, durée 2 : ce tour et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: fire
+
+  - id: garde_chance
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 123, durée 2 : ce tour et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: water
+
+  - id: garde_agilite
+    scope: caster
+    max: 1
+    default: 0
+    monotone: increasing
+    # Effet 119, durée 2 : ce tour et le suivant.
+    duration: { turns: 1, refresh: on_apply, on_expire: reset_to_default }
+    modifies_damage:
+      - kind: characteristic
+        amount: 200
+        element: air
 
   # Les glyphes qui frappent : la rotation suppose une cible qui ne bouge pas,
   # et qui reste donc dans chaque glyphe posé sur elle ; un piège, lui, ne part
@@ -678,15 +774,24 @@ spells:
     assumptions:
       - "Effets 950/951 : ce sort applique « Mise en Garde » (5373) ; applique « {{spell,29073,1::Étoile du Berger}} » (5261) ; retire « Mise en Garde » (5373). AUCUN sort de la classe ne lit ces etats dans son masque de cible, et ils ne portent aucun drapeau touchant aux degats : ils ne changent donc aucun chiffre ici."
       - "Effet 1160 : lance aussi « Étoile du Berger », sans aucune ligne de degats, etat, deplacement ou pose au sol. Aucun chiffre de ce calculateur n'en depend."
+      - "Effets 118, 126, 123 et 119 : +200 Force, Intelligence, Chance ou Agilité pendant deux tours, chacun sous l'armure de son élément (masques `C,E5262` à `C,E5265`) : Armure Terrestre du Refuge, Incandescente de la Vigie, Aqueuse du Verglas, Venteuse du Pâturage, états que le glyphe-aura donne à qui s'y tient. Le lanceur porte l'armure du glyphe de son tour s'il se tient sur son glyphe-aura (`sur_le_glyphe_aura`), et toujours celle de la Vigie, posée sous lui contre un ennemi."
     lines: []
     open_questions:
       - "Effets 950/951 : ce sort applique « Glyphes déclenchés » (5260), lu par Pâturage, Refuge, Verglas ; retire « Glyphes déclenchés » (5260), lu par Pâturage, Refuge, Verglas. Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une decision de modelisation."
-      - "Effet 118 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 119 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 123 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-      - "Effet 126 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
       - "Effet 1026 non modelise. Ce que le sort fait en plus de ses degats reste a lire dans son texte et a verifier en jeu."
-    effects: []
+    effects:
+      - effect: gain
+        resource: garde_force
+        requires: { kind: caster_has, resource: armure_terrestre }
+      - effect: gain
+        resource: garde_intelligence
+        requires: { kind: caster_has, resource: armure_incandescente }
+      - effect: gain
+        resource: garde_chance
+        requires: { kind: caster_has, resource: armure_aqueuse }
+      - effect: gain
+        resource: garde_agilite
+        requires: { kind: caster_has, resource: armure_venteuse }
 
   - id: houlette
     dofusdb_id: 13007
@@ -812,6 +917,9 @@ spells:
       # l'Eliotrope, dont le gain se conditionne au compteur declare.
       - effect: gain
         resource: aura_paturage
+        requires: { kind: caster_has, resource: sur_le_glyphe_aura }
+      - effect: gain
+        resource: armure_venteuse
         requires: { kind: caster_has, resource: sur_le_glyphe_aura }
       - effect: gain
         resource: glyphe_paturage
@@ -971,6 +1079,10 @@ spells:
         normal: unknown
     effects:
       - effect: damage
+      # L'armure du glyphe-aura, pour qui s'y tient.
+      - effect: gain
+        resource: armure_terrestre
+        requires: { kind: caster_has, resource: sur_le_glyphe_aura }
       - effect: gain
         resource: glyphe_refuge
       - effect: gain
@@ -1018,6 +1130,10 @@ spells:
         normal: unknown
     effects:
       - effect: damage
+      # L'armure du glyphe-aura, pour qui s'y tient.
+      - effect: gain
+        resource: armure_aqueuse
+        requires: { kind: caster_has, resource: sur_le_glyphe_aura }
       - effect: gain
         resource: glyphe_verglas
       - effect: gain
@@ -1066,6 +1182,9 @@ spells:
         normal: unknown
     effects:
       - effect: damage
+      # Contre un ennemi, le glyphe-aura se pose sous le lanceur : il s'y tient.
+      - effect: gain
+        resource: armure_incandescente
       - effect: gain
         resource: hypoglyphe
 

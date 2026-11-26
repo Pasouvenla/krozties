@@ -3968,6 +3968,37 @@ fn compile_spell(
         masque |= tag_bit(tags, t)?;
     }
 
+    // Deux plafonds distincts, le second par cible : la Gelure du Xélor part
+    // quatre fois dans le tour mais deux fois au plus sur la même cible, donc
+    // deux lancers sur un ennemi, quatre sur deux. Un sort lancé sur soi n'a
+    // qu'une cible ; un sort dont la case visée ne porte pas ce qu'il exige ne
+    // part pas.
+    let plafond = |par_tour: u8, par_cible: Option<u8>| {
+        if visee_refusee(def.aim, cibles) {
+            0
+        } else {
+            par_cible.map_or(par_tour, |t| {
+                let cibles_du_sort = if def.on_self { 1 } else { cibles.nombre() };
+                par_tour.min(t.saturating_mul(cibles_du_sort))
+            })
+        }
+    };
+    let cast_cap = plafond(def.casts_per_turn, def.casts_per_target);
+    let extra_casts = def.extra_casts.as_ref().map(|e| {
+        let r = res_index[&e.resource];
+        if e.per_target == 0 {
+            return (r, e.per_stack, e.cap);
+        }
+        // Des lancers par cible avec ceux du tour : ce qu'un point ajoute se lit
+        // sur les deux plafonds, au nombre de cibles du sort.
+        let gagnes = plafond(
+            def.casts_per_turn.saturating_add(e.per_stack),
+            def.casts_per_target.map(|t| t.saturating_add(e.per_target)),
+        )
+        .saturating_sub(cast_cap);
+        (r, gagnes, gagnes)
+    });
+
     Ok(Spell {
         id: def.id.clone(),
         name: def.name.fr.clone(),
@@ -3977,26 +4008,11 @@ fn compile_spell(
         can_crit: def.crit.can_crit,
         cost_reduction,
         cost_increase,
-        // Deux plafonds distincts, le second par cible : la Gelure du Xélor
-        // part quatre fois dans le tour mais deux fois au plus sur la même
-        // cible, donc deux lancers sur un ennemi, quatre sur deux. Un sort
-        // lancé sur soi n'a qu'une cible ; un sort dont la case visée ne porte
-        // pas ce qu'il exige ne part pas.
-        cast_cap: if visee_refusee(def.aim, cibles) {
-            0
-        } else {
-            def.casts_per_target.map_or(def.casts_per_turn, |t| {
-                let cibles_du_sort = if def.on_self { 1 } else { cibles.nombre() };
-                def.casts_per_turn.min(t.saturating_mul(cibles_du_sort))
-            })
-        },
+        cast_cap,
         // Posés par `Engine::new`, qui seul voit les modes d'un même sort.
         groupe: 0,
         quota: def.casts_per_turn,
-        extra_casts: def
-            .extra_casts
-            .as_ref()
-            .map(|e| (res_index[&e.resource], e.per_stack, e.cap)),
+        extra_casts,
         cooldown: def.cooldown_turns,
         initial_cooldown: def.initial_cooldown,
         schedule,

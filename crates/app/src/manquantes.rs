@@ -44,6 +44,7 @@ pub enum Raison {
     Hasard,
     Invocation,
     Mecanique,
+    Condition,
     Interne,
     SansIncidence,
 }
@@ -56,6 +57,7 @@ impl Raison {
             Raison::Hasard => "Dépendent du hasard",
             Raison::Invocation => "Dépendent d'une invocation",
             Raison::Mecanique => "Font partie de la mécanique du sort : invocation, pose, portail",
+            Raison::Condition => "Ne font que conditionner d'autres sorts, qui les lisent",
             Raison::Interne => "Tiennent à un état que le jeu n'affiche pas",
             Raison::SansIncidence => "Ne changent pas vos dégâts",
         }
@@ -105,6 +107,24 @@ const DEPLACEMENTS: &[u32] = &[5, 6, 8, 50, 51, 783, 1041, 1042, 1099, 1100, 110
 /// Les états qui empêchent un déplacement : ils ne changent que le placement.
 const IMMUNITES: &[&str] = &["Pesanteur", "Indéplaçable", "Enraciné", "Inébranlable"];
 
+/// Les états que le jeu explique, et ce que cela en dit : Intrépide, Pleutre,
+/// Psychopathe et Proie disent « permettre » les effets d'autres sorts, et Sobre
+/// ne fait en plus que retirer l'état Saoul ; les Mutilations posent des
+/// boucliers ; Prohibition interdit Saoul et les Tonneaux ; Relais règle les
+/// échanges de Relais Spirituel ; Bombe Collante ennemie est masqué.
+const ETATS_EXPLIQUES: &[(u32, Raison)] = &[
+    (98, Raison::Condition),
+    (99, Raison::Condition),
+    (100, Raison::Condition),
+    (516, Raison::Condition),
+    (3531, Raison::Condition),
+    (1230, Raison::SansIncidence),
+    (1231, Raison::SansIncidence),
+    (3536, Raison::Mecanique),
+    (6291, Raison::Placement),
+    (665, Raison::Interne),
+];
+
 /// Les effets qui invoquent : une créature, une copie, une bombe, une créature
 /// contrôlable.
 const EFFETS_D_INVOCATION: &[u32] = &[180, 181, 1008, 1011];
@@ -117,6 +137,9 @@ const DECRIRE: &str = "Relevez en jeu ce qu'il fait : sa valeur, sa durée, ce q
 /// Un effet lu dans l'instantané : un point s'il peut changer les dégâts du
 /// lanceur, sa raison sinon. `invoque` : le sort invoque une créature.
 fn juger(lu: &EffetLu, invoque: bool) -> Result<(), Raison> {
+    if effets_secondaires::VISUELS.contains(&lu.id) {
+        return Err(Raison::SansIncidence);
+    }
     if lu.nature == Nature::Mecanique {
         return Err(Raison::Mecanique);
     }
@@ -209,6 +232,10 @@ pub fn etats_de(question: &str) -> Option<Vec<Result<EtatLu, Raison>>> {
         let (nom_brut, apres) = morceau.strip_prefix('«')?.split_once('»')?;
         let nom_brut = nom_brut.trim();
         let id: u32 = apres.trim_start().strip_prefix('(')?.split_once(')')?.0.parse().ok()?;
+        if let Some((_, raison)) = ETATS_EXPLIQUES.iter().find(|(e, _)| *e == id) {
+            sortie.push(Err(*raison));
+            continue;
+        }
         if apres.contains("un drapeau") {
             sortie.push(Err(Raison::SansIncidence));
             continue;
@@ -543,18 +570,36 @@ mod tests {
         assert!(e.contains("Une question que personne n'a prévue."), "{e}");
     }
 
-    /// L'état Psychopathe, que posent deux masques et que lisent Carnavalo et
-    /// Transfiguration : un seul point, qui nomme les deux sorts.
+    /// Un état que posent deux sorts fait un seul point, qui nomme les deux :
+    /// Flèches Amoureuses, posée ici aussi par la Flèche Punitive.
     #[test]
     fn un_etat_pose_par_deux_sorts_fait_un_seul_point() {
-        let p = points_de(&charger(14), "Masque du Psychopathe");
+        let mut regles = crate::solve::load_ruleset(9).unwrap().spells;
+        let instantane = crate::solve::snapshot_for(9).unwrap();
+        let question = regles
+            .iter()
+            .flat_map(|s| s.open_questions.iter())
+            .find(|q| q.contains("(7010)"))
+            .unwrap()
+            .clone();
+        regles.iter_mut().find(|s| s.name.fr == "Flèche Punitive").unwrap().open_questions.push(question);
+        let c = classe(9, "Crâ", &regles, &instantane.spells).unwrap();
+        let p: Vec<&Point> =
+            c.cartes.iter().flat_map(|x| &x.points).filter(|x| x.texte == "L'état « Flèches Amoureuses »").collect();
         assert_eq!(p.len(), 1, "{p:#?}");
-        assert_eq!((p[0].genre, p[0].texte.as_str()), (Genre::Etat, "L'état « Psychopathe »"));
-        assert_eq!(
-            p[0].aide,
-            "Posé par Masque du Psychopathe et Masque de l'Hystérique, lu par Carnavalo et Transfiguration. \
-             Son effet n'est pas compté : décrivez ce qu'il change en jeu."
-        );
+        assert!(p[0].aide.starts_with("Posé par ") && p[0].aide.contains("Flèche Punitive"), "{p:#?}");
+        assert!(p[0].aide.contains("Flèches Amoureuses et") || p[0].aide.contains("et Flèches Amoureuses"), "{p:#?}");
+    }
+
+    /// Les états que le jeu explique sortent de la liste avec leur raison :
+    /// Psychopathe ne fait que conditionner Carnavalo et Transfiguration.
+    #[test]
+    fn un_etat_explique_par_le_jeu_sort_de_la_liste() {
+        let zobal = charger(14);
+        assert!(points_de(&zobal, "Masque du Psychopathe").is_empty());
+        assert!(sortis(&zobal, Raison::Condition).contains(&"Masque du Psychopathe".to_string()));
+        let sacrieur = charger(11);
+        assert!(points_de(&sacrieur, "Mutilation").iter().all(|p| p.genre != Genre::Etat));
     }
 
     /// Un effet non compté se dit comme dans la frise : le Tir Perçant du Crâ.
@@ -568,8 +613,9 @@ mod tests {
     }
 
     /// Ce que les règles comptent désormais quitte la page : les masques du
-    /// Zobal, Berserk, Manigance, la Sentinelle, sauf le sous-sort qu'elle lance
-    /// deux tours plus tard ; et le bonus des portails, qui dépend du placement.
+    /// Zobal, Berserk, Manigance, la Mise en Garde du Féca, la Varappe du
+    /// Pandawa ; et le bonus des portails, qui dépend du placement, comme le
+    /// lancer de Portail que donne la Transcendance.
     #[test]
     fn les_effets_modelises_quittent_la_page() {
         let zobal = charger(14);
@@ -577,34 +623,56 @@ mod tests {
         assert!(points_de(&zobal, "Masque du Psychopathe").iter().all(|p| p.genre != Genre::Effet));
         assert!(points_de(&charger(11), "Berserk").is_empty());
         assert!(points_de(&charger(4), "Manigance").is_empty());
-        let sentinelle = points_de(&charger(9), "Sentinelle");
-        assert_eq!(sentinelle.len(), 1, "{sentinelle:#?}");
-        assert_eq!(sentinelle[0].texte, "Lance un sort que la donnée ne décrit pas, dans 2 tours");
+        assert!(points_de(&charger(1), "Mise en Garde").iter().all(|p| p.genre != Genre::Effet));
+        assert!(points_de(&charger(12), "Varappe").is_empty());
         let eliotrope = charger(16);
         assert!(points_de(&eliotrope, "Portail").is_empty() && points_de(&eliotrope, "Errance").is_empty());
+        assert!(points_de(&eliotrope, "Transcendance").is_empty());
         assert!(sortis(&eliotrope, Raison::Placement).contains(&"Portail".to_string()));
     }
 
-    /// La Mise en Garde donne ses caractéristiques sous un état que la liste
-    /// ne nomme pas : la phrase se dit sans lui, et la consigne le demande.
+    /// Les effets 3792 et 3793 ne jouent qu'une animation : la Sentinelle et
+    /// Odorat quittent la page, ce qu'ils font au tour suivant étant compté
+    /// par leurs autres effets.
     #[test]
-    fn une_condition_sans_nom_se_demande() {
-        let p = points_de(&charger(1), "Mise en Garde");
-        let force = p.iter().find(|x| x.reference.ends_with("effet 118")).unwrap();
-        assert_eq!(force.texte, "Donne 200 Force au lanceur, pendant 2 tours");
-        assert_eq!(force.aide, SOUS_UN_ETAT);
+    fn une_animation_sort_de_la_liste() {
+        let cra = charger(9);
+        assert!(points_de(&cra, "Sentinelle").is_empty());
+        assert!(sortis(&cra, Raison::SansIncidence).contains(&"Sentinelle".to_string()));
+        assert!(points_de(&charger(6), "Odorat").is_empty());
     }
 
-    /// Le modificateur de la Varappe nomme le sort qu'il touche, et son
-    /// identifiant ne passe pas pour une valeur.
+    /// Un effet sous un état que la liste ne nomme pas : la phrase se dit sans
+    /// lui, et la consigne le demande. La Puissance de la Mutilation, que son
+    /// masque réserve au lanceur sans l'état 1302.
+    #[test]
+    fn une_condition_sans_nom_se_demande() {
+        let mut regles = crate::solve::load_ruleset(11).unwrap().spells;
+        let instantane = crate::solve::snapshot_for(11).unwrap();
+        let mutilation = regles.iter_mut().find(|s| s.name.fr == "Mutilation").unwrap();
+        mutilation.open_questions.push("Effet 138 non modelise. Essai.".into());
+        let c = classe(11, "Sacrieur", &regles, &instantane.spells).unwrap();
+        let p = points_de(&c, "Mutilation");
+        let puissance = p.iter().find(|x| x.reference.ends_with("effet 138")).unwrap();
+        assert!(puissance.texte.starts_with("Donne 150 Puissance au lanceur"), "{puissance:#?}");
+        assert_eq!(puissance.aide, SOUS_UN_ETAT);
+    }
+
+    /// Le modificateur de la Varappe nomme le sort qu'il touche, sans l'état
+    /// masqué qui dit la variante, et son identifiant ne passe pas pour une
+    /// valeur ; la Mise en Garde nomme l'armure qui donne sa Force.
     #[test]
     fn un_modificateur_nomme_le_sort_qu_il_touche() {
-        let p = points_de(&charger(12), "Varappe");
-        assert!(!p.is_empty(), "{p:#?}");
-        for x in &p {
-            assert!(x.texte.starts_with("Karcham\u{a0}: +") && !x.aide.contains("12787"), "{x:#?}");
-            assert_eq!(x.aide, SOUS_UN_ETAT);
-        }
+        let instantane = crate::solve::snapshot_for(12).unwrap();
+        let nommer = |i: u32| instantane.spells.iter().find(|s| s.id == i).map(|s| s.name.fr.clone());
+        let varappe = instantane.spells.iter().find(|s| s.name.fr == "Varappe").unwrap();
+        let phrases = effets_secondaires::du_sort(varappe, &nommer).phrases;
+        assert!(phrases.iter().any(|x| x.starts_with("Karcham et Chamrak\u{a0}: +2 lancers par tour")), "{phrases:#?}");
+        assert!(phrases.iter().all(|x| !x.contains("12787") && !x.contains("sous Karcham")), "{phrases:#?}");
+        let feca = crate::solve::snapshot_for(1).unwrap();
+        let garde = feca.spells.iter().find(|s| s.name.fr == "Mise en Garde").unwrap();
+        let phrases = effets_secondaires::du_sort(garde, &|_| None).phrases;
+        assert!(phrases.iter().any(|x| x.contains("Armure Terrestre") && x.contains("200 Force")), "{phrases:#?}");
     }
 
     /// Les valeurs que la donnée ne porte pas : la Rage de l'Ouginak, les
@@ -651,18 +719,21 @@ mod tests {
     #[test]
     fn une_question_d_etats_se_decoupe() {
         let q = "Effets 950/951 : ce sort applique « Insoignable » (76), qui porte incurable, un drapeau qui \
-                 change ce qu'une cible peut infliger ou subir ; applique « {{spell,24037,1::Sobre}} » (3531), lu \
-                 par Absinthe, Alcoshu et 12 autre(s) ; retire « Prohibition » (3536), lu par Liqueur, Ribote. \
+                 change ce qu'une cible peut infliger ou subir ; applique « {{spell,24037,1::Sobre}} » (90001), lu \
+                 par Absinthe, Alcoshu et 12 autre(s) ; retire « Prohibition » (90002), lu par Liqueur, Ribote. \
                  Ces etats-la portent une mecanique que ce calculateur n'ecrit pas encore : chacun demande une \
                  decision de modelisation.";
         let e = etats_de(q).unwrap();
         assert_eq!(e[0], Err(Raison::SansIncidence));
         let sobre = e[1].clone().unwrap();
-        assert_eq!((sobre.id, sobre.nom.as_str(), sobre.retire, sobre.autres), (3531, "Sobre", false, 12));
+        assert_eq!((sobre.id, sobre.nom.as_str(), sobre.retire, sobre.autres), (90001, "Sobre", false, 12));
         assert_eq!(sobre.lu_par, ["Absinthe", "Alcoshu"]);
         let prohibition = e[2].clone().unwrap();
         assert!(prohibition.retire);
         assert_eq!((prohibition.lu_par.as_slice(), prohibition.autres), (&["Liqueur".to_string(), "Ribote".to_string()][..], 0));
+        // Les vrais Sobre et Prohibition, que le jeu explique.
+        let vrais = etats_de("Effets 950/951 : ce sort applique « Sobre » (3531), lu par Absinthe ; retire « Prohibition » (3536).");
+        assert_eq!(vrais, Some(vec![Err(Raison::Condition), Err(Raison::Mecanique)]));
     }
 
     /// Quatre noms au plus, le reste compté.

@@ -1,5 +1,6 @@
 // The overlay page's drawing, checked in a browser: three cells of each kind
-// that is drawn, the badge at the bottom right, drawn twice then cleared.
+// that is drawn, the badge at the bottom right, drawn twice then cleared,
+// then through the page's hook.
 import { draw } from './calque.js';
 
 const errors = [];
@@ -29,6 +30,9 @@ const result = {
 };
 draw(svg, { cells: [], badge: null });
 result.cleared = svg.childElementCount;
+// The hook the app's script calls.
+window.drawOverlay({ cells: drawing.cells.slice(0, 1), badge: null });
+result.hooked = [...svg.querySelectorAll('polygon')].map((p) => p.getAttribute('class'));
 const out = document.createElement('pre');
 out.id = 'calque-essai';
 out.textContent = JSON.stringify(result);
