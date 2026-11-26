@@ -2,7 +2,7 @@
 """Lecture des niveaux de sorts du jeu : zones, regles de lancement, lignes de
 degats, autres effets, pieges et glyphes poses.
 
-Lancer : ./tools/test_import_jeu.py
+Lancer : ./tools/test_import_jeu.py, ou par pytest.
 """
 
 import importlib.util
@@ -26,7 +26,7 @@ class FauxJeu:
         self.par_grade = {(n["spellId"], n["grade"]): n for n in niveaux}
 
 
-def main() -> None:
+def test_lecture_des_niveaux() -> None:
     assert m.zone_cells("C", 2) == 13
     assert (m.zone_cells("Q", 1, 1), m.zone_cells("Q", 3, 1), m.zone_cells("Q", 1, 0)) == (4, 12, 5)
     assert m.zone_cells("l", 1, 63) is None
@@ -57,8 +57,8 @@ def main() -> None:
     assert n["placed_effect_ids"] == [5, 97]
     assert n["placed_trigger_zone"]["shape"] == "C" and n["placed_trigger_zone"]["cells"] == 1
     assert [e["id"] for e in n["placed_effects"]] == [97, 5]
-    print("import_jeu : tout passe")
 
 
 if __name__ == "__main__":
-    main()
+    test_lecture_des_niveaux()
+    print("import_jeu : tout passe")
